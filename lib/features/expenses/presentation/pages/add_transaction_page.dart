@@ -1,0 +1,1017 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../../../core/theme/app_theme.dart';
+import '../../../../core/utils/formatters.dart';
+import '../../domain/entities/category.dart';
+import '../../domain/entities/account.dart';
+import '../../domain/entities/transaction.dart';
+import '../bloc/account_cubit.dart';
+import '../bloc/account_state.dart';
+import '../bloc/transaction_cubit.dart';
+import '../bloc/category_cubit.dart';
+import '../bloc/category_state.dart';
+import '../widgets/add_category_bottom_sheet.dart';
+
+// ─── Step metadata ────────────────────────────────────────────────────────────
+
+const int _kTotalSteps = 5;
+const List<String> _kStepTitles = [
+  'Transaction Type',
+  'Category',
+  'Account',
+  'Title & Date',
+  'How much?',
+];
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
+
+class AddTransactionPage extends StatefulWidget {
+  final TransactionEntity? existingTransaction;
+
+  const AddTransactionPage({super.key, this.existingTransaction});
+
+  @override
+  State<AddTransactionPage> createState() => _AddTransactionPageState();
+}
+
+class _AddTransactionPageState extends State<AddTransactionPage> {
+  final _pageController = PageController();
+  int _currentStep = 0;
+
+  // ── Form state ───────────────────────────────────────────────────────────
+  bool _isIncome = false;
+  Category _selectedCategory = DefaultCategories.all.first;
+  bool _categoryExplicitlySet = false;
+  AccountEntity? _selectedAccount;
+  final _titleController = TextEditingController();
+  DateTime _selectedDate = DateTime.now();
+  final _amountController = TextEditingController();
+  bool _isSaving = false;
+
+  // ── Init ─────────────────────────────────────────────────────────────────
+  @override
+  void initState() {
+    super.initState();
+    final e = widget.existingTransaction;
+    if (e != null) {
+      _isIncome = e.isIncome;
+      _selectedCategory = DefaultCategories.all.firstWhere(
+        (c) => c.id == e.categoryId,
+        orElse: () => DefaultCategories.all.first,
+      );
+      _categoryExplicitlySet = true;
+      _selectedDate = e.date;
+      _titleController.text = e.title;
+      final raw = e.amount.toStringAsFixed(2);
+      _amountController.text =
+          raw.endsWith('.00') ? raw.substring(0, raw.length - 3) : raw;
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final accState = context.read<AccountCubit>().state;
+    if (accState is AccountLoaded && _selectedAccount == null) {
+      final e = widget.existingTransaction;
+      if (e != null) {
+        _selectedAccount = accState.accounts.firstWhere(
+          (a) => a.id == e.accountId,
+          orElse: () => accState.accounts.first,
+        );
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    _titleController.dispose();
+    _amountController.dispose();
+    super.dispose();
+  }
+
+  // ── Navigation ────────────────────────────────────────────────────────────
+
+  void _advance() {
+    if (_currentStep >= _kTotalSteps - 1) return;
+    setState(() => _currentStep++);
+    _pageController.animateToPage(
+      _currentStep,
+      duration: const Duration(milliseconds: 380),
+      curve: Curves.easeInOutCubic,
+    );
+  }
+
+  void _back() {
+    if (_currentStep > 0) {
+      setState(() => _currentStep--);
+      _pageController.animateToPage(
+        _currentStep,
+        duration: const Duration(milliseconds: 380),
+        curve: Curves.easeInOutCubic,
+      );
+    } else {
+      context.pop();
+    }
+  }
+
+  // ── Actions ───────────────────────────────────────────────────────────────
+
+  Future<void> _pickDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now(),
+    );
+    if (picked != null) setState(() => _selectedDate = picked);
+  }
+
+  Future<void> _save() async {
+    final amount = double.tryParse(_amountController.text.trim()) ?? 0.0;
+    final rawTitle = _titleController.text.trim();
+    final title = rawTitle.isEmpty ? _selectedCategory.name : rawTitle;
+
+    if (amount <= 0) {
+      _snack('Enter a valid amount greater than zero');
+      return;
+    }
+    if (_selectedAccount == null) {
+      _snack('Please select an account first');
+      return;
+    }
+
+    setState(() => _isSaving = true);
+
+    final tx = TransactionEntity(
+      id:           widget.existingTransaction?.id ?? '',
+      accountId:    _selectedAccount!.id,
+      userId:       '',
+      title:        title,
+      amount:       amount,
+      categoryId:   _selectedCategory.id,
+      categoryName: _selectedCategory.name,
+      date:         _selectedDate,
+      isIncome:     _isIncome,
+      note:         null,
+      createdAt:    widget.existingTransaction?.createdAt ?? DateTime.now(),
+      updatedAt:    DateTime.now(),
+    );
+
+    if (widget.existingTransaction == null) {
+      await context.read<TransactionCubit>().addTransaction(tx);
+    } else {
+      await context.read<TransactionCubit>().updateTransaction(
+            widget.existingTransaction!, tx);
+    }
+
+    if (mounted) context.pop();
+  }
+
+  void _snack(String msg) {
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(msg)));
+  }
+
+  // ── Build ─────────────────────────────────────────────────────────────────
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Scaffold(
+      appBar: AppBar(
+        leading: IconButton(
+          icon: Icon(
+            _currentStep == 0 ? Icons.close_rounded : Icons.arrow_back_rounded,
+          ),
+          onPressed: _back,
+          tooltip: _currentStep == 0 ? 'Cancel' : 'Back',
+        ),
+        title: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 250),
+          transitionBuilder: (child, anim) => FadeTransition(
+            opacity: anim,
+            child: SlideTransition(
+              position: Tween<Offset>(
+                begin: const Offset(0, 0.3),
+                end: Offset.zero,
+              ).animate(anim),
+              child: child,
+            ),
+          ),
+          child: Text(
+            _kStepTitles[_currentStep],
+            key: ValueKey(_currentStep),
+          ),
+        ),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: Center(
+              child: Text(
+                '${_currentStep + 1} of $_kTotalSteps',
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 600),
+          child: Column(
+        children: [
+          // ── Step progress bar ─────────────────────────────────────────────
+          _StepProgressBar(step: _currentStep, total: _kTotalSteps),
+
+          // ── Step content ──────────────────────────────────────────────────
+          Expanded(
+            child: PageView(
+              controller: _pageController,
+              physics: const NeverScrollableScrollPhysics(),
+              children: [
+                // Step 1 — Type
+                _Step1Type(
+                  onSelected: (value) {
+                    setState(() {
+                      _isIncome = value;
+                      final typeCategories = DefaultCategories.all.where((c) => c.isIncome == value).toList();
+                      if (typeCategories.isNotEmpty && !typeCategories.any((c) => c.id == _selectedCategory.id)) {
+                        _selectedCategory = typeCategories.first;
+                        _categoryExplicitlySet = false;
+                      }
+                    });
+                    _advance();
+                  },
+                ),
+
+                // Step 2 — Category
+                _Step2Category(
+                  selectedCategory:      _selectedCategory,
+                  categoryExplicitlySet: _categoryExplicitlySet,
+                  isIncome:              _isIncome,
+                  onCategoryTap: (cat) {
+                    setState(() {
+                      _selectedCategory       = cat;
+                      _categoryExplicitlySet  = true;
+                    });
+                    _advance();
+                  },
+                ),
+
+                // Step 3 — Account
+                _Step3Account(
+                  selectedAccount: _selectedAccount,
+                  onAccountTap: (acc) {
+                    setState(() => _selectedAccount = acc);
+                    _advance();
+                  },
+                ),
+
+                // Step 4 — Title & Date
+                _Step4TitleDate(
+                  titleController: _titleController,
+                  selectedDate:    _selectedDate,
+                  onDateTap:       _pickDate,
+                  onNext: () {
+                    _advance();
+                  },
+                ),
+
+                // Step 5 — Amount
+                _Step5Amount(
+                  isIncome:          _isIncome,
+                  amountController:  _amountController,
+                  isSaving:          _isSaving,
+                  onSave:            _save,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Progress Bar ─────────────────────────────────────────────────────────────
+
+class _StepProgressBar extends StatelessWidget {
+  final int step;
+  final int total;
+
+  const _StepProgressBar({required this.step, required this.total});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme    = Theme.of(context);
+    final progress = (step + 1) / total;
+
+    return Column(
+      children: [
+        // Dot indicators
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          child: Row(
+            children: List.generate(total, (i) {
+              final active  = i == step;
+              final done    = i < step;
+              return Expanded(
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeOut,
+                  margin: const EdgeInsets.symmetric(horizontal: 3),
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: done || active
+                        ? theme.colorScheme.primary
+                        : theme.colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              );
+            }),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ─── Step 1: Transaction Type ─────────────────────────────────────────────────
+
+class _Step1Type extends StatelessWidget {
+  final ValueChanged<bool> onSelected;
+
+  const _Step1Type({required this.onSelected});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 32, 24, 40),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'What are you recording?',
+            style: theme.textTheme.titleLarge,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Choose the transaction type to get started.',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 40),
+
+          // Type cards — full-width, stacked
+          _TypeCard(
+            emoji: '💸',
+            label: 'Expense',
+            sublabel: 'Money going out',
+            color: AppTheme.expenseColor,
+            onTap: () => onSelected(false),
+          ),
+          const SizedBox(height: 16),
+          _TypeCard(
+            emoji: '💰',
+            label: 'Income',
+            sublabel: 'Money coming in',
+            color: AppTheme.incomeColor,
+            onTap: () => onSelected(true),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TypeCard extends StatelessWidget {
+  final String emoji;
+  final String label;
+  final String sublabel;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _TypeCard({
+    required this.emoji,
+    required this.label,
+    required this.sublabel,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Material(
+      color: color.withOpacity(0.08),
+      borderRadius: BorderRadius.circular(20),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
+        splashColor: color.withOpacity(0.12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 22),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: color.withOpacity(0.3), width: 1.5),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                alignment: Alignment.center,
+                child: Text(emoji, style: const TextStyle(fontSize: 28)),
+              ),
+              const SizedBox(width: 20),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      style: theme.textTheme.titleMedium?.copyWith(color: color),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      sublabel,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(Icons.arrow_forward_ios_rounded, color: color, size: 18),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Step 2: Category ─────────────────────────────────────────────────────────
+
+class _Step2Category extends StatelessWidget {
+  final Category selectedCategory;
+  final bool categoryExplicitlySet;
+  final bool isIncome;
+  final ValueChanged<Category> onCategoryTap;
+
+  const _Step2Category({
+    required this.selectedCategory,
+    required this.categoryExplicitlySet,
+    required this.isIncome,
+    required this.onCategoryTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(24, 24, 24, 40),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _SectionHeader(
+            label: 'Category',
+            hint: categoryExplicitlySet ? null : 'Pick one to continue',
+          ),
+          const SizedBox(height: 12),
+          BlocBuilder<CategoryCubit, CategoryState>(
+            builder: (context, state) {
+              List<Category> allCategories = DefaultCategories.all;
+              if (state is CategoryLoaded) {
+                allCategories = state.categories;
+              }
+              final categories = allCategories.where((c) => c.isIncome == isIncome).toList();
+
+              return GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: categories.length + 1,
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 4,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                  childAspectRatio: 0.82,
+                ),
+                itemBuilder: (_, i) {
+                  if (i == categories.length) {
+                    return _CategoryCell(
+                      category: Category(
+                        id: 'add_new',
+                        name: 'Add Custom',
+                        icon: '➕',
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      isSelected: false,
+                      onTap: () async {
+                        final newCategory = await showModalBottomSheet<Category>(
+                          context: context,
+                          isScrollControlled: true,
+                          backgroundColor: Colors.transparent,
+                          builder: (context) => AddCategoryBottomSheet(isIncome: isIncome),
+                        );
+                        if (newCategory != null) {
+                          onCategoryTap(newCategory);
+                        }
+                      },
+                    );
+                  }
+                  final cat      = categories[i];
+                  final selected = cat.id == selectedCategory.id && categoryExplicitlySet;
+                  return _CategoryCell(
+                    category: cat,
+                    isSelected: selected,
+                    onTap: () => onCategoryTap(cat),
+                    onLongPress: cat.isDefault
+                        ? null
+                        : () async {
+                            final confirm = await showDialog<bool>(
+                              context: context,
+                              builder: (ctx) => AlertDialog(
+                                title: const Text('Delete Category?'),
+                                content: Text('Are you sure you want to delete "${cat.name}"?'),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(ctx, false),
+                                    child: const Text('Cancel'),
+                                  ),
+                                  FilledButton(
+                                    onPressed: () => Navigator.pop(ctx, true),
+                                    style: FilledButton.styleFrom(
+                                      backgroundColor: Theme.of(context).colorScheme.error,
+                                    ),
+                                    child: const Text('Delete'),
+                                  ),
+                                ],
+                              ),
+                            );
+                            if (confirm == true && context.mounted) {
+                              context.read<CategoryCubit>().deleteCustomCategory(cat.id);
+                            }
+                          },
+                  );
+                },
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Step 3: Account ──────────────────────────────────────────────────────────
+
+class _Step3Account extends StatelessWidget {
+  final AccountEntity? selectedAccount;
+  final ValueChanged<AccountEntity> onAccountTap;
+
+  const _Step3Account({
+    required this.selectedAccount,
+    required this.onAccountTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(24, 24, 24, 40),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _SectionHeader(
+            label: 'Account',
+            hint: selectedAccount == null ? 'Pick one to continue' : null,
+          ),
+          const SizedBox(height: 12),
+          BlocBuilder<AccountCubit, AccountState>(
+            builder: (context, state) {
+              if (state is AccountLoaded && state.accounts.isNotEmpty) {
+                return Column(
+                  children: state.accounts.map((acc) {
+                    final selected = acc.id == selectedAccount?.id;
+                    return _AccountRow(
+                      account:    acc,
+                      isSelected: selected,
+                      onTap:      () => onAccountTap(acc),
+                    );
+                  }).toList(),
+                );
+              }
+              return Text(
+                'No accounts found. Please add an account first.',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SectionHeader extends StatelessWidget {
+  final String label;
+  final String? hint;
+
+  const _SectionHeader({required this.label, this.hint});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Row(
+      children: [
+        Text(label, style: theme.textTheme.titleSmall),
+        if (hint != null) ...[
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primary.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              hint!,
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: theme.colorScheme.primary,
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _CategoryCell extends StatelessWidget {
+  final Category category;
+  final bool isSelected;
+  final VoidCallback onTap;
+  final VoidCallback? onLongPress;
+
+  const _CategoryCell({
+    required this.category,
+    required this.isSelected,
+    required this.onTap,
+    this.onLongPress,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return GestureDetector(
+      onTap: onTap,
+      onLongPress: onLongPress,
+      onSecondaryTapDown: (_) => onLongPress?.call(), // More reliable on web
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? theme.colorScheme.primary.withOpacity(0.12)
+              : theme.colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: isSelected
+                ? theme.colorScheme.primary
+                : Colors.transparent,
+            width: 2,
+          ),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(category.icon, style: const TextStyle(fontSize: 26)),
+            const SizedBox(height: 6),
+            Text(
+              category.name,
+              style: theme.textTheme.labelSmall?.copyWith(
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w400,
+                color: isSelected
+                    ? theme.colorScheme.primary
+                    : theme.colorScheme.onSurfaceVariant,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AccountRow extends StatelessWidget {
+  final AccountEntity account;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _AccountRow({
+    required this.account,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme   = Theme.of(context);
+    final isAsset = account.type == AccountType.asset;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? theme.colorScheme.primary.withOpacity(0.08)
+              : theme.cardTheme.color,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: isSelected
+                ? theme.colorScheme.primary
+                : theme.colorScheme.outline,
+            width: isSelected ? 2 : 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: (isAsset ? Colors.teal : Colors.orange).withOpacity(0.12),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                isAsset
+                    ? Icons.account_balance_wallet_rounded
+                    : Icons.credit_card_rounded,
+                size: 20,
+                color: isAsset ? Colors.teal : Colors.orange,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(account.name, style: theme.textTheme.bodyLarge),
+                  Text(
+                    AppFormatters.formatCurrency(account.balance),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (isSelected)
+              Icon(
+                Icons.check_circle_rounded,
+                color: theme.colorScheme.primary,
+                size: 22,
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Step 4: Title & Date ─────────────────────────────────────────────────────
+
+class _Step4TitleDate extends StatelessWidget {
+  final TextEditingController titleController;
+  final DateTime selectedDate;
+  final VoidCallback onDateTap;
+  final VoidCallback onNext;
+
+  const _Step4TitleDate({
+    required this.titleController,
+    required this.selectedDate,
+    required this.onDateTap,
+    required this.onNext,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 32, 24, 40),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Add a title', style: theme.textTheme.titleLarge),
+          const SizedBox(height: 6),
+          Text(
+            'Give this transaction a short, clear name.',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 32),
+
+          // Title field
+          TextField(
+            controller: titleController,
+            autofocus: true,
+            textCapitalization: TextCapitalization.sentences,
+            style: theme.textTheme.bodyLarge,
+            decoration: const InputDecoration(
+              hintText: 'e.g. Groceries, Salary, Netflix…',
+              prefixIcon: Icon(Icons.title_rounded),
+            ),
+            onSubmitted: (_) => onNext(),
+          ),
+          const SizedBox(height: 20),
+
+          // Date picker row
+          Text('Date', style: theme.textTheme.titleSmall),
+          const SizedBox(height: 10),
+          GestureDetector(
+            onTap: onDateTap,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              decoration: BoxDecoration(
+                color: theme.inputDecorationTheme.fillColor,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: theme.colorScheme.outline),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.calendar_today_rounded,
+                    size: 20,
+                    color: theme.colorScheme.primary,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      AppFormatters.formatRelativeDate(selectedDate),
+                      style: theme.textTheme.bodyMedium,
+                    ),
+                  ),
+                  Icon(
+                    Icons.expand_more_rounded,
+                    size: 20,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          const Spacer(),
+
+          // Next button
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: onNext,
+              icon: const Icon(Icons.arrow_forward_rounded),
+              label: const Text('Next'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Step 5: Amount ───────────────────────────────────────────────────────────
+
+class _Step5Amount extends StatelessWidget {
+  final bool isIncome;
+  final TextEditingController amountController;
+  final bool isSaving;
+  final VoidCallback onSave;
+
+  const _Step5Amount({
+    required this.isIncome,
+    required this.amountController,
+    required this.isSaving,
+    required this.onSave,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme       = Theme.of(context);
+    final accentColor = isIncome ? AppTheme.incomeColor : AppTheme.expenseColor;
+    final prefix      = isIncome ? '+\$' : '-\$';
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 32, 24, 40),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Enter the amount', style: theme.textTheme.titleLarge),
+          const SizedBox(height: 6),
+          Text(
+            isIncome ? 'How much did you receive?' : 'How much did you spend?',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 40),
+
+          // Large amount display built from the text field value
+          Center(
+            child: ValueListenableBuilder<TextEditingValue>(
+              valueListenable: amountController,
+              builder: (_, val, __) {
+                final display =
+                    val.text.isEmpty || val.text == '0' ? '0' : val.text;
+                return Text(
+                  '$prefix$display',
+                  style: theme.textTheme.displayMedium?.copyWith(
+                    color: accentColor,
+                    fontWeight: FontWeight.w800,
+                  ),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 32),
+
+          // Amount text field — autofocus brings up native keyboard
+          TextField(
+            controller: amountController,
+            autofocus: true,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            style: theme.textTheme.bodyLarge,
+            textAlign: TextAlign.center,
+            decoration: InputDecoration(
+              hintText: '0.00',
+              prefixText: isIncome ? '+' : '-',
+              prefixStyle: TextStyle(
+                color: accentColor,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            onSubmitted: (_) => onSave(),
+          ),
+
+          const Spacer(),
+
+          // Save button
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: accentColor,
+                foregroundColor: Colors.white,
+                minimumSize: const Size.fromHeight(52),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              onPressed: isSaving ? null : onSave,
+              child: isSaving
+                  ? const SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.5,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Text(
+                      'Save Transaction',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 16,
+                      ),
+                    ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
