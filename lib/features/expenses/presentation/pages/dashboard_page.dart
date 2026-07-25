@@ -36,9 +36,8 @@ class DashboardPage extends StatelessWidget {
               ..showSnackBar(SnackBar(
                 content: const Text('Transaction deleted'),
                 action: SnackBarAction(
-                  label: 'Undo',
-                  onPressed: () =>
-                      context.read<TransactionCubit>().undoDelete(),
+                  label: 'Close',
+                  onPressed: () => ScaffoldMessenger.of(context).hideCurrentSnackBar(),
                 ),
                 duration: const Duration(seconds: 3),
               ));
@@ -263,6 +262,17 @@ class _DashboardAppBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    
+    final hour = DateTime.now().hour;
+    String greeting;
+    if (hour < 12) {
+      greeting = 'Good morning 👋';
+    } else if (hour < 17) {
+      greeting = 'Good afternoon 👋';
+    } else {
+      greeting = 'Good evening 👋';
+    }
+
     return SliverAppBar(
       backgroundColor: theme.scaffoldBackgroundColor,
       elevation: 0,
@@ -272,7 +282,7 @@ class _DashboardAppBar extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Good morning 👋',
+            greeting,
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),

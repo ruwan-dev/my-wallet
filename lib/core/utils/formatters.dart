@@ -7,7 +7,7 @@ class AppFormatters {
   /// Format [amount] as currency with the given [symbol].
   static String formatCurrency(
     double amount, {
-    String symbol = '\$',
+    String symbol = 'Rs ',
     String locale = 'en_US',
   }) {
     final formatter = NumberFormat.currency(

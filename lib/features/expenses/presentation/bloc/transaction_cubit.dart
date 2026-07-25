@@ -83,17 +83,7 @@ class TransactionCubit extends Cubit<TransactionState> {
     }
   }
 
-  Future<void> undoDelete() async {
-    if (state is TransactionLoaded) {
-      final loadedState = state as TransactionLoaded;
-      final transactionToRestore = loadedState.deletedTransaction;
-      
-      if (transactionToRestore != null) {
-        emit(loadedState.copyWith(clearDeleted: true));
-        await _addTransaction(transactionToRestore);
-      }
-    }
-  }
+
 
   @override
   Future<void> close() {
