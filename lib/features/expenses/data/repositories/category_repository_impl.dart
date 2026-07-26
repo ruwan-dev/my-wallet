@@ -28,6 +28,23 @@ class CategoryRepositoryImpl implements CategoryRepository {
   }
 
   @override
+  Stream<List<Category>> watchCustomCategories(String userId) {
+    try {
+      return remoteDatasource.watchAllCategories(userId).map((remoteModels) {
+        // Sync to local silently
+        for (final model in remoteModels) {
+          localDatasource.saveCategory(model);
+        }
+        return remoteModels.map((e) => e.toEntity()).toList();
+      });
+    } catch (_) {
+      // If stream creation fails entirely, return a fallback stream from local
+      return Stream.fromFuture(localDatasource.getAllCategories())
+          .map((localModels) => localModels.map((e) => e.toEntity()).toList());
+    }
+  }
+
+  @override
   Future<void> saveCategory(String userId, Category category) async {
     final model = CategoryModel.fromEntity(category);
     // Save to local first for immediate feedback

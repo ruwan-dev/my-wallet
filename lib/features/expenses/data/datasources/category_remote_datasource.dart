@@ -4,6 +4,7 @@ import '../models/category_model.dart';
 
 abstract class CategoryRemoteDatasource {
   Future<List<CategoryModel>> getAllCategories(String userId);
+  Stream<List<CategoryModel>> watchAllCategories(String userId);
   Future<void> saveCategory(String userId, CategoryModel category);
   Future<void> deleteCategory(String userId, String categoryId);
 }
@@ -12,6 +13,24 @@ class FirestoreCategoryRemoteDatasource implements CategoryRemoteDatasource {
   final FirebaseFirestore firestore;
 
   FirestoreCategoryRemoteDatasource(this.firestore);
+
+  @override
+  Stream<List<CategoryModel>> watchAllCategories(String userId) {
+    try {
+      return firestore
+          .collection('users')
+          .doc(userId)
+          .collection('categories')
+          .snapshots()
+          .map((snapshot) {
+        return snapshot.docs
+            .map((doc) => CategoryModel.fromJson(doc.data()))
+            .toList();
+      });
+    } catch (e) {
+      throw CacheException(message: 'Failed to watch remote categories: $e');
+    }
+  }
 
   @override
   Future<List<CategoryModel>> getAllCategories(String userId) async {

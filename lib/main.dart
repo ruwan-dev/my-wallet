@@ -59,7 +59,7 @@ class ExpenseTrackerApp extends StatelessWidget {
           value: sl<TransactionCubit>(),
         ),
         BlocProvider.value(
-          value: sl<CategoryCubit>()..loadCategories(),
+          value: sl<CategoryCubit>(),
         ),
         BlocProvider.value(
           value: sl<AuthCubit>(),
@@ -75,6 +75,7 @@ class ExpenseTrackerApp extends StatelessWidget {
           } else if (state is AuthAuthenticated) {
             context.read<AccountCubit>().loadAccounts();
             context.read<TransactionCubit>().loadTransactions();
+            context.read<CategoryCubit>().loadCategories();
             context.read<BudgetCubit>().loadBudgetsForMonth(DateTime.now());
             appRouter.go('/');
           }
