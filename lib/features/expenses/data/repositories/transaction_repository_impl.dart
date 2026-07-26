@@ -94,6 +94,7 @@ class TransactionRepositoryImpl implements TransactionRepository {
     }
   }
 
+  @override
   Future<Either<Failure, void>> deleteTransaction(String userId, String id) async {
     try {
       await remoteDataSource.deleteTransaction(userId, id);

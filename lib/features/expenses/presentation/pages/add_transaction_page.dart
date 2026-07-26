@@ -13,6 +13,8 @@ import '../bloc/transaction_cubit.dart';
 import '../bloc/category_cubit.dart';
 import '../bloc/category_state.dart';
 import '../widgets/add_category_bottom_sheet.dart';
+import '../widgets/subcategory_picker_sheet.dart';
+import '../widgets/recurring_timeline_widget.dart';
 
 // ─── Step metadata ────────────────────────────────────────────────────────────
 
@@ -45,8 +47,11 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
   Category _selectedCategory = DefaultCategories.all.first;
   bool _categoryExplicitlySet = false;
   AccountEntity? _selectedAccount;
+  AccountEntity? _transferTargetAccount;
   final _titleController = TextEditingController();
+  final _subCategoryController = TextEditingController();
   DateTime _selectedDate = DateTime.now();
+  String? _recurrenceFrequency;
   final _amountController = TextEditingController();
   bool _isSaving = false;
 
@@ -59,10 +64,23 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
       _isIncome = e.isIncome;
       _selectedCategory = DefaultCategories.all.firstWhere(
         (c) => c.id == e.categoryId,
-        orElse: () => DefaultCategories.all.first,
+        orElse: () {
+          if (e.categoryId.startsWith('liability_')) {
+            return Category(
+              id: e.categoryId,
+              name: e.categoryName,
+              icon: '💳',
+              color: Colors.orange,
+              isIncome: false,
+            );
+          }
+          return DefaultCategories.all.first;
+        },
       );
       _categoryExplicitlySet = true;
       _selectedDate = e.date;
+      _recurrenceFrequency = e.recurrenceFrequency;
+      _subCategoryController.text = e.subCategory ?? '';
       _titleController.text = e.title;
       final raw = e.amount.toStringAsFixed(2);
       _amountController.text =
@@ -81,6 +99,12 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
           (a) => a.id == e.accountId,
           orElse: () => accState.accounts.first,
         );
+        if (e.transferAccountId != null) {
+          _transferTargetAccount = accState.accounts.firstWhere(
+            (a) => a.id == e.transferAccountId,
+            orElse: () => accState.accounts.first,
+          );
+        }
       }
     }
   }
@@ -89,6 +113,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
   void dispose() {
     _pageController.dispose();
     _titleController.dispose();
+    _subCategoryController.dispose();
     _amountController.dispose();
     super.dispose();
   }
@@ -144,7 +169,58 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
       return;
     }
 
+    if (widget.existingTransaction != null && widget.existingTransaction!.nextDueDate != null) {
+      final oldNextDueDate = widget.existingTransaction!.nextDueDate!;
+      if (_selectedDate.isBefore(oldNextDueDate)) {
+        final proceed = await showDialog<bool>(
+          context: context,
+          builder: (ctx) {
+            final theme = Theme.of(ctx);
+            return AlertDialog(
+              icon: Icon(Icons.info_outline_rounded, color: theme.colorScheme.primary, size: 32),
+              title: const Text('Early Entry?'),
+              content: Text(
+                'You are logging this transaction ahead of its scheduled date (${AppFormatters.formatDate(oldNextDueDate)}).\n\nIs this an early payment for the upcoming schedule?',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  child: const Text('Cancel'),
+                ),
+                FilledButton(
+                  onPressed: () => Navigator.pop(ctx, true),
+                  child: const Text('Yes, Continue'),
+                ),
+              ],
+            );
+          },
+        );
+        if (proceed != true) {
+          return;
+        }
+      }
+    }
+
     setState(() => _isSaving = true);
+
+    DateTime? nextDueDate;
+    final freq = _recurrenceFrequency;
+    if (freq != null && freq != 'None') {
+      switch (freq) {
+        case 'Daily':
+          nextDueDate = _selectedDate.add(const Duration(days: 1));
+          break;
+        case 'Weekly':
+          nextDueDate = _selectedDate.add(const Duration(days: 7));
+          break;
+        case 'Monthly':
+          nextDueDate = DateTime(_selectedDate.year, _selectedDate.month + 1, _selectedDate.day);
+          break;
+        case 'Yearly':
+          nextDueDate = DateTime(_selectedDate.year + 1, _selectedDate.month, _selectedDate.day);
+          break;
+      }
+    }
 
     final tx = TransactionEntity(
       id:           widget.existingTransaction?.id ?? '',
@@ -154,11 +230,15 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
       amount:       amount,
       categoryId:   _selectedCategory.id,
       categoryName: _selectedCategory.name,
+      subCategory:  _subCategoryController.text.trim().isEmpty ? null : _subCategoryController.text.trim(),
       date:         _selectedDate,
       isIncome:     _isIncome,
       note:         null,
       createdAt:    widget.existingTransaction?.createdAt ?? DateTime.now(),
       updatedAt:    DateTime.now(),
+      recurrenceFrequency: freq == 'None' ? null : freq,
+      nextDueDate:  nextDueDate,
+      transferAccountId: _transferTargetAccount?.id,
     );
 
     if (widget.existingTransaction == null) {
@@ -254,21 +334,37 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
 
                 // Step 2 — Category
                 _Step2Category(
-                  selectedCategory:      _selectedCategory,
-                  categoryExplicitlySet: _categoryExplicitlySet,
-                  isIncome:              _isIncome,
-                  onCategoryTap: (cat) {
+                   selectedCategory:      _selectedCategory,
+                   categoryExplicitlySet: _categoryExplicitlySet,
+                   isIncome:              _isIncome,
+                   subCategoryController: _subCategoryController,
+                   selectedAccountId:     _selectedAccount?.id,
+                   onNext: _advance,
+                   onCategoryTap: (cat) {
                     setState(() {
                       _selectedCategory       = cat;
                       _categoryExplicitlySet  = true;
+                      
+                      if (cat.id.startsWith('liability_')) {
+                        final liabilityId = cat.id.replaceFirst('liability_', '');
+                        final accState = context.read<AccountCubit>().state;
+                        if (accState is AccountLoaded) {
+                          _transferTargetAccount = accState.accounts.firstWhere(
+                            (a) => a.id == liabilityId,
+                            orElse: () => accState.accounts.first,
+                          );
+                        }
+                      } else {
+                        _transferTargetAccount = null;
+                      }
                     });
-                    _advance();
                   },
                 ),
 
                 // Step 3 — Account
                 _Step3Account(
                   selectedAccount: _selectedAccount,
+                  excludedAccountId: _transferTargetAccount?.id,
                   onAccountTap: (acc) {
                     setState(() => _selectedAccount = acc);
                     _advance();
@@ -280,9 +376,12 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                   titleController: _titleController,
                   selectedDate:    _selectedDate,
                   onDateTap:       _pickDate,
-                  onNext: () {
-                    _advance();
+                  recurrenceFrequency: _recurrenceFrequency,
+                  onRecurrenceChanged: (val) {
+                    setState(() => _recurrenceFrequency = val);
                   },
+                  isIncome: _isIncome,
+                  onNext:   _advance,
                 ),
 
                 // Step 5 — Amount
@@ -472,18 +571,79 @@ class _TypeCard extends StatelessWidget {
 
 // ─── Step 2: Category ─────────────────────────────────────────────────────────
 
-class _Step2Category extends StatelessWidget {
+class _Step2Category extends StatefulWidget {
   final Category selectedCategory;
   final bool categoryExplicitlySet;
   final bool isIncome;
   final ValueChanged<Category> onCategoryTap;
+  final TextEditingController subCategoryController;
+  final VoidCallback onNext;
+  final String? selectedAccountId;
 
   const _Step2Category({
     required this.selectedCategory,
     required this.categoryExplicitlySet,
     required this.isIncome,
     required this.onCategoryTap,
+    required this.subCategoryController,
+    required this.onNext,
+    this.selectedAccountId,
   });
+
+  @override
+  State<_Step2Category> createState() => _Step2CategoryState();
+}
+
+class _Step2CategoryState extends State<_Step2Category> {
+  bool _showingSubcategories = false;
+
+  void _addSubcategory(BuildContext context, Category category) {
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        final ctrl = TextEditingController();
+        return AlertDialog(
+          title: const Text('Add Subcategory'),
+          content: TextField(
+            controller: ctrl,
+            decoration: const InputDecoration(hintText: 'Subcategory Name'),
+            textCapitalization: TextCapitalization.words,
+            autofocus: true,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () {
+                final text = ctrl.text.trim();
+                if (text.isNotEmpty && !category.subcategories.contains(text)) {
+                  final updated = category.copyWith(
+                    subcategories: [...category.subcategories, text],
+                  );
+                  context.read<CategoryCubit>().updateCategory(updated);
+                  widget.onCategoryTap(updated);
+                }
+                Navigator.pop(ctx);
+              },
+              child: const Text('Add'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _removeSubcategory(BuildContext context, Category category, String sub) {
+    final updatedList = List<String>.from(category.subcategories)..remove(sub);
+    final updated = category.copyWith(subcategories: updatedList);
+    context.read<CategoryCubit>().updateCategory(updated);
+    widget.onCategoryTap(updated);
+    if (widget.subCategoryController.text == sub) {
+      widget.subCategoryController.clear();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -493,8 +653,10 @@ class _Step2Category extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _SectionHeader(
-            label: 'Category',
-            hint: categoryExplicitlySet ? null : 'Pick one to continue',
+            label: _showingSubcategories ? widget.selectedCategory.name : 'Category',
+            hint: widget.categoryExplicitlySet && !_showingSubcategories
+                ? null
+                : (_showingSubcategories ? 'Pick a subcategory' : 'Pick one to continue'),
           ),
           const SizedBox(height: 12),
           BlocBuilder<CategoryCubit, CategoryState>(
@@ -503,17 +665,126 @@ class _Step2Category extends StatelessWidget {
               if (state is CategoryLoaded) {
                 allCategories = state.categories;
               }
-              final categories = allCategories.where((c) => c.isIncome == isIncome).toList();
+              final categories = allCategories.where((c) => c.isIncome == widget.isIncome).toList();
 
+              if (!widget.isIncome) {
+                final accState = context.read<AccountCubit>().state;
+                if (accState is AccountLoaded) {
+                  // Exclude the account selected as SOURCE so you can't pay a card with itself
+                  final liabilities = accState.accounts.where(
+                    (a) => a.type == AccountType.liability && a.id != widget.selectedAccountId,
+                  );
+                  for (final acc in liabilities) {
+                    categories.add(Category(
+                      id: 'liability_${acc.id}',
+                      name: acc.name,
+                      icon: '💳',
+                      color: Colors.orange,
+                      isIncome: false,
+                    ));
+                  }
+                }
+              }
+
+              // Make sure we have the latest instance of the selected category from the state
+              Category currentSelected = widget.selectedCategory;
+              if (categories.any((c) => c.id == widget.selectedCategory.id)) {
+                currentSelected = categories.firstWhere((c) => c.id == widget.selectedCategory.id);
+              }
+
+              if (_showingSubcategories) {
+                return GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: currentSelected.subcategories.length + 2, // +1 for Back, +1 for Add
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 3,
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 12,
+                    childAspectRatio: 2.2,
+                  ),
+                  itemBuilder: (_, i) {
+                    if (i == 0) {
+                      return _CategoryCell(
+                        category: Category(
+                          id: 'back',
+                          name: 'Categories',
+                          icon: '🗂️',
+                          color: Theme.of(context).colorScheme.secondary,
+                        ),
+                        isSelected: false,
+                        onTap: () {
+                          setState(() {
+                            _showingSubcategories = false;
+                            widget.subCategoryController.clear();
+                          });
+                        },
+                      );
+                    }
+                    if (i == currentSelected.subcategories.length + 1) {
+                      return _CategoryCell(
+                        category: Category(
+                          id: 'add_sub',
+                          name: 'Add New',
+                          icon: '➕',
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                        isSelected: false,
+                        onTap: () => _addSubcategory(context, currentSelected),
+                      );
+                    }
+                    
+                    final sub = currentSelected.subcategories[i - 1];
+                    final isSelected = widget.subCategoryController.text == sub;
+                    return _CategoryCell(
+                      category: Category(
+                        id: 'sub_$i',
+                        name: sub,
+                        icon: '↳',
+                        color: currentSelected.color,
+                      ),
+                      isSelected: isSelected,
+                      onTap: () {
+                        setState(() {
+                          widget.subCategoryController.text = sub;
+                        });
+                        widget.onNext();
+                      },
+                      onLongPress: () async {
+                        final confirm = await showDialog<bool>(
+                          context: context,
+                          builder: (ctx) => AlertDialog(
+                            title: const Text('Delete Subcategory?'),
+                            content: Text('Are you sure you want to delete "$sub"?'),
+                            actions: [
+                              TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+                              FilledButton(
+                                onPressed: () => Navigator.pop(ctx, true),
+                                style: FilledButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error),
+                                child: const Text('Delete'),
+                              ),
+                            ],
+                          ),
+                        );
+                        if (confirm == true && context.mounted) {
+                          _removeSubcategory(context, currentSelected, sub);
+                        }
+                      },
+                    );
+                  },
+                );
+              }
+
+              // Main Categories View
               return GridView.builder(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 itemCount: categories.length + 1,
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 4,
+                  crossAxisCount: 3,
                   crossAxisSpacing: 12,
                   mainAxisSpacing: 12,
-                  childAspectRatio: 0.82,
+                  childAspectRatio: 2.2,
                 ),
                 itemBuilder: (_, i) {
                   if (i == categories.length) {
@@ -530,20 +801,29 @@ class _Step2Category extends StatelessWidget {
                           context: context,
                           isScrollControlled: true,
                           backgroundColor: Colors.transparent,
-                          builder: (context) => AddCategoryBottomSheet(isIncome: isIncome),
+                          builder: (context) => AddCategoryBottomSheet(isIncome: widget.isIncome),
                         );
                         if (newCategory != null) {
-                          onCategoryTap(newCategory);
+                          widget.onCategoryTap(newCategory);
                         }
                       },
                     );
                   }
                   final cat      = categories[i];
-                  final selected = cat.id == selectedCategory.id && categoryExplicitlySet;
+                  final selected = cat.id == widget.selectedCategory.id && widget.categoryExplicitlySet;
                   return _CategoryCell(
                     category: cat,
                     isSelected: selected,
-                    onTap: () => onCategoryTap(cat),
+                    onTap: () {
+                      widget.onCategoryTap(cat);
+                      if (cat.id.startsWith('liability_')) {
+                        widget.onNext();
+                      } else {
+                        setState(() {
+                          _showingSubcategories = true;
+                        });
+                      }
+                    },
                     onLongPress: cat.isDefault
                         ? null
                         : () async {
@@ -553,15 +833,10 @@ class _Step2Category extends StatelessWidget {
                                 title: const Text('Delete Category?'),
                                 content: Text('Are you sure you want to delete "${cat.name}"?'),
                                 actions: [
-                                  TextButton(
-                                    onPressed: () => Navigator.pop(ctx, false),
-                                    child: const Text('Cancel'),
-                                  ),
+                                  TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
                                   FilledButton(
                                     onPressed: () => Navigator.pop(ctx, true),
-                                    style: FilledButton.styleFrom(
-                                      backgroundColor: Theme.of(context).colorScheme.error,
-                                    ),
+                                    style: FilledButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error),
                                     child: const Text('Delete'),
                                   ),
                                 ],
@@ -576,6 +851,16 @@ class _Step2Category extends StatelessWidget {
               );
             },
           ),
+          // Sub-category input removed entirely per user request
+          const SizedBox(height: 32),
+          SizedBox(
+            width: double.infinity,
+            height: 54,
+            child: FilledButton(
+              onPressed: widget.categoryExplicitlySet ? widget.onNext : null,
+              child: const Text('Next', style: TextStyle(fontSize: 16)),
+            ),
+          ),
         ],
       ),
     );
@@ -586,10 +871,12 @@ class _Step2Category extends StatelessWidget {
 
 class _Step3Account extends StatelessWidget {
   final AccountEntity? selectedAccount;
+  final String? excludedAccountId;
   final ValueChanged<AccountEntity> onAccountTap;
 
   const _Step3Account({
     required this.selectedAccount,
+    this.excludedAccountId,
     required this.onAccountTap,
   });
 
@@ -609,8 +896,22 @@ class _Step3Account extends StatelessWidget {
           BlocBuilder<AccountCubit, AccountState>(
             builder: (context, state) {
               if (state is AccountLoaded && state.accounts.isNotEmpty) {
+                final availableAccounts = state.accounts.where((acc) => acc.id != excludedAccountId).toList();
+                
+                if (availableAccounts.isEmpty) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    child: Text(
+                      'No other accounts available to pay from.',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  );
+                }
+
                 return Column(
-                  children: state.accounts.map((acc) {
+                  children: availableAccounts.map((acc) {
                     final selected = acc.id == selectedAccount?.id;
                     return _AccountRow(
                       account:    acc,
@@ -672,7 +973,6 @@ class _CategoryCell extends StatelessWidget {
   final bool isSelected;
   final VoidCallback onTap;
   final VoidCallback? onLongPress;
-
   const _CategoryCell({
     required this.category,
     required this.isSelected,
@@ -701,22 +1001,23 @@ class _CategoryCell extends StatelessWidget {
             width: 2,
           ),
         ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        child: Row(
           children: [
-            Text(category.icon, style: const TextStyle(fontSize: 26)),
-            const SizedBox(height: 6),
-            Text(
-              category.name,
-              style: theme.textTheme.labelSmall?.copyWith(
-                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w400,
-                color: isSelected
-                    ? theme.colorScheme.primary
-                    : theme.colorScheme.onSurfaceVariant,
+            Text(category.icon, style: const TextStyle(fontSize: 22)),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                category.name,
+                style: theme.textTheme.labelMedium?.copyWith(
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                  color: isSelected
+                      ? theme.colorScheme.primary
+                      : theme.colorScheme.onSurfaceVariant,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
             ),
           ],
         ),
@@ -810,12 +1111,18 @@ class _Step4TitleDate extends StatelessWidget {
   final DateTime selectedDate;
   final VoidCallback onDateTap;
   final VoidCallback onNext;
+  final String? recurrenceFrequency;
+  final ValueChanged<String?> onRecurrenceChanged;
+  final bool isIncome;
 
   const _Step4TitleDate({
     required this.titleController,
     required this.selectedDate,
     required this.onDateTap,
     required this.onNext,
+    this.recurrenceFrequency,
+    required this.onRecurrenceChanged,
+    required this.isIncome,
   });
 
   @override
@@ -886,6 +1193,34 @@ class _Step4TitleDate extends StatelessWidget {
               ),
             ),
           ),
+          
+          const SizedBox(height: 20),
+          Text('Recurring Expense?', style: theme.textTheme.titleSmall),
+          const SizedBox(height: 10),
+          DropdownButtonFormField<String>(
+            value: recurrenceFrequency ?? 'None',
+            decoration: InputDecoration(
+              prefixIcon: const Icon(Icons.autorenew_rounded),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            items: const [
+              DropdownMenuItem(value: 'None', child: Text('No, one-time')),
+              DropdownMenuItem(value: 'Daily', child: Text('Daily')),
+              DropdownMenuItem(value: 'Weekly', child: Text('Weekly')),
+              DropdownMenuItem(value: 'Monthly', child: Text('Monthly')),
+              DropdownMenuItem(value: 'Yearly', child: Text('Yearly')),
+            ],
+            onChanged: onRecurrenceChanged,
+          ),
+
+          if (recurrenceFrequency != null && recurrenceFrequency != 'None') ...[
+            const SizedBox(height: 24),
+            RecurringTimelineWidget(
+              events: _generatePreviewEvents(selectedDate, recurrenceFrequency!),
+            ),
+          ],
 
           const Spacer(),
 
@@ -901,6 +1236,47 @@ class _Step4TitleDate extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  List<TimelineEvent> _generatePreviewEvents(DateTime start, String freq) {
+    DateTime next1;
+    DateTime next2;
+    switch (freq) {
+      case 'Daily':
+        next1 = start.add(const Duration(days: 1));
+        next2 = start.add(const Duration(days: 2));
+        break;
+      case 'Weekly':
+        next1 = start.add(const Duration(days: 7));
+        next2 = start.add(const Duration(days: 14));
+        break;
+      case 'Yearly':
+        next1 = DateTime(start.year + 1, start.month, start.day);
+        next2 = DateTime(start.year + 2, start.month, start.day);
+        break;
+      case 'Monthly':
+      default:
+        next1 = DateTime(start.year, start.month + 1, start.day);
+        next2 = DateTime(start.year, start.month + 2, start.day);
+        break;
+    }
+    return [
+      TimelineEvent(
+        title: 'Initial Payment',
+        subtitle: AppFormatters.formatDate(start),
+        state: TimelineNodeState.current,
+      ),
+      TimelineEvent(
+        title: 'Next Scheduled',
+        subtitle: AppFormatters.formatDate(next1),
+        state: TimelineNodeState.upcoming,
+      ),
+      TimelineEvent(
+        title: 'Following',
+        subtitle: AppFormatters.formatDate(next2),
+        state: TimelineNodeState.upcoming,
+      ),
+    ];
   }
 }
 
@@ -923,7 +1299,7 @@ class _Step5Amount extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme       = Theme.of(context);
     final accentColor = isIncome ? AppTheme.incomeColor : AppTheme.expenseColor;
-    final prefix      = isIncome ? '+\$' : '-\$';
+    final prefix      = isIncome ? '+Rs ' : '-Rs ';
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 32, 24, 40),

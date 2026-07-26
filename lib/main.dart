@@ -14,6 +14,7 @@ import 'features/expenses/presentation/bloc/transaction_cubit.dart';
 import 'features/expenses/presentation/bloc/category_cubit.dart';
 import 'features/auth/presentation/bloc/auth_cubit.dart';
 import 'features/auth/presentation/bloc/auth_state.dart';
+import 'features/expenses/presentation/bloc/budget_cubit.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -51,17 +52,20 @@ class ExpenseTrackerApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [
-        BlocProvider(
-          create: (_) => sl<AccountCubit>(),
+        BlocProvider.value(
+          value: sl<AccountCubit>(),
         ),
-        BlocProvider(
-          create: (_) => sl<TransactionCubit>(),
+        BlocProvider.value(
+          value: sl<TransactionCubit>(),
         ),
-        BlocProvider(
-          create: (_) => sl<CategoryCubit>()..loadCategories(),
+        BlocProvider.value(
+          value: sl<CategoryCubit>()..loadCategories(),
         ),
-        BlocProvider(
-          create: (_) => sl<AuthCubit>(),
+        BlocProvider.value(
+          value: sl<AuthCubit>(),
+        ),
+        BlocProvider.value(
+          value: sl<BudgetCubit>(),
         ),
       ],
       child: BlocListener<AuthCubit, AuthState>(
@@ -71,6 +75,7 @@ class ExpenseTrackerApp extends StatelessWidget {
           } else if (state is AuthAuthenticated) {
             context.read<AccountCubit>().loadAccounts();
             context.read<TransactionCubit>().loadTransactions();
+            context.read<BudgetCubit>().loadBudgetsForMonth(DateTime.now());
             appRouter.go('/');
           }
         },

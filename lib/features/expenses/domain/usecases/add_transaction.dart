@@ -3,6 +3,7 @@ import 'package:uuid/uuid.dart';
 import '../../../../core/errors/failures.dart';
 import '../../../../core/utils/use_case.dart';
 import '../entities/transaction.dart';
+import '../entities/account.dart';
 import '../repositories/transaction_repository.dart';
 import '../repositories/account_repository.dart';
 
@@ -32,20 +33,49 @@ class AddTransactionUseCase implements UseCase<TransactionEntity, TransactionEnt
       updatedAt: now,
     );
 
-    // 1. Fetch account
+    // 1. Fetch source account
     final accountResult = await accountRepository.getAccount(transaction.userId, transaction.accountId);
     return accountResult.fold(
       (failure) => Left(failure),
       (account) async {
-        // 2. Update account balance
-        final double amountDelta = transaction.isIncome ? transaction.amount : -transaction.amount;
+        // 2. Update source account balance
+        double amountDelta;
+        if (account.type == AccountType.liability) {
+          // For credit cards, an expense increases the debt (balance), income decreases it.
+          amountDelta = transaction.isIncome ? -transaction.amount : transaction.amount;
+        } else {
+          // For assets, income increases the balance, expense decreases it.
+          amountDelta = transaction.isIncome ? transaction.amount : -transaction.amount;
+        }
         final updatedAccount = account.copyWith(balance: account.balance + amountDelta);
         
         final updateResult = await accountRepository.updateAccount(updatedAccount);
         return updateResult.fold(
           (failure) => Left(failure),
           (_) async {
-            // 3. Save transaction
+            // 3. Handle transfer target if present
+            if (transaction.transferAccountId != null && transaction.transferAccountId!.isNotEmpty) {
+              final targetAccountResult = await accountRepository.getAccount(transaction.userId, transaction.transferAccountId!);
+              final targetFailure = await targetAccountResult.fold(
+                (failure) async => failure,
+                (targetAccount) async {
+                  double targetDelta;
+                  if (targetAccount.type == AccountType.liability) {
+                    targetDelta = -transaction.amount; // Transfer to liability pays it off
+                  } else {
+                    targetDelta = transaction.amount; // Transfer to asset adds to it
+                  }
+                  final updatedTarget = targetAccount.copyWith(balance: targetAccount.balance + targetDelta);
+                  final targetUpdateResult = await accountRepository.updateAccount(updatedTarget);
+                  return targetUpdateResult.fold((f) => f, (_) => null);
+                }
+              );
+              if (targetFailure != null) {
+                 return Left(targetFailure);
+              }
+            }
+            
+            // 4. Save transaction
             return transactionRepository.addTransaction(transaction);
           },
         );

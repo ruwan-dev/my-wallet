@@ -76,6 +76,11 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
       label: 'Accounts',
     ),
     NavigationDestination(
+      icon: Icon(Icons.category_outlined),
+      selectedIcon: Icon(Icons.category_rounded),
+      label: 'Categories',
+    ),
+    NavigationDestination(
       icon: Icon(Icons.person_outline_rounded),
       selectedIcon: Icon(Icons.person_rounded),
       label: 'Profile',

@@ -15,7 +15,12 @@ import '../../features/auth/presentation/bloc/auth_state.dart';
 import '../di/injection.dart';
 import '../../features/analytics/presentation/pages/analytics_page.dart';
 import '../../features/accounts/presentation/pages/accounts_page.dart';
+import '../../features/expenses/presentation/pages/manage_categories_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
+import '../../features/expenses/presentation/pages/budgets_page.dart';
+import '../../features/expenses/presentation/pages/transactions_page.dart';
+import '../../features/expenses/presentation/pages/account_transactions_page.dart';
+import '../../features/expenses/domain/entities/account.dart';
 import '../widgets/responsive_layout.dart';
 
 class GoRouterRefreshStream extends ChangeNotifier {
@@ -101,6 +106,14 @@ final appRouter = GoRouter(
         StatefulShellBranch(
           routes: [
             GoRoute(
+              path: '/categories',
+              builder: (context, state) => const ManageCategoriesPage(),
+            ),
+          ],
+        ),
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
               path: '/profile',
               builder: (context, state) => const ProfilePage(),
             ),
@@ -142,6 +155,21 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/debug',
       builder: (context, state) => const DebugDatabasePage(),
+    ),
+    GoRoute(
+      path: '/budgets',
+      builder: (context, state) => const BudgetsPage(),
+    ),
+    GoRoute(
+      path: '/account-transactions',
+      builder: (context, state) {
+        final account = state.extra as AccountEntity;
+        return AccountTransactionsPage(account: account);
+      },
+    ),
+    GoRoute(
+      path: '/all-transactions',
+      builder: (context, state) => const TransactionsPage(),
     ),
   ],
 );

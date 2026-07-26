@@ -4,7 +4,14 @@ import 'package:fl_chart/fl_chart.dart';
 import '../../../expenses/presentation/bloc/transaction_cubit.dart';
 import '../../../expenses/presentation/bloc/transaction_state.dart';
 import '../../../expenses/domain/entities/transaction.dart';
-import '../../../../core/utils/formatters.dart';
+import '../../../expenses/presentation/widgets/transaction_card.dart';
+
+class MonthlySummary {
+  final DateTime date;
+  final double income;
+  final double expense;
+  MonthlySummary(this.date, this.income, this.expense);
+}
 
 class AnalyticsPage extends StatelessWidget {
   const AnalyticsPage({super.key});
@@ -36,8 +43,11 @@ class AnalyticsPage extends StatelessWidget {
 
             final currentMonthTxs = _getCurrentMonthTransactions(transactions);
             final categoryTotals = _getCategoryTotals(currentMonthTxs);
-            final totalIncome = _getTotalIncome(currentMonthTxs);
-            final totalExpense = _getTotalExpense(currentMonthTxs);
+            final topExpenses = _getTopExpenses(currentMonthTxs);
+            
+            final sixMonthSummaries = _getLast6MonthsSummary(transactions);
+            final momDifference = _getMoMDifference(sixMonthSummaries);
+            final savingsRate = _getSavingsRate(sixMonthSummaries.last);
 
             return CustomScrollView(
               slivers: [
@@ -48,7 +58,7 @@ class AnalyticsPage extends StatelessWidget {
                   flexibleSpace: FlexibleSpaceBar(
                     titlePadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                     title: Text(
-                      'Analytics',
+                      'Financial Insights',
                       style: theme.textTheme.headlineMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: theme.colorScheme.onSurface,
@@ -62,13 +72,32 @@ class AnalyticsPage extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Current Month Overview', style: theme.textTheme.titleMedium),
-                        const SizedBox(height: 16),
-                        _buildIncomeExpenseBarChart(context, totalIncome, totalExpense),
+                        _buildFinancialHealthRow(context, momDifference, savingsRate),
                         const SizedBox(height: 32),
+                        
+                        Text('6-Month Trend', style: theme.textTheme.titleMedium),
+                        const SizedBox(height: 16),
+                        _buildTrendLineChart(context, sixMonthSummaries),
+                        const SizedBox(height: 32),
+                        
                         Text('Expenses by Category', style: theme.textTheme.titleMedium),
                         const SizedBox(height: 16),
-                        _buildCategoryPieChart(context, categoryTotals, totalExpense),
+                        _buildCategoryPieChart(context, categoryTotals),
+                        const SizedBox(height: 32),
+                        
+                        if (topExpenses.isNotEmpty) ...[
+                          Text('Top Spendings (This Month)', style: theme.textTheme.titleMedium),
+                          const SizedBox(height: 16),
+                          ...topExpenses.map((tx) => Padding(
+                            padding: const EdgeInsets.only(bottom: 12.0),
+                            child: TransactionCard(
+                              transaction: tx,
+                              accountName: tx.categoryName, 
+                              onDelete: null, 
+                            ),
+                          )),
+                          const SizedBox(height: 100), 
+                        ],
                       ],
                     ),
                   ),
@@ -81,6 +110,8 @@ class AnalyticsPage extends StatelessWidget {
       ),
     );
   }
+
+  // --- Logic Helpers ---
 
   List<TransactionEntity> _getCurrentMonthTransactions(List<TransactionEntity> all) {
     final now = DateTime.now();
@@ -95,80 +126,244 @@ class AnalyticsPage extends StatelessWidget {
     return totals;
   }
 
-  double _getTotalIncome(List<TransactionEntity> txs) {
-    return txs.where((t) => t.isIncome).fold(0, (sum, t) => sum + t.amount);
+  List<TransactionEntity> _getTopExpenses(List<TransactionEntity> currentMonthTxs) {
+    final expenses = currentMonthTxs.where((t) => !t.isIncome).toList();
+    expenses.sort((a, b) => b.amount.compareTo(a.amount));
+    return expenses.take(3).toList();
   }
 
-  double _getTotalExpense(List<TransactionEntity> txs) {
-    return txs.where((t) => !t.isIncome).fold(0, (sum, t) => sum + t.amount);
+  List<MonthlySummary> _getLast6MonthsSummary(List<TransactionEntity> all) {
+    final now = DateTime.now();
+    final List<MonthlySummary> summaries = [];
+
+    for (int i = 5; i >= 0; i--) {
+      int month = now.month - i;
+      int year = now.year;
+      if (month <= 0) {
+        month += 12;
+        year -= 1;
+      }
+      
+      final txsForMonth = all.where((t) => t.date.year == year && t.date.month == month);
+      final income = txsForMonth.where((t) => t.isIncome).fold(0.0, (sum, t) => sum + t.amount);
+      final expense = txsForMonth.where((t) => !t.isIncome).fold(0.0, (sum, t) => sum + t.amount);
+      
+      summaries.add(MonthlySummary(DateTime(year, month), income, expense));
+    }
+    return summaries;
   }
 
-  Widget _buildIncomeExpenseBarChart(BuildContext context, double income, double expense) {
-    final theme = Theme.of(context);
-    final maxVal = income > expense ? income : expense;
-    final maxY = maxVal == 0 ? 100.0 : maxVal * 1.2; // Add 20% headroom
+  double _getMoMDifference(List<MonthlySummary> summaries) {
+    if (summaries.length < 2) return 0.0;
+    final currentMonth = summaries.last;
+    final lastMonth = summaries[summaries.length - 2];
+    
+    if (lastMonth.expense == 0) {
+        if (currentMonth.expense == 0) return 0.0;
+        return 100.0; 
+    }
+    return ((currentMonth.expense - lastMonth.expense) / lastMonth.expense) * 100;
+  }
 
+  double _getSavingsRate(MonthlySummary currentMonth) {
+    if (currentMonth.income == 0) return 0.0;
+    final savings = currentMonth.income - currentMonth.expense;
+    if (savings <= 0) return 0.0;
+    return (savings / currentMonth.income) * 100;
+  }
+
+  // --- UI Builders ---
+
+  Widget _buildFinancialHealthRow(BuildContext context, double momDiff, double savingsRate) {
+    final isMoMIncrease = momDiff > 0;
+    
+    return Row(
+      children: [
+        Expanded(
+          child: _buildInsightCard(
+            title: 'Vs Last Month',
+            content: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Icon(
+                  isMoMIncrease ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded,
+                  color: isMoMIncrease ? const Color(0xFFF43F5E) : const Color(0xFF10B981),
+                  size: 20,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  '${momDiff.abs().toStringAsFixed(1)}%',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: isMoMIncrease ? const Color(0xFFF43F5E) : const Color(0xFF10B981),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: _buildInsightCard(
+            title: 'Savings Rate',
+            content: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(
+                    value: savingsRate / 100,
+                    strokeWidth: 4,
+                    backgroundColor: const Color(0xFFF1F5F9),
+                    valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF0891B2)),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  '${savingsRate.toStringAsFixed(1)}%',
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF1E293B),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInsightCard({required String title, required Widget content}) {
     return Container(
-      height: 250,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: const [
           BoxShadow(
-            color: theme.colorScheme.shadow.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: Color(0x0A000000), // 4% opacity black
+            blurRadius: 15,
+            offset: Offset(0, 5),
           ),
         ],
       ),
-      child: BarChart(
-        BarChartData(
-          alignment: BarChartAlignment.spaceAround,
-          maxY: maxY,
-          barTouchData: BarTouchData(enabled: false),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              color: Color(0xFF64748B),
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 12),
+          content,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTrendLineChart(BuildContext context, List<MonthlySummary> summaries) {
+    if (summaries.isEmpty) return const SizedBox();
+
+    double maxY = 0;
+    for (var s in summaries) {
+      if (s.income > maxY) maxY = s.income;
+      if (s.expense > maxY) maxY = s.expense;
+    }
+    maxY = maxY == 0 ? 100.0 : maxY * 1.2;
+
+    final incomeSpots = <FlSpot>[];
+    final expenseSpots = <FlSpot>[];
+    for (int i = 0; i < summaries.length; i++) {
+      incomeSpots.add(FlSpot(i.toDouble(), summaries[i].income));
+      expenseSpots.add(FlSpot(i.toDouble(), summaries[i].expense));
+    }
+
+    final monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+    return Container(
+      height: 250,
+      padding: const EdgeInsets.fromLTRB(16, 24, 24, 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0A000000), 
+            blurRadius: 15,
+            offset: Offset(0, 5),
+          ),
+        ],
+      ),
+      child: LineChart(
+        LineChartData(
+          gridData: FlGridData(
+            show: true,
+            drawVerticalLine: false,
+            horizontalInterval: maxY / 4,
+            getDrawingHorizontalLine: (value) => const FlLine(color: Color(0xFFF1F5F9), strokeWidth: 1),
+          ),
           titlesData: FlTitlesData(
             show: true,
+            rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
             bottomTitles: AxisTitles(
               sideTitles: SideTitles(
                 showTitles: true,
+                interval: 1,
                 getTitlesWidget: (value, meta) {
-                  final text = value == 0 ? 'Income' : 'Expense';
-                  return Padding(
-                    padding: const EdgeInsets.only(top: 8.0),
-                    child: Text(text, style: theme.textTheme.bodySmall),
-                  );
+                  if (value.toInt() >= 0 && value.toInt() < summaries.length) {
+                    final date = summaries[value.toInt()].date;
+                    return Padding(
+                      padding: const EdgeInsets.only(top: 8.0),
+                      child: Text(
+                        monthNames[date.month - 1],
+                        style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 12),
+                      ),
+                    );
+                  }
+                  return const SizedBox();
                 },
               ),
             ),
-            leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-            topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-            rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)), 
           ),
-          gridData: const FlGridData(show: false),
           borderData: FlBorderData(show: false),
-          barGroups: [
-            BarChartGroupData(
-              x: 0,
-              barRods: [
-                BarChartRodData(
-                  toY: income,
-                  color: const Color(0xFF4CAF50), // Teal/Green for income
-                  width: 30,
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
-                ),
-              ],
+          minX: 0,
+          maxX: (summaries.length - 1).toDouble(),
+          minY: 0,
+          maxY: maxY,
+          lineBarsData: [
+            LineChartBarData(
+              spots: incomeSpots,
+              isCurved: true,
+              color: const Color(0xFF10B981), // Soft Emerald
+              barWidth: 3,
+              isStrokeCapRound: true,
+              dotData: const FlDotData(show: false),
+              belowBarData: BarAreaData(
+                show: true,
+                color: const Color(0x1A10B981), // 10% Opacity Emerald
+              ),
             ),
-            BarChartGroupData(
-              x: 1,
-              barRods: [
-                BarChartRodData(
-                  toY: expense,
-                  color: const Color(0xFFFF6584), // Red/Pink for expense
-                  width: 30,
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
-                ),
-              ],
+            LineChartBarData(
+              spots: expenseSpots,
+              isCurved: true,
+              color: const Color(0xFFF43F5E), // Soft Coral
+              barWidth: 3,
+              isStrokeCapRound: true,
+              dotData: const FlDotData(show: false),
+              belowBarData: BarAreaData(
+                show: true,
+                color: const Color(0x1AF43F5E), // 10% Opacity Coral
+              ),
             ),
           ],
         ),
@@ -176,29 +371,29 @@ class AnalyticsPage extends StatelessWidget {
     );
   }
 
-  Widget _buildCategoryPieChart(BuildContext context, Map<String, double> categoryTotals, double totalExpense) {
-    final theme = Theme.of(context);
-    
+  Widget _buildCategoryPieChart(BuildContext context, Map<String, double> categoryTotals) {
     if (categoryTotals.isEmpty) {
       return Container(
         height: 250,
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: theme.colorScheme.surface,
+          color: Colors.white,
           borderRadius: BorderRadius.circular(24),
         ),
-        child: Text('No expenses this month.', style: theme.textTheme.bodyMedium),
+        child: const Text('No expenses this month.', style: TextStyle(color: Color(0xFF94A3B8))),
       );
     }
 
-    // Prepare colors
+    final totalExpense = categoryTotals.values.fold(0.0, (a, b) => a + b);
+    
+    // Premium soft colors
     final colors = [
-      const Color(0xFF42A5F5),
-      const Color(0xFFFF6584),
-      const Color(0xFFFFBE0B),
-      const Color(0xFF9C27B0),
-      const Color(0xFF03DAC6),
-      const Color(0xFF6C63FF),
+      const Color(0xFF38BDF8),
+      const Color(0xFFFB7185),
+      const Color(0xFFFBBF24),
+      const Color(0xFFA78BFA),
+      const Color(0xFF34D399),
+      const Color(0xFF818CF8),
     ];
     
     int colorIndex = 0;
@@ -210,8 +405,8 @@ class AnalyticsPage extends StatelessWidget {
       return PieChartSectionData(
         color: color,
         value: e.value,
-        title: '${percentage.toStringAsFixed(1)}%',
-        radius: 60,
+        title: percentage > 5 ? '${percentage.toStringAsFixed(0)}%' : '',
+        radius: 50,
         titleStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
       );
     }).toList();
@@ -220,13 +415,13 @@ class AnalyticsPage extends StatelessWidget {
       height: 300,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(24),
-        boxShadow: [
+        boxShadow: const [
           BoxShadow(
-            color: theme.colorScheme.shadow.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: Color(0x0A000000),
+            blurRadius: 15,
+            offset: Offset(0, 5),
           ),
         ],
       ),
@@ -246,6 +441,7 @@ class AnalyticsPage extends StatelessWidget {
             flex: 1,
             child: ListView.builder(
               shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
               itemCount: categoryTotals.length,
               itemBuilder: (context, index) {
                 final entry = categoryTotals.entries.elementAt(index);
@@ -254,12 +450,12 @@ class AnalyticsPage extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(vertical: 4.0),
                   child: Row(
                     children: [
-                      Container(width: 12, height: 12, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+                      Container(width: 10, height: 10, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           entry.key,
-                          style: theme.textTheme.bodySmall,
+                          style: const TextStyle(fontSize: 12, color: Color(0xFF64748B), fontWeight: FontWeight.w500),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),

@@ -7,13 +7,13 @@ import '../../domain/entities/category.dart';
 
 class TransactionCard extends StatelessWidget {
   final TransactionEntity transaction;
-  final VoidCallback onDelete;
+  final VoidCallback? onDelete;
   final String accountName;
 
   const TransactionCard({
     super.key,
     required this.transaction,
-    required this.onDelete,
+    this.onDelete,
     required this.accountName,
   });
 
@@ -33,29 +33,14 @@ class TransactionCard extends StatelessWidget {
     final amountText =
         '${isIncome ? '+' : '-'}${AppFormatters.formatCurrency(transaction.amount)}';
 
-    return Dismissible(
-      key: ValueKey(transaction.id),
-      direction: DismissDirection.endToStart,
-      onDismissed: (_) => onDelete(),
-      background: Container(
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 20),
-        margin: const EdgeInsets.only(bottom: 2),
-        decoration: BoxDecoration(
-          color: AppTheme.expenseColor.withOpacity(0.12),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: const Icon(Icons.delete_outline_rounded,
-            color: AppTheme.expenseColor, size: 26),
+    final cardContent = InkWell(
+      onTap: () => context.push(
+        '/edit-expense/${transaction.id}',
+        extra: transaction,
       ),
-      child: InkWell(
-        onTap: () => context.push(
-          '/edit-expense/${transaction.id}',
-          extra: transaction,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 12),
+      borderRadius: BorderRadius.circular(16),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12),
           child: Row(
             children: [
               // ── Leading: circular icon bubble ──────────────────────────────
@@ -87,8 +72,9 @@ class TransactionCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      '${transaction.categoryName}  •  '
-                      '${AppFormatters.formatRelativeDate(transaction.date)}',
+                      transaction.subCategory != null && transaction.subCategory!.isNotEmpty
+                          ? '${transaction.categoryName} (${transaction.subCategory})  •  ${AppFormatters.formatRelativeDate(transaction.date)}'
+                          : '${transaction.categoryName}  •  ${AppFormatters.formatRelativeDate(transaction.date)}',
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                         fontWeight: FontWeight.w400,
@@ -101,30 +87,53 @@ class TransactionCard extends StatelessWidget {
               ),
 
               // ── Trailing: amount ───────────────────────────────────────────
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    amountText,
-                    style: theme.textTheme.bodyLarge?.copyWith(
-                      color: amountColor,
-                      fontWeight: FontWeight.w700,
+              Padding(
+                padding: const EdgeInsets.only(right: 16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      amountText,
+                      style: theme.textTheme.bodyLarge?.copyWith(
+                        color: amountColor,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    accountName,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                      fontWeight: FontWeight.w400,
+                    const SizedBox(height: 3),
+                    Text(
+                      accountName,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w400,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ],
           ),
         ),
+      );
+    if (onDelete == null) {
+      return cardContent;
+    }
+
+    return Dismissible(
+      key: ValueKey(transaction.id),
+      direction: DismissDirection.endToStart,
+      onDismissed: (_) => onDelete!(),
+      background: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 20),
+        margin: const EdgeInsets.only(bottom: 2),
+        decoration: BoxDecoration(
+          color: AppTheme.expenseColor.withOpacity(0.12),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: const Icon(Icons.delete_outline_rounded,
+            color: AppTheme.expenseColor, size: 26),
       ),
+      child: cardContent,
     );
   }
 }

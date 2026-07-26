@@ -8,11 +8,15 @@ class TransactionEntity extends Equatable {
   final double amount;
   final String categoryId;
   final String categoryName;
+  final String? subCategory;
   final DateTime date;
   final bool isIncome;
   final String? note;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final String? recurrenceFrequency;
+  final DateTime? nextDueDate;
+  final String? transferAccountId;
 
   const TransactionEntity({
     required this.id,
@@ -22,11 +26,15 @@ class TransactionEntity extends Equatable {
     required this.amount,
     required this.categoryId,
     required this.categoryName,
+    this.subCategory,
     required this.date,
     required this.isIncome,
     this.note,
     required this.createdAt,
     required this.updatedAt,
+    this.recurrenceFrequency,
+    this.nextDueDate,
+    this.transferAccountId,
   });
 
   double get signedAmount => isIncome ? amount : -amount;
@@ -39,11 +47,15 @@ class TransactionEntity extends Equatable {
     double? amount,
     String? categoryId,
     String? categoryName,
+    String? subCategory,
     DateTime? date,
     bool? isIncome,
     String? note,
     DateTime? createdAt,
     DateTime? updatedAt,
+    String? recurrenceFrequency,
+    DateTime? nextDueDate,
+    String? transferAccountId,
   }) =>
       TransactionEntity(
         id:           id           ?? this.id,
@@ -53,16 +65,21 @@ class TransactionEntity extends Equatable {
         amount:       amount       ?? this.amount,
         categoryId:   categoryId   ?? this.categoryId,
         categoryName: categoryName ?? this.categoryName,
+        subCategory:  subCategory  ?? this.subCategory,
         date:         date         ?? this.date,
         isIncome:     isIncome     ?? this.isIncome,
         note:         note         ?? this.note,
         createdAt:    createdAt    ?? this.createdAt,
         updatedAt:    updatedAt    ?? this.updatedAt,
+        recurrenceFrequency: recurrenceFrequency ?? this.recurrenceFrequency,
+        nextDueDate:  nextDueDate  ?? this.nextDueDate,
+        transferAccountId: transferAccountId ?? this.transferAccountId,
       );
 
   @override
   List<Object?> get props => [
         id, accountId, userId, title, amount, categoryId,
-        categoryName, date, isIncome, note, createdAt, updatedAt,
+        categoryName, subCategory, date, isIncome, note, createdAt, updatedAt,
+        recurrenceFrequency, nextDueDate, transferAccountId,
       ];
 }

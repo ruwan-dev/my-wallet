@@ -24,6 +24,9 @@ class CategoryModel extends HiveObject {
   @HiveField(5)
   final bool isIncome;
 
+  @HiveField(6)
+  final List<String> subcategories;
+
   CategoryModel({
     required this.id,
     required this.name,
@@ -31,6 +34,7 @@ class CategoryModel extends HiveObject {
     required this.colorValue,
     required this.isDefault,
     required this.isIncome,
+    required this.subcategories,
   });
 
   factory CategoryModel.fromEntity(Category entity) {
@@ -41,6 +45,7 @@ class CategoryModel extends HiveObject {
       colorValue: entity.color.value,
       isDefault: entity.isDefault,
       isIncome: entity.isIncome,
+      subcategories: entity.subcategories,
     );
   }
 
@@ -52,6 +57,31 @@ class CategoryModel extends HiveObject {
       color: Color(colorValue),
       isDefault: isDefault,
       isIncome: isIncome,
+      subcategories: subcategories,
     );
+  }
+
+  factory CategoryModel.fromJson(Map<String, dynamic> json) {
+    return CategoryModel(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      icon: json['icon'] as String,
+      colorValue: json['colorValue'] as int,
+      isDefault: json['isDefault'] as bool? ?? false,
+      isIncome: json['isIncome'] as bool? ?? false,
+      subcategories: List<String>.from(json['subcategories'] as List? ?? []),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'icon': icon,
+      'colorValue': colorValue,
+      'isDefault': isDefault,
+      'isIncome': isIncome,
+      'subcategories': subcategories,
+    };
   }
 }

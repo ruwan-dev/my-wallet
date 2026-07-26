@@ -1,7 +1,5 @@
 import 'package:dartz/dartz.dart';
-import 'package:equatable/equatable.dart';
 import '../../../../core/errors/failures.dart';
-import '../../../../core/utils/use_case.dart';
 import '../entities/account.dart';
 import '../repositories/account_repository.dart';
 

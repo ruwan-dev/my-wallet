@@ -13,10 +13,15 @@ import '../bloc/account_cubit.dart';
 import '../bloc/account_state.dart';
 import '../bloc/transaction_cubit.dart';
 import '../bloc/transaction_state.dart';
+import '../bloc/budget_cubit.dart';
+import '../bloc/budget_state.dart';
 import '../widgets/empty_state_widget.dart';
 import '../widgets/shimmer_tile.dart';
 import '../widgets/transaction_card.dart';
-
+import '../widgets/budget_progress_card.dart';
+import '../widgets/set_budget_bottom_sheet.dart';
+import '../widgets/animated_dashboard_card.dart';
+import '../widgets/mesh_account_card.dart';
 // ─────────────────────────────────────────────────────────────────────────────
 // DashboardPage
 // ─────────────────────────────────────────────────────────────────────────────
@@ -60,7 +65,11 @@ class DashboardPage extends StatelessWidget {
 
                     if (accState is AccountLoaded) {
                       for (final a in accState.accounts) {
-                        totalBalance += a.balance;
+                        if (a.type == AccountType.liability) {
+                          totalBalance -= a.balance;
+                        } else {
+                          totalBalance += a.balance;
+                        }
                       }
                     }
                     final txState = context.watch<TransactionCubit>().state;
@@ -71,7 +80,7 @@ class DashboardPage extends StatelessWidget {
                       }
                     }
 
-                    return _BalanceCard(
+                    return AnimatedDashboardCard(
                       totalBalance: totalBalance,
                       totalIncome:  totalIncome,
                       totalExpense: totalExpense,
@@ -106,7 +115,7 @@ class DashboardPage extends StatelessWidget {
                   }
                   if (state is AccountLoaded) {
                     return SizedBox(
-                      height: 120,
+                      height: 130,
                       child: ScrollConfiguration(
                         behavior: ScrollConfiguration.of(context).copyWith(
                           dragDevices: {
@@ -124,7 +133,7 @@ class DashboardPage extends StatelessWidget {
                           separatorBuilder: (_, __) =>
                               const SizedBox(width: 12),
                           itemBuilder: (context, i) {
-                            return _AccountCard(account: state.accounts[i], index: i);
+                            return MeshAccountCard(account: state.accounts[i]);
                           },
                         ),
                       ),
@@ -138,6 +147,70 @@ class DashboardPage extends StatelessWidget {
             // ── Gap ────────────────────────────────────────────────────────
             const SliverToBoxAdapter(child: SizedBox(height: 24)),
 
+            // ── Budgets Header ─────────────────────────────────────────────
+            BlocBuilder<BudgetCubit, BudgetState>(
+              builder: (context, budgetState) {
+                if (budgetState is BudgetLoaded && budgetState.summaries.isNotEmpty) {
+                  return SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: _SectionHeader(
+                        title: 'Monthly Budgets',
+                        actionLabel: 'See All',
+                        onAction: () => context.push('/budgets'),
+                      ),
+                    ),
+                  );
+                }
+                return SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: _SectionHeader(
+                      title: 'Monthly Budgets',
+                      actionLabel: '+ Add',
+                      onAction: () {
+                        showModalBottomSheet(
+                          context: context,
+                          isScrollControlled: true,
+                          backgroundColor: Colors.transparent,
+                          builder: (_) => const SetBudgetBottomSheet(),
+                        );
+                      },
+                    ),
+                  ),
+                );
+              },
+            ),
+
+            // ── Budgets List ───────────────────────────────────────────────
+            BlocBuilder<BudgetCubit, BudgetState>(
+              builder: (context, budgetState) {
+                if (budgetState is BudgetLoaded && budgetState.summaries.isNotEmpty) {
+                  final sortedSummaries = List.of(budgetState.summaries)
+                    ..sort((a, b) => b.progressPercentage.compareTo(a.progressPercentage));
+                  final topSummaries = sortedSummaries.take(3).toList();
+
+                  return SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+                    sliver: SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (context, index) {
+                          return BudgetProgressCard(
+                            summary: topSummaries[index],
+                          );
+                        },
+                        childCount: topSummaries.length,
+                      ),
+                    ),
+                  );
+                }
+                return const SliverToBoxAdapter(child: SizedBox.shrink());
+              },
+            ),
+            
+            // ── Gap ────────────────────────────────────────────────────────
+            const SliverToBoxAdapter(child: SizedBox(height: 24)),
+
             // ── Recent Transactions Header ─────────────────────────────────
             SliverToBoxAdapter(
               child: Padding(
@@ -145,7 +218,7 @@ class DashboardPage extends StatelessWidget {
                 child: _SectionHeader(
                   title: 'Recent Transactions',
                   actionLabel: 'See All',
-                  onAction: () {},
+                  onAction: () => context.push('/all-transactions'),
                 ),
               ),
             ),
@@ -177,13 +250,13 @@ class DashboardPage extends StatelessWidget {
                       final accounts = accState is AccountLoaded
                           ? accState.accounts
                           : <AccountEntity>[];
+                      final recentTransactions = txState.transactions.take(2).toList();
                       return SliverPadding(
-                        padding:
-                            const EdgeInsets.fromLTRB(20, 0, 20, 120),
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
                         sliver: SliverList(
                           delegate: SliverChildListDelegate(
                             _buildGroupedItems(
-                                txState.transactions, accounts, context),
+                                recentTransactions, accounts, context),
                           ),
                         ),
                       );
@@ -193,6 +266,9 @@ class DashboardPage extends StatelessWidget {
                 return const SliverToBoxAdapter(child: SizedBox.shrink());
               },
             ),
+
+            // ── Bottom Padding for FAB ─────────────────────────────────────
+            const SliverToBoxAdapter(child: SizedBox(height: 100)),
           ],
         ),
       ),
@@ -218,7 +294,7 @@ class DashboardPage extends StatelessWidget {
 
     for (final tx in transactions) {
       final dateGroup  = AppFormatters.formatRelativeDate(tx.date);
-      final accountName = accounts
+      String accountName = accounts
           .firstWhere(
             (a) => a.id == tx.accountId,
             orElse: () => const AccountEntity(
@@ -226,6 +302,18 @@ class DashboardPage extends StatelessWidget {
                 type: AccountType.asset, userId: ''),
           )
           .name;
+
+      if (tx.transferAccountId != null) {
+        final targetName = accounts
+            .firstWhere(
+              (a) => a.id == tx.transferAccountId,
+              orElse: () => const AccountEntity(
+                  id: '', name: 'Unknown Account', balance: 0,
+                  type: AccountType.asset, userId: ''),
+            )
+            .name;
+        accountName = '$accountName → $targetName';
+      }
 
       if (dateGroup != currentGroup) {
         if (items.isNotEmpty) items.add(const SizedBox(height: 8));
@@ -336,278 +424,9 @@ class _DashboardAppBar extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Balance Card
-// ─────────────────────────────────────────────────────────────────────────────
 
-class _BalanceCard extends StatelessWidget {
-  final double totalBalance;
-  final double totalIncome;
-  final double totalExpense;
 
-  const _BalanceCard({
-    required this.totalBalance,
-    required this.totalIncome,
-    required this.totalExpense,
-  });
 
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(24, 28, 24, 28),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [
-            Color(0xFF34D399), // lighter mint — top-left
-            Color(0xFF059669), // deep teal — bottom-right
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(30),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.10),
-            blurRadius: 30,
-            spreadRadius: 0,
-            offset: const Offset(0, 12),
-          ),
-          BoxShadow(
-            color: const Color(0xFF10B981).withOpacity(0.25),
-            blurRadius: 20,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Stack(
-        children: [
-          // Decorative circles
-          Positioned(
-            top: -30, right: -20,
-            child: Container(
-              width: 110, height: 110,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withOpacity(0.06),
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: -35, right: 50,
-            child: Container(
-              width: 70, height: 70,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withOpacity(0.05),
-              ),
-            ),
-          ),
-
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Total Balance',
-                style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                AppFormatters.formatCurrency(totalBalance),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 36,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -1.5,
-                  height: 1.1,
-                ),
-              ),
-              const SizedBox(height: 20),
-              Container(height: 1, color: Colors.white.withOpacity(0.2)),
-              const SizedBox(height: 18),
-
-              Row(
-                children: [
-                  Expanded(
-                    child: _CardStat(
-                      icon: Icons.arrow_downward_rounded,
-                      label: 'Income',
-                      value: AppFormatters.formatCurrency(totalIncome),
-                    ),
-                  ),
-                  Container(
-                      width: 1, height: 36,
-                      color: Colors.white.withOpacity(0.2)),
-                  Expanded(
-                    child: _CardStat(
-                      icon: Icons.arrow_upward_rounded,
-                      label: 'Expenses',
-                      value: AppFormatters.formatCurrency(totalExpense),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _CardStat extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-
-  const _CardStat({
-    required this.icon,
-    required this.label,
-    required this.value,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(7),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.18),
-              borderRadius: BorderRadius.circular(9),
-            ),
-            child: Icon(icon, color: Colors.white, size: 15),
-          ),
-          const SizedBox(width: 10),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(label,
-                  style: const TextStyle(
-                      color: Colors.white70, fontSize: 11)),
-              Text(value,
-                  style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: -0.3)),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Account Cards (horizontal)
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _AccountCard extends StatelessWidget {
-  final AccountEntity account;
-  final int index;
-
-  const _AccountCard({required this.account, required this.index});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme   = Theme.of(context);
-    final isAsset = account.type == AccountType.asset;
-
-    // Distinct soft pastel colours for each account
-    final List<Color> bgColors = [
-      const Color(0xFFE8F0FE), // soft blue
-      const Color(0xFFFCE8E6), // soft red
-      const Color(0xFFE6F4EA), // soft green
-      const Color(0xFFFEF7E0), // soft yellow
-      const Color(0xFFF3E8FF), // soft purple
-    ];
-    final bgColor = bgColors[index % bgColors.length];
-
-    final accentColor =
-        isAsset ? const Color(0xFF10B981) : const Color(0xFFEF4444);
-
-    return Container(
-      width: 180,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 10,
-            spreadRadius: 0,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: accentColor.withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(
-                  isAsset
-                      ? Icons.account_balance_wallet_rounded
-                      : Icons.credit_card_rounded,
-                  color: accentColor,
-                  size: 16,
-                ),
-              ),
-              const Spacer(),
-              // Account type chip
-              Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 7, vertical: 3),
-                decoration: BoxDecoration(
-                  color: accentColor.withOpacity(0.10),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  isAsset ? 'Asset' : 'Liability',
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                    color: accentColor,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const Spacer(),
-          Text(
-            AppFormatters.formatCurrency(account.balance),
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w800,
-              letterSpacing: -0.5,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            account.name,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 
 

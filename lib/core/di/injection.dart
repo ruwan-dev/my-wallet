@@ -14,6 +14,7 @@ import '../../features/expenses/domain/repositories/account_repository.dart';
 import '../../features/expenses/domain/repositories/transaction_repository.dart';
 import '../../features/expenses/domain/repositories/category_repository.dart';
 import '../../features/expenses/data/datasources/category_local_datasource.dart';
+import '../../features/expenses/data/datasources/category_remote_datasource.dart';
 import '../../features/expenses/data/models/category_model.dart';
 import '../../features/expenses/presentation/bloc/category_cubit.dart';
 import '../../features/auth/domain/repositories/auth_repository.dart';
@@ -30,6 +31,11 @@ import '../../features/expenses/domain/usecases/watch_accounts.dart';
 import '../../features/expenses/domain/usecases/watch_transactions.dart';
 import '../../features/expenses/presentation/bloc/account_cubit.dart';
 import '../../features/expenses/presentation/bloc/transaction_cubit.dart';
+
+import '../../features/expenses/data/datasources/budget_remote_datasource.dart';
+import '../../features/expenses/data/repositories/budget_repository_impl.dart';
+import '../../features/expenses/domain/repositories/budget_repository.dart';
+import '../../features/expenses/presentation/bloc/budget_cubit.dart';
 
 final sl = GetIt.instance;
 
@@ -50,6 +56,12 @@ Future<void> configureDependencies() async {
   sl.registerLazySingleton<CategoryLocalDatasource>(
     () => HiveCategoryLocalDatasource(categoriesBox),
   );
+  sl.registerLazySingleton<CategoryRemoteDatasource>(
+    () => FirestoreCategoryRemoteDatasource(sl()),
+  );
+  sl.registerLazySingleton<BudgetRemoteDataSource>(
+    () => BudgetRemoteDataSourceImpl(sl()),
+  );
 
   // --- Repositories ---
   sl.registerLazySingleton<AccountRepository>(
@@ -59,10 +71,13 @@ Future<void> configureDependencies() async {
     () => TransactionRepositoryImpl(sl()),
   );
   sl.registerLazySingleton<CategoryRepository>(
-    () => CategoryRepositoryImpl(sl()),
+    () => CategoryRepositoryImpl(sl(), sl()),
   );
   sl.registerLazySingleton<AuthRepository>(
     () => FirebaseAuthRepositoryImpl(sl()),
+  );
+  sl.registerLazySingleton<BudgetRepository>(
+    () => BudgetRepositoryImpl(sl()),
   );
 
   // --- UseCases ---
@@ -77,7 +92,7 @@ Future<void> configureDependencies() async {
   sl.registerLazySingleton(() => WatchTransactionsUseCase(sl()));
 
   // --- BLoC / Cubit ---
-  sl.registerFactory(
+  sl.registerLazySingleton(
     () => AccountCubit(
       watchAccounts: sl(),
       addAccount: sl(),
@@ -86,7 +101,7 @@ Future<void> configureDependencies() async {
     ),
   );
 
-  sl.registerFactory(
+  sl.registerLazySingleton(
     () => TransactionCubit(
       watchTransactions: sl(),
       addTransaction: sl(),
@@ -96,14 +111,22 @@ Future<void> configureDependencies() async {
     ),
   );
 
-  sl.registerFactory(
-    () => CategoryCubit(repository: sl()),
+  sl.registerLazySingleton(
+    () => CategoryCubit(repository: sl(), authRepository: sl()),
   );
 
-  sl.registerFactory(
+  sl.registerLazySingleton(
     () => AuthCubit(
       repository: sl(),
       firebaseAuth: sl(),
+    ),
+  );
+
+  sl.registerLazySingleton(
+    () => BudgetCubit(
+      budgetRepository: sl(),
+      transactionCubit: sl(),
+      authRepository: sl(),
     ),
   );
 }

@@ -23,13 +23,14 @@ class CategoryModelAdapter extends TypeAdapter<CategoryModel> {
       colorValue: fields[3] as int,
       isDefault: fields[4] as bool,
       isIncome: fields[5] as bool,
+      subcategories: (fields[6] as List?)?.cast<String>() ?? [],
     );
   }
 
   @override
   void write(BinaryWriter writer, CategoryModel obj) {
     writer
-      ..writeByte(6)
+      ..writeByte(7)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -41,7 +42,9 @@ class CategoryModelAdapter extends TypeAdapter<CategoryModel> {
       ..writeByte(4)
       ..write(obj.isDefault)
       ..writeByte(5)
-      ..write(obj.isIncome);
+      ..write(obj.isIncome)
+      ..writeByte(6)
+      ..write(obj.subcategories);
   }
 
   @override

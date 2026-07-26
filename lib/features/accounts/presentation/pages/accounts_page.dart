@@ -164,11 +164,33 @@ class _AccountListTile extends StatelessWidget {
                 ],
               ),
             ),
-            Text(
-              AppFormatters.formatCurrency(account.balance),
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                if (account.type == AccountType.liability) ...[
+                  Text(
+                    AppFormatters.formatCurrency(account.creditLimit - account.balance),
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    AppFormatters.formatCurrency(account.balance),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.error,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ] else ...[
+                  Text(
+                    AppFormatters.formatCurrency(account.balance),
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ],
             ),
           ],
         ),
@@ -187,21 +209,35 @@ class _AddAccountDialog extends StatefulWidget {
 class _AddAccountDialogState extends State<_AddAccountDialog> {
   final _nameController = TextEditingController();
   final _balanceController = TextEditingController();
+  final _limitController = TextEditingController();
   AccountType _selectedType = AccountType.asset;
+
+  static const List<Color> _availableColors = [
+    Color(0xFF673AB7), // Deep Purple
+    Color(0xFF2196F3), // Blue
+    Color(0xFFE91E63), // Pink
+    Color(0xFF4CAF50), // Green
+    Color(0xFFFF9800), // Orange
+    Color(0xFF00BCD4), // Cyan
+  ];
+  int _selectedColorIndex = 0;
 
   @override
   void dispose() {
     _nameController.dispose();
     _balanceController.dispose();
+    _limitController.dispose();
     super.dispose();
   }
 
   void _submit() {
     final name = _nameController.text.trim();
     final balanceStr = _balanceController.text.trim();
+    final limitStr = _limitController.text.trim();
     if (name.isEmpty || balanceStr.isEmpty) return;
 
     final balance = double.tryParse(balanceStr) ?? 0.0;
+    final limit = double.tryParse(limitStr) ?? 0.0;
 
     final authCubit = context.read<AuthCubit>();
     final authState = authCubit.state;
@@ -211,8 +247,10 @@ class _AddAccountDialogState extends State<_AddAccountDialog> {
       id: '',
       name: name,
       balance: balance,
+      creditLimit: _selectedType == AccountType.liability ? limit : 0.0,
       type: _selectedType,
       userId: userId,
+      colorValue: _availableColors[_selectedColorIndex].value,
     );
 
     context.read<AccountCubit>().addAccount(newAccount);
@@ -248,6 +286,44 @@ class _AddAccountDialogState extends State<_AddAccountDialog> {
             onChanged: (val) {
               if (val != null) setState(() => _selectedType = val);
             },
+          ),
+          if (_selectedType == AccountType.liability) ...[
+            const SizedBox(height: 12),
+            TextField(
+              controller: _limitController,
+              decoration: const InputDecoration(labelText: 'Credit Limit (Optional)'),
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            ),
+          ],
+          const SizedBox(height: 16),
+          const Align(
+            alignment: Alignment.centerLeft,
+            child: Text('Card Color', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+          ),
+          const SizedBox(height: 8),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: List.generate(_availableColors.length, (index) {
+                final color = _availableColors[index];
+                final isSelected = _selectedColorIndex == index;
+                return GestureDetector(
+                  onTap: () => setState(() => _selectedColorIndex = index),
+                  child: Container(
+                    margin: const EdgeInsets.only(right: 12),
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: color,
+                      shape: BoxShape.circle,
+                      border: isSelected ? Border.all(color: Theme.of(context).colorScheme.primary, width: 3) : null,
+                      boxShadow: isSelected ? [BoxShadow(color: color.withOpacity(0.4), blurRadius: 8, offset: const Offset(0, 2))] : null,
+                    ),
+                    child: isSelected ? const Icon(Icons.check, color: Colors.white, size: 20) : null,
+                  ),
+                );
+              }),
+            ),
           ),
         ],
       ),

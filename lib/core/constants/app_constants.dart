@@ -27,7 +27,7 @@ class AppConstants {
 
   // Default Values
   static const String defaultCurrency = 'USD';
-  static const String defaultCurrencySymbol = '\$';
+  static const String defaultCurrencySymbol = 'Rs ';
 
   // Pagination
   static const int pageSize = 20;
