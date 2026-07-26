@@ -10,6 +10,7 @@ class Category extends Equatable {
   final bool isDefault;
   final bool isIncome;
   final List<String> subcategories;
+  final Map<String, dynamic> recurringConfigs;
 
   const Category({
     required this.id,
@@ -19,6 +20,7 @@ class Category extends Equatable {
     this.isDefault = false,
     this.isIncome = false,
     this.subcategories = const [],
+    this.recurringConfigs = const {},
   });
 
   Category copyWith({
@@ -29,6 +31,7 @@ class Category extends Equatable {
     bool? isDefault,
     bool? isIncome,
     List<String>? subcategories,
+    Map<String, dynamic>? recurringConfigs,
   }) {
     return Category(
       id: id ?? this.id,
@@ -38,11 +41,12 @@ class Category extends Equatable {
       isDefault: isDefault ?? this.isDefault,
       isIncome: isIncome ?? this.isIncome,
       subcategories: subcategories ?? this.subcategories,
+      recurringConfigs: recurringConfigs ?? this.recurringConfigs,
     );
   }
 
   @override
-  List<Object?> get props => [id, name, icon, color, isDefault, isIncome, subcategories];
+  List<Object?> get props => [id, name, icon, color, isDefault, isIncome, subcategories, recurringConfigs];
 }
 
 /// Pre-defined default categories shipped with the app.
@@ -71,6 +75,9 @@ class DefaultCategories {
           isDefault:     true,
           isIncome:      e['isIncome'] as bool,
           subcategories: List<String>.from(e['subcategories'] as List? ?? []),
+          recurringConfigs: e.containsKey('recurringConfigs') 
+              ? Map<String, dynamic>.from(e['recurringConfigs'] as Map)
+              : {},
         ),
       )
       .toList();

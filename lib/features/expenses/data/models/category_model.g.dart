@@ -23,14 +23,15 @@ class CategoryModelAdapter extends TypeAdapter<CategoryModel> {
       colorValue: fields[3] as int,
       isDefault: fields[4] as bool,
       isIncome: fields[5] as bool,
-      subcategories: (fields[6] as List?)?.cast<String>() ?? [],
+      subcategories: (fields[6] as List).cast<String>(),
+      recurringConfigs: (fields[7] as Map?)?.cast<dynamic, dynamic>(),
     );
   }
 
   @override
   void write(BinaryWriter writer, CategoryModel obj) {
     writer
-      ..writeByte(7)
+      ..writeByte(8)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -44,7 +45,9 @@ class CategoryModelAdapter extends TypeAdapter<CategoryModel> {
       ..writeByte(5)
       ..write(obj.isIncome)
       ..writeByte(6)
-      ..write(obj.subcategories);
+      ..write(obj.subcategories)
+      ..writeByte(7)
+      ..write(obj.recurringConfigs);
   }
 
   @override

@@ -27,6 +27,9 @@ class CategoryModel extends HiveObject {
   @HiveField(6)
   final List<String> subcategories;
 
+  @HiveField(7)
+  final Map<dynamic, dynamic>? recurringConfigs;
+
   CategoryModel({
     required this.id,
     required this.name,
@@ -35,6 +38,7 @@ class CategoryModel extends HiveObject {
     required this.isDefault,
     required this.isIncome,
     required this.subcategories,
+    this.recurringConfigs,
   });
 
   factory CategoryModel.fromEntity(Category entity) {
@@ -46,6 +50,7 @@ class CategoryModel extends HiveObject {
       isDefault: entity.isDefault,
       isIncome: entity.isIncome,
       subcategories: entity.subcategories,
+      recurringConfigs: entity.recurringConfigs,
     );
   }
 
@@ -58,6 +63,7 @@ class CategoryModel extends HiveObject {
       isDefault: isDefault,
       isIncome: isIncome,
       subcategories: subcategories,
+      recurringConfigs: recurringConfigs?.map((key, value) => MapEntry(key.toString(), value)) ?? const {},
     );
   }
 
@@ -70,6 +76,7 @@ class CategoryModel extends HiveObject {
       isDefault: json['isDefault'] as bool? ?? false,
       isIncome: json['isIncome'] as bool? ?? false,
       subcategories: List<String>.from(json['subcategories'] as List? ?? []),
+      recurringConfigs: json['recurringConfigs'] as Map<dynamic, dynamic>?,
     );
   }
 
@@ -82,6 +89,7 @@ class CategoryModel extends HiveObject {
       'isDefault': isDefault,
       'isIncome': isIncome,
       'subcategories': subcategories,
+      'recurringConfigs': recurringConfigs,
     };
   }
 }

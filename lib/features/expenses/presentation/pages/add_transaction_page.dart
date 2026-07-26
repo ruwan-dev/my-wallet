@@ -10,6 +10,7 @@ import '../../domain/entities/transaction.dart';
 import '../bloc/account_cubit.dart';
 import '../bloc/account_state.dart';
 import '../bloc/transaction_cubit.dart';
+import '../bloc/transaction_state.dart';
 import '../bloc/category_cubit.dart';
 import '../bloc/category_state.dart';
 import '../widgets/add_category_bottom_sheet.dart';
@@ -382,6 +383,8 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                   },
                   isIncome: _isIncome,
                   onNext:   _advance,
+                  selectedCategory: _selectedCategory,
+                  selectedSubCategory: _subCategoryController.text.trim().isEmpty ? null : _subCategoryController.text.trim(),
                 ),
 
                 // Step 5 — Amount
@@ -1114,6 +1117,8 @@ class _Step4TitleDate extends StatelessWidget {
   final String? recurrenceFrequency;
   final ValueChanged<String?> onRecurrenceChanged;
   final bool isIncome;
+  final Category selectedCategory;
+  final String? selectedSubCategory;
 
   const _Step4TitleDate({
     required this.titleController,
@@ -1123,6 +1128,8 @@ class _Step4TitleDate extends StatelessWidget {
     this.recurrenceFrequency,
     required this.onRecurrenceChanged,
     required this.isIncome,
+    required this.selectedCategory,
+    this.selectedSubCategory,
   });
 
   @override
@@ -1134,95 +1141,159 @@ class _Step4TitleDate extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Add a title', style: theme.textTheme.titleLarge),
-          const SizedBox(height: 6),
-          Text(
-            'Give this transaction a short, clear name.',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-          const SizedBox(height: 32),
-
-          // Title field
-          TextField(
-            controller: titleController,
-            autofocus: true,
-            textCapitalization: TextCapitalization.sentences,
-            style: theme.textTheme.bodyLarge,
-            decoration: const InputDecoration(
-              hintText: 'e.g. Groceries, Salary, Netflix…',
-              prefixIcon: Icon(Icons.title_rounded),
-            ),
-            onSubmitted: (_) => onNext(),
-          ),
-          const SizedBox(height: 20),
-
-          // Date picker row
-          Text('Date', style: theme.textTheme.titleSmall),
-          const SizedBox(height: 10),
-          GestureDetector(
-            onTap: onDateTap,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-              decoration: BoxDecoration(
-                color: theme.inputDecorationTheme.fillColor,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: theme.colorScheme.outline),
-              ),
-              child: Row(
+          Expanded(
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(
-                    Icons.calendar_today_rounded,
-                    size: 20,
-                    color: theme.colorScheme.primary,
+                  BlocBuilder<TransactionCubit, TransactionState>(
+                    builder: (context, state) {
+                      if (state is TransactionLoaded) {
+                        final recurringMatches = state.transactions.where((t) =>
+                            t.recurrenceFrequency != null &&
+                            t.nextDueDate != null &&
+                            t.categoryId == selectedCategory.id &&
+                            t.subCategory == selectedSubCategory).toList();
+
+                        if (recurringMatches.isNotEmpty) {
+                          recurringMatches.sort((a, b) => b.nextDueDate!.compareTo(a.nextDueDate!));
+                          final latest = recurringMatches.first;
+
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 24),
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.primary.withOpacity(0.08),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: theme.colorScheme.primary.withOpacity(0.2)),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(Icons.event_repeat_rounded, color: theme.colorScheme.primary),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Next Scheduled Date',
+                                        style: theme.textTheme.labelMedium?.copyWith(
+                                          color: theme.colorScheme.primary,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        'A past recurring log for ${selectedSubCategory ?? selectedCategory.name} is due next on ${AppFormatters.formatDate(latest.nextDueDate!)}',
+                                        style: theme.textTheme.bodySmall?.copyWith(
+                                          color: theme.colorScheme.onSurfaceVariant,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }
+                      }
+                      return const SizedBox.shrink();
+                    },
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      AppFormatters.formatRelativeDate(selectedDate),
-                      style: theme.textTheme.bodyMedium,
+                  Text('Add a title', style: theme.textTheme.titleLarge),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Give this transaction a short, clear name.',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
-                  Icon(
-                    Icons.expand_more_rounded,
-                    size: 20,
-                    color: theme.colorScheme.onSurfaceVariant,
+                  const SizedBox(height: 32),
+
+                  // Title field
+                  TextField(
+                    controller: titleController,
+                    autofocus: true,
+                    textCapitalization: TextCapitalization.sentences,
+                    style: theme.textTheme.bodyLarge,
+                    decoration: const InputDecoration(
+                      hintText: 'e.g. Groceries, Salary, Netflix…',
+                      prefixIcon: Icon(Icons.title_rounded),
+                    ),
+                    onSubmitted: (_) => onNext(),
                   ),
+                  const SizedBox(height: 20),
+
+                  // Date picker row
+                  Text('Date', style: theme.textTheme.titleSmall),
+                  const SizedBox(height: 10),
+                  GestureDetector(
+                    onTap: onDateTap,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                      decoration: BoxDecoration(
+                        color: theme.inputDecorationTheme.fillColor,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: theme.colorScheme.outline),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.calendar_today_rounded,
+                            size: 20,
+                            color: theme.colorScheme.primary,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              AppFormatters.formatRelativeDate(selectedDate),
+                              style: theme.textTheme.bodyMedium,
+                            ),
+                          ),
+                          Icon(
+                            Icons.expand_more_rounded,
+                            size: 20,
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 20),
+                  Text('Recurring Expense?', style: theme.textTheme.titleSmall),
+                  const SizedBox(height: 10),
+                  DropdownButtonFormField<String>(
+                    value: recurrenceFrequency ?? 'None',
+                    decoration: InputDecoration(
+                      prefixIcon: const Icon(Icons.autorenew_rounded),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    items: const [
+                      DropdownMenuItem(value: 'None', child: Text('No, one-time')),
+                      DropdownMenuItem(value: 'Daily', child: Text('Daily')),
+                      DropdownMenuItem(value: 'Weekly', child: Text('Weekly')),
+                      DropdownMenuItem(value: 'Monthly', child: Text('Monthly')),
+                      DropdownMenuItem(value: 'Yearly', child: Text('Yearly')),
+                    ],
+                    onChanged: onRecurrenceChanged,
+                  ),
+
+                  if (recurrenceFrequency != null && recurrenceFrequency != 'None') ...[
+                    const SizedBox(height: 24),
+                    RecurringTimelineWidget(
+                      events: _generatePreviewEvents(selectedDate, recurrenceFrequency!),
+                    ),
+                    const SizedBox(height: 24),
+                  ],
                 ],
               ),
             ),
           ),
           
-          const SizedBox(height: 20),
-          Text('Recurring Expense?', style: theme.textTheme.titleSmall),
-          const SizedBox(height: 10),
-          DropdownButtonFormField<String>(
-            value: recurrenceFrequency ?? 'None',
-            decoration: InputDecoration(
-              prefixIcon: const Icon(Icons.autorenew_rounded),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            items: const [
-              DropdownMenuItem(value: 'None', child: Text('No, one-time')),
-              DropdownMenuItem(value: 'Daily', child: Text('Daily')),
-              DropdownMenuItem(value: 'Weekly', child: Text('Weekly')),
-              DropdownMenuItem(value: 'Monthly', child: Text('Monthly')),
-              DropdownMenuItem(value: 'Yearly', child: Text('Yearly')),
-            ],
-            onChanged: onRecurrenceChanged,
-          ),
-
-          if (recurrenceFrequency != null && recurrenceFrequency != 'None') ...[
-            const SizedBox(height: 24),
-            RecurringTimelineWidget(
-              events: _generatePreviewEvents(selectedDate, recurrenceFrequency!),
-            ),
-          ],
-
-          const Spacer(),
+          const SizedBox(height: 16),
 
           // Next button
           SizedBox(
@@ -1238,7 +1309,7 @@ class _Step4TitleDate extends StatelessWidget {
     );
   }
 
-  List<TimelineEvent> _generatePreviewEvents(DateTime start, String freq) {
+  List<RecurringBranchEvent> _generatePreviewEvents(DateTime start, String freq) {
     DateTime next1;
     DateTime next2;
     switch (freq) {
@@ -1261,20 +1332,22 @@ class _Step4TitleDate extends StatelessWidget {
         break;
     }
     return [
-      TimelineEvent(
-        title: 'Initial Payment',
-        subtitle: AppFormatters.formatDate(start),
-        state: TimelineNodeState.current,
+      RecurringBranchEvent(
+        expectedDate: start,
+        actualDate: start,
+        isPaid: true,
+        statusText: 'Paid',
+        statusColor: Colors.green,
       ),
-      TimelineEvent(
-        title: 'Next Scheduled',
-        subtitle: AppFormatters.formatDate(next1),
-        state: TimelineNodeState.upcoming,
+      RecurringBranchEvent(
+        expectedDate: next1,
+        statusText: 'Pending',
+        statusColor: Colors.grey,
       ),
-      TimelineEvent(
-        title: 'Following',
-        subtitle: AppFormatters.formatDate(next2),
-        state: TimelineNodeState.upcoming,
+      RecurringBranchEvent(
+        expectedDate: next2,
+        statusText: 'Pending',
+        statusColor: Colors.grey,
       ),
     ];
   }

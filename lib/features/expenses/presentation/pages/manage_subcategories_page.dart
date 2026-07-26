@@ -49,9 +49,21 @@ class ManageSubcategoriesPage extends StatelessWidget {
                 return ListTile(
                   leading: const Icon(Icons.subdirectory_arrow_right),
                   title: Text(sub),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.delete_outline, color: Colors.red),
-                    onPressed: () => _deleteSubcategory(context, category, sub),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: Icon(
+                          category.recurringConfigs.containsKey(sub) ? Icons.event_repeat : Icons.event_available,
+                          color: category.recurringConfigs.containsKey(sub) ? Theme.of(context).colorScheme.primary : Colors.grey,
+                        ),
+                        onPressed: () => _showRecurringSetup(context, category, sub),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.delete_outline, color: Colors.red),
+                        onPressed: () => _deleteSubcategory(context, category, sub),
+                      ),
+                    ],
                   ),
                 );
               },
@@ -132,8 +144,130 @@ class ManageSubcategoriesPage extends StatelessWidget {
 
     if (confirm == true && context.mounted) {
       final updatedList = List<String>.from(category.subcategories)..remove(sub);
-      final updated = category.copyWith(subcategories: updatedList);
+      final updatedConfigs = Map<String, dynamic>.from(category.recurringConfigs)..remove(sub);
+      final updated = category.copyWith(subcategories: updatedList, recurringConfigs: updatedConfigs);
       context.read<CategoryCubit>().updateCategory(updated);
     }
+  }
+
+  void _showRecurringSetup(BuildContext context, Category category, String sub) {
+    final existingConfig = category.recurringConfigs[sub] as Map?;
+    String frequency = existingConfig?['frequency'] ?? 'Monthly';
+    DateTime nextDueDate = existingConfig != null && existingConfig['dueDate'] != null
+        ? DateTime.parse(existingConfig['dueDate'])
+        : DateTime.now();
+    final amountController = TextEditingController(text: existingConfig?['amount']?.toString() ?? '');
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setState) {
+            final theme = Theme.of(ctx);
+            return Container(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+                top: 24,
+                left: 24,
+                right: 24,
+              ),
+              decoration: BoxDecoration(
+                color: theme.scaffoldBackgroundColor,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Recurring Schedule', style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  Text('Set up a recurring schedule for $sub.', style: theme.textTheme.bodyMedium),
+                  const SizedBox(height: 24),
+
+                  DropdownButtonFormField<String>(
+                    value: frequency,
+                    decoration: const InputDecoration(labelText: 'Frequency', border: OutlineInputBorder()),
+                    items: ['Daily', 'Weekly', 'Monthly', 'Yearly'].map((String val) {
+                      return DropdownMenuItem(value: val, child: Text(val));
+                    }).toList(),
+                    onChanged: (val) {
+                      if (val != null) setState(() => frequency = val);
+                    },
+                  ),
+                  const SizedBox(height: 16),
+
+                  TextField(
+                    controller: amountController,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    decoration: const InputDecoration(
+                      labelText: 'Expected Amount',
+                      border: OutlineInputBorder(),
+                      prefixText: '\$ ',
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Next Due Date'),
+                    subtitle: Text('${nextDueDate.year}-${nextDueDate.month.toString().padLeft(2, '0')}-${nextDueDate.day.toString().padLeft(2, '0')}'),
+                    trailing: const Icon(Icons.calendar_today),
+                    onTap: () async {
+                      final picked = await showDatePicker(
+                        context: ctx,
+                        initialDate: nextDueDate,
+                        firstDate: DateTime(2000),
+                        lastDate: DateTime(2100),
+                      );
+                      if (picked != null) {
+                        setState(() => nextDueDate = picked);
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 32),
+
+                  Row(
+                    children: [
+                      if (existingConfig != null)
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () {
+                              final configs = Map<String, dynamic>.from(category.recurringConfigs)..remove(sub);
+                              final updated = category.copyWith(recurringConfigs: configs);
+                              context.read<CategoryCubit>().updateCategory(updated);
+                              Navigator.pop(ctx);
+                            },
+                            style: OutlinedButton.styleFrom(foregroundColor: Colors.red),
+                            child: const Text('Remove'),
+                          ),
+                        ),
+                      if (existingConfig != null) const SizedBox(width: 16),
+                      Expanded(
+                        child: FilledButton(
+                          onPressed: () {
+                            final configs = Map<String, dynamic>.from(category.recurringConfigs);
+                            configs[sub] = {
+                              'frequency': frequency,
+                              'dueDate': nextDueDate.toIso8601String(),
+                              'amount': double.tryParse(amountController.text) ?? 0.0,
+                            };
+                            final updated = category.copyWith(recurringConfigs: configs);
+                            context.read<CategoryCubit>().updateCategory(updated);
+                            Navigator.pop(ctx);
+                          },
+                          child: const Text('Save Schedule'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 }
