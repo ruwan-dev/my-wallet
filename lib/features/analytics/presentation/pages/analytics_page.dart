@@ -483,7 +483,8 @@ class AnalyticsPage extends StatelessWidget {
                  'expectedDate': currentExpected,
                  'actualTx': tx,
                });
-               currentExpected = _getNextDate(currentExpected, frequency);
+               // NEW DYNAMIC LOGIC: Calculate next expected date from the ACTUAL payment date
+               currentExpected = _getNextDate(tx.date, frequency);
             }
             
             // Always show the next unpaid expected date

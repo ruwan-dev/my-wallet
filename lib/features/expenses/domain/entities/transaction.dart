@@ -17,6 +17,7 @@ class TransactionEntity extends Equatable {
   final String? recurrenceFrequency;
   final DateTime? nextDueDate;
   final String? transferAccountId;
+  final bool isFavorite;
 
   const TransactionEntity({
     required this.id,
@@ -35,6 +36,7 @@ class TransactionEntity extends Equatable {
     this.recurrenceFrequency,
     this.nextDueDate,
     this.transferAccountId,
+    this.isFavorite = false,
   });
 
   double get signedAmount => isIncome ? amount : -amount;
@@ -56,6 +58,7 @@ class TransactionEntity extends Equatable {
     String? recurrenceFrequency,
     DateTime? nextDueDate,
     String? transferAccountId,
+    bool? isFavorite,
   }) =>
       TransactionEntity(
         id:           id           ?? this.id,
@@ -74,12 +77,13 @@ class TransactionEntity extends Equatable {
         recurrenceFrequency: recurrenceFrequency ?? this.recurrenceFrequency,
         nextDueDate:  nextDueDate  ?? this.nextDueDate,
         transferAccountId: transferAccountId ?? this.transferAccountId,
+        isFavorite:   isFavorite   ?? this.isFavorite,
       );
 
   @override
   List<Object?> get props => [
         id, accountId, userId, title, amount, categoryId,
         categoryName, subCategory, date, isIncome, note, createdAt, updatedAt,
-        recurrenceFrequency, nextDueDate, transferAccountId,
+        recurrenceFrequency, nextDueDate, transferAccountId, isFavorite,
       ];
 }

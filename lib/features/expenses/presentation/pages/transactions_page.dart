@@ -9,8 +9,15 @@ import '../bloc/account_cubit.dart';
 import '../bloc/account_state.dart';
 import '../widgets/transaction_card.dart';
 
-class TransactionsPage extends StatelessWidget {
+class TransactionsPage extends StatefulWidget {
   const TransactionsPage({super.key});
+
+  @override
+  State<TransactionsPage> createState() => _TransactionsPageState();
+}
+
+class _TransactionsPageState extends State<TransactionsPage> {
+  String? _selectedCategoryFilter;
 
   @override
   Widget build(BuildContext context) {
@@ -27,6 +34,68 @@ class TransactionsPage extends StatelessWidget {
           icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
           onPressed: () => context.pop(),
         ),
+        actions: [
+          BlocBuilder<TransactionCubit, TransactionState>(
+            builder: (context, txState) {
+              if (txState is! TransactionLoaded || txState.transactions.isEmpty) {
+                return const SizedBox.shrink();
+              }
+              final uniqueCategories = txState.transactions.map((t) => t.categoryName).toSet().toList()..sort();
+              
+              return IconButton(
+                icon: Icon(
+                  _selectedCategoryFilter != null ? Icons.filter_alt : Icons.filter_alt_outlined, 
+                  color: _selectedCategoryFilter != null ? theme.colorScheme.primary : null,
+                ),
+                onPressed: () {
+                  showModalBottomSheet(
+                    context: context,
+                    builder: (ctx) {
+                      return SafeArea(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: Text('Filter by Category', style: theme.textTheme.titleMedium),
+                            ),
+                            ListTile(
+                              title: const Text('All Categories'),
+                              trailing: _selectedCategoryFilter == null ? Icon(Icons.check, color: theme.colorScheme.primary) : null,
+                              onTap: () {
+                                setState(() => _selectedCategoryFilter = null);
+                                Navigator.pop(ctx);
+                              },
+                            ),
+                            const Divider(height: 1),
+                            Flexible(
+                              child: ListView.builder(
+                                shrinkWrap: true,
+                                itemCount: uniqueCategories.length,
+                                itemBuilder: (ctx, i) {
+                                  final cat = uniqueCategories[i];
+                                  final isSelected = _selectedCategoryFilter == cat;
+                                  return ListTile(
+                                    title: Text(cat),
+                                    trailing: isSelected ? Icon(Icons.check, color: theme.colorScheme.primary) : null,
+                                    onTap: () {
+                                      setState(() => _selectedCategoryFilter = cat);
+                                      Navigator.pop(ctx);
+                                    },
+                                  );
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  );
+                },
+              );
+            },
+          ),
+        ],
       ),
       body: BlocBuilder<TransactionCubit, TransactionState>(
         builder: (context, txState) {
@@ -34,15 +103,28 @@ class TransactionsPage extends StatelessWidget {
             return const Center(child: CircularProgressIndicator());
           }
           if (txState is TransactionLoaded) {
-            final transactions = txState.transactions;
+            var transactions = txState.transactions;
+            if (_selectedCategoryFilter != null) {
+              transactions = transactions.where((t) => t.categoryName == _selectedCategoryFilter).toList();
+            }
 
             if (transactions.isEmpty) {
               return Center(
-                child: Text(
-                  'No transactions found.',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      'No transactions found.',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    if (_selectedCategoryFilter != null)
+                      TextButton(
+                        onPressed: () => setState(() => _selectedCategoryFilter = null),
+                        child: const Text('Clear Filter'),
+                      ),
+                  ],
                 ),
               );
             }

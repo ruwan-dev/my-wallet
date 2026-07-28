@@ -34,17 +34,18 @@ class DashboardPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: BlocListener<TransactionCubit, TransactionState>(
+        listenWhen: (previous, current) {
+          return current is TransactionLoaded && 
+                 current.deletedTransaction != null && 
+                 (previous is! TransactionLoaded || previous.deletedTransaction != current.deletedTransaction);
+        },
         listener: (context, state) {
           if (state is TransactionLoaded && state.deletedTransaction != null) {
             ScaffoldMessenger.of(context)
               ..hideCurrentSnackBar()
-              ..showSnackBar(SnackBar(
-                content: const Text('Transaction deleted'),
-                action: SnackBarAction(
-                  label: 'Close',
-                  onPressed: () => ScaffoldMessenger.of(context).hideCurrentSnackBar(),
-                ),
-                duration: const Duration(seconds: 3),
+              ..showSnackBar(const SnackBar(
+                content: Text('Transaction deleted'),
+                duration: Duration(seconds: 3),
               ));
           }
         },

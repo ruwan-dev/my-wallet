@@ -4,6 +4,8 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../domain/entities/transaction.dart';
 import '../../domain/entities/category.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../bloc/transaction_cubit.dart';
 
 class TransactionCard extends StatelessWidget {
   final TransactionEntity transaction;
@@ -88,24 +90,46 @@ class TransactionCard extends StatelessWidget {
 
               // ── Trailing: amount ───────────────────────────────────────────
               Padding(
-                padding: const EdgeInsets.only(right: 16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
+                padding: const EdgeInsets.only(right: 8.0),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      amountText,
-                      style: theme.textTheme.bodyLarge?.copyWith(
-                        color: amountColor,
-                        fontWeight: FontWeight.w700,
-                      ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          amountText,
+                          style: theme.textTheme.bodyLarge?.copyWith(
+                            color: amountColor,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          accountName,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 3),
-                    Text(
-                      accountName,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                        fontWeight: FontWeight.w400,
+                    const SizedBox(width: 4),
+                    IconButton(
+                      icon: Icon(
+                        transaction.isFavorite ? Icons.favorite : Icons.favorite_border,
+                        color: transaction.isFavorite 
+                            ? Colors.redAccent 
+                            : theme.colorScheme.onSurfaceVariant.withOpacity(0.3),
+                        size: 20,
                       ),
+                      onPressed: () {
+                        // ignore: invalid_use_of_visible_for_testing_member
+                        context.read<TransactionCubit>().updateTransaction(
+                              transaction,
+                              transaction.copyWith(isFavorite: !transaction.isFavorite),
+                            );
+                      },
                     ),
                   ],
                 ),

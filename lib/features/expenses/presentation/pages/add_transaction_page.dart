@@ -257,6 +257,44 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
         .showSnackBar(SnackBar(content: Text(msg)));
   }
 
+  void _handleFavoriteTapped(TransactionEntity favorite) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (bottomSheetCtx) {
+        return _FavoriteAccountPickerSheet(
+          favorite: favorite,
+          onSave: (amount, account) async {
+            Navigator.pop(bottomSheetCtx);
+            final newTx = TransactionEntity(
+              id: '',
+              accountId: account.id,
+              userId: '',
+              title: favorite.title,
+              amount: amount,
+              categoryId: favorite.categoryId,
+              categoryName: favorite.categoryName,
+              subCategory: favorite.subCategory,
+              date: DateTime.now(),
+              isIncome: favorite.isIncome,
+              note: favorite.note,
+              createdAt: DateTime.now(),
+              updatedAt: DateTime.now(),
+              recurrenceFrequency: favorite.recurrenceFrequency,
+              nextDueDate: null,
+              isFavorite: false,
+              transferAccountId: favorite.transferAccountId,
+            );
+            // ignore: invalid_use_of_visible_for_testing_member
+            context.read<TransactionCubit>().addTransaction(newTx);
+            if (mounted) context.pop();
+          },
+        );
+      },
+    );
+  }
+
   // ── Build ─────────────────────────────────────────────────────────────────
 
   @override
@@ -331,6 +369,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                     });
                     _advance();
                   },
+                  onFavoriteTapped: _handleFavoriteTapped,
                 ),
 
                 // Step 2 — Category
@@ -453,14 +492,18 @@ class _StepProgressBar extends StatelessWidget {
 
 class _Step1Type extends StatelessWidget {
   final ValueChanged<bool> onSelected;
+  final void Function(TransactionEntity) onFavoriteTapped;
 
-  const _Step1Type({required this.onSelected});
+  const _Step1Type({
+    required this.onSelected,
+    required this.onFavoriteTapped,
+  });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Padding(
+    return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(24, 32, 24, 40),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -493,6 +536,42 @@ class _Step1Type extends StatelessWidget {
             sublabel: 'Money coming in',
             color: AppTheme.incomeColor,
             onTap: () => onSelected(true),
+          ),
+          const SizedBox(height: 48),
+
+          BlocBuilder<TransactionCubit, TransactionState>(
+            builder: (context, txState) {
+              if (txState is! TransactionLoaded) return const SizedBox.shrink();
+              final favorites = txState.transactions.where((t) => t.isFavorite).toList();
+              
+              if (favorites.isEmpty) return const SizedBox.shrink();
+              
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Favorite Templates',
+                    style: theme.textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    height: 110,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: favorites.length,
+                      separatorBuilder: (_, __) => const SizedBox(width: 12),
+                      itemBuilder: (ctx, i) {
+                        final fav = favorites[i];
+                        return _FavoriteTemplateCard(
+                          transaction: fav,
+                          onTap: () => onFavoriteTapped(fav),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
         ],
       ),
@@ -655,6 +734,7 @@ class _Step2CategoryState extends State<_Step2Category> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+
           _SectionHeader(
             label: _showingSubcategories ? widget.selectedCategory.name : 'Category',
             hint: widget.categoryExplicitlySet && !_showingSubcategories
@@ -1460,6 +1540,196 @@ class _Step5Amount extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _FavoriteTemplateCard extends StatelessWidget {
+  final TransactionEntity transaction;
+  final VoidCallback onTap;
+
+  const _FavoriteTemplateCard({
+    required this.transaction,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final category = DefaultCategories.all.firstWhere(
+      (c) => c.id == transaction.categoryId,
+      orElse: () => DefaultCategories.all.last,
+    );
+    
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        width: 140,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: category.color.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: category.color.withOpacity(0.2)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(category.icon, style: const TextStyle(fontSize: 24)),
+            const Spacer(),
+            Text(
+              (transaction.subCategory != null && transaction.subCategory!.isNotEmpty)
+                  ? transaction.subCategory!
+                  : transaction.title,
+              style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              AppFormatters.formatCurrency(transaction.amount),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: transaction.isIncome ? AppTheme.incomeColor : AppTheme.expenseColor,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _FavoriteAccountPickerSheet extends StatefulWidget {
+  final TransactionEntity favorite;
+  final void Function(double amount, AccountEntity account) onSave;
+
+  const _FavoriteAccountPickerSheet({
+    required this.favorite,
+    required this.onSave,
+  });
+
+  @override
+  State<_FavoriteAccountPickerSheet> createState() => _FavoriteAccountPickerSheetState();
+}
+
+class _FavoriteAccountPickerSheetState extends State<_FavoriteAccountPickerSheet> {
+  late TextEditingController _amountController;
+  AccountEntity? _selectedAccount;
+
+  @override
+  void initState() {
+    super.initState();
+    _amountController = TextEditingController(text: widget.favorite.amount.toString());
+  }
+
+  @override
+  void dispose() {
+    _amountController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.only(
+        top: 24, 
+        bottom: MediaQuery.of(context).viewInsets.bottom + 40,
+      ),
+      decoration: BoxDecoration(
+        color: Theme.of(context).scaffoldBackgroundColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Text(
+                'Quick Save: ${widget.favorite.title}',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+            ),
+            const SizedBox(height: 24),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: TextField(
+                controller: _amountController,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(
+                  labelText: 'Amount',
+                  prefixText: 'Rs. ',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Text(
+                'Select Account',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+            ),
+            const SizedBox(height: 8),
+            BlocBuilder<AccountCubit, AccountState>(
+              builder: (context, state) {
+                if (state is! AccountLoaded) return const Center(child: CircularProgressIndicator());
+                final accounts = state.accounts;
+                if (accounts.isEmpty) return const Padding(padding: EdgeInsets.all(24), child: Text('No accounts found.'));
+                
+                return ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: accounts.length,
+                  itemBuilder: (ctx, i) {
+                    final acc = accounts[i];
+                    final isSelected = _selectedAccount?.id == acc.id;
+                    return ListTile(
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                      leading: CircleAvatar(
+                        backgroundColor: isSelected 
+                            ? Theme.of(context).colorScheme.primary 
+                            : Color(acc.colorValue).withOpacity(0.1),
+                        child: Text(
+                          acc.name.isNotEmpty ? acc.name[0].toUpperCase() : '?',
+                          style: TextStyle(
+                            color: isSelected ? Theme.of(context).colorScheme.onPrimary : null,
+                          ),
+                        ),
+                      ),
+                      title: Text(acc.name, style: Theme.of(context).textTheme.bodyLarge),
+                      subtitle: Text(AppFormatters.formatCurrency(acc.balance)),
+                      trailing: isSelected ? Icon(Icons.check_circle, color: Theme.of(context).colorScheme.primary) : null,
+                      onTap: () => setState(() => _selectedAccount = acc),
+                    );
+                  },
+                );
+              },
+            ),
+            const SizedBox(height: 24),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: SizedBox(
+                width: double.infinity,
+                height: 54,
+                child: FilledButton(
+                  onPressed: _selectedAccount == null
+                      ? null
+                      : () {
+                          final amt = double.tryParse(_amountController.text) ?? widget.favorite.amount;
+                          widget.onSave(amt, _selectedAccount!);
+                        },
+                  child: const Text('Save Transaction', style: TextStyle(fontSize: 16)),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

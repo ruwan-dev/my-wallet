@@ -18,6 +18,7 @@ class TransactionModel {
   final String? recurrenceFrequency;
   final DateTime? nextDueDate;
   final String? transferAccountId;
+  final bool isFavorite;
 
   TransactionModel({
     required this.id,
@@ -36,6 +37,7 @@ class TransactionModel {
     this.recurrenceFrequency,
     this.nextDueDate,
     this.transferAccountId,
+    this.isFavorite = false,
   });
 
   factory TransactionModel.fromEntity(TransactionEntity entity) {
@@ -56,6 +58,7 @@ class TransactionModel {
       recurrenceFrequency: entity.recurrenceFrequency,
       nextDueDate: entity.nextDueDate,
       transferAccountId: entity.transferAccountId,
+      isFavorite: entity.isFavorite,
     );
   }
 
@@ -77,6 +80,7 @@ class TransactionModel {
       recurrenceFrequency: recurrenceFrequency,
       nextDueDate: nextDueDate,
       transferAccountId: transferAccountId,
+      isFavorite: isFavorite,
     );
   }
 
@@ -98,6 +102,7 @@ class TransactionModel {
       recurrenceFrequency: data['recurrenceFrequency'],
       nextDueDate: data['nextDueDate'] != null ? (data['nextDueDate'] as Timestamp).toDate() : null,
       transferAccountId: data['transferAccountId'],
+      isFavorite: data['isFavorite'] ?? false,
     );
   }
 
@@ -118,6 +123,7 @@ class TransactionModel {
       if (recurrenceFrequency != null) 'recurrenceFrequency': recurrenceFrequency,
       if (nextDueDate != null) 'nextDueDate': Timestamp.fromDate(nextDueDate!),
       if (transferAccountId != null) 'transferAccountId': transferAccountId,
+      'isFavorite': isFavorite,
     };
   }
 }
