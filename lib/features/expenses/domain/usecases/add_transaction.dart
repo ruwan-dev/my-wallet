@@ -33,7 +33,12 @@ class AddTransactionUseCase implements UseCase<TransactionEntity, TransactionEnt
       updatedAt: now,
     );
 
-    // 1. Fetch source account
+    // 1. Check if planned expense
+    if (transaction.accountId == 'planned') {
+      return transactionRepository.addTransaction(transaction);
+    }
+
+    // 2. Fetch source account
     final accountResult = await accountRepository.getAccount(transaction.userId, transaction.accountId);
     return accountResult.fold(
       (failure) => Left(failure),

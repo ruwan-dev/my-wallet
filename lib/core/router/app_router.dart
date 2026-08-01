@@ -22,6 +22,7 @@ import '../../features/expenses/presentation/pages/transactions_page.dart';
 import '../../features/expenses/presentation/pages/account_transactions_page.dart';
 import '../../features/expenses/domain/entities/account.dart';
 import '../widgets/responsive_layout.dart';
+import '../../features/budgets/presentation/pages/budgets_main_page.dart';
 
 class GoRouterRefreshStream extends ChangeNotifier {
   GoRouterRefreshStream(Stream<dynamic> stream) {
@@ -106,20 +107,20 @@ final appRouter = GoRouter(
         StatefulShellBranch(
           routes: [
             GoRoute(
-              path: '/categories',
-              builder: (context, state) => const ManageCategoriesPage(),
-            ),
-          ],
-        ),
-        StatefulShellBranch(
-          routes: [
-            GoRoute(
               path: '/profile',
               builder: (context, state) => const ProfilePage(),
             ),
           ],
         ),
       ],
+    ),
+    GoRoute(
+      path: '/budgets-main',
+      builder: (context, state) => const BudgetsMainPage(),
+    ),
+    GoRoute(
+      path: '/manage-categories',
+      builder: (context, state) => const ManageCategoriesPage(),
     ),
     GoRoute(
       path: '/add-expense',

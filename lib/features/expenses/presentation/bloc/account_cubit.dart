@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../auth/domain/repositories/auth_repository.dart';
 import '../../domain/entities/account.dart';
 import '../../domain/usecases/add_account.dart';
+import '../../domain/usecases/update_account.dart';
 import '../../domain/usecases/delete_account.dart';
 import '../../domain/usecases/watch_accounts.dart';
 import 'account_state.dart';
@@ -10,6 +11,7 @@ import 'account_state.dart';
 class AccountCubit extends Cubit<AccountState> {
   final WatchAccountsUseCase _watchAccounts;
   final AddAccountUseCase _addAccount;
+  final UpdateAccountUseCase _updateAccount;
   final DeleteAccountUseCase _deleteAccount;
   final AuthRepository _authRepository;
 
@@ -26,10 +28,12 @@ class AccountCubit extends Cubit<AccountState> {
   AccountCubit({
     required WatchAccountsUseCase watchAccounts,
     required AddAccountUseCase addAccount,
+    required UpdateAccountUseCase updateAccount,
     required DeleteAccountUseCase deleteAccount,
     required AuthRepository authRepository,
   })  : _watchAccounts = watchAccounts,
         _addAccount    = addAccount,
+        _updateAccount = updateAccount,
         _deleteAccount = deleteAccount,
         _authRepository = authRepository,
         super(AccountInitial());
@@ -60,6 +64,15 @@ class AccountCubit extends Cubit<AccountState> {
     result.fold(
       (failure) => emit(AccountError(failure.message)),
       (_) {},
+    );
+  }
+
+  Future<void> updateAccount(AccountEntity account) async {
+    final accountWithUser = account.copyWith(userId: _currentUserId);
+    final result = await _updateAccount(accountWithUser);
+    result.fold(
+      (failure) => emit(AccountError(failure.message)),
+      (_) {}, // The stream will handle the success
     );
   }
 

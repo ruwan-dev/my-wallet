@@ -22,6 +22,8 @@ import '../widgets/budget_progress_card.dart';
 import '../widgets/set_budget_bottom_sheet.dart';
 import '../widgets/animated_dashboard_card.dart';
 import '../widgets/mesh_account_card.dart';
+import '../widgets/monthly_budget_progress_card.dart';
+import '../pages/budget_setup_page.dart';
 // ─────────────────────────────────────────────────────────────────────────────
 // DashboardPage
 // ─────────────────────────────────────────────────────────────────────────────
@@ -33,7 +35,8 @@ class DashboardPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: BlocListener<TransactionCubit, TransactionState>(
+      body: SafeArea(
+        child: BlocListener<TransactionCubit, TransactionState>(
         listenWhen: (previous, current) {
           return current is TransactionLoaded && 
                  current.deletedTransaction != null && 
@@ -49,20 +52,17 @@ class DashboardPage extends StatelessWidget {
               ));
           }
         },
-        child: CustomScrollView(
-          slivers: [
-            // ── App Bar ────────────────────────────────────────────────────
-            _DashboardAppBar(),
-
+        child: Column(
+          children: [
             // ── Balance Card ───────────────────────────────────────────────
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
+            Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
                 child: BlocBuilder<AccountCubit, AccountState>(
                   builder: (context, accState) {
                     double totalBalance = 0;
                     double totalIncome  = 0;
                     double totalExpense = 0;
+                    double fixedExpenses = 0;
 
                     if (accState is AccountLoaded) {
                       for (final a in accState.accounts) {
@@ -75,6 +75,7 @@ class DashboardPage extends StatelessWidget {
                     }
                     final txState = context.watch<TransactionCubit>().state;
                     if (txState is TransactionLoaded) {
+                      fixedExpenses = context.read<TransactionCubit>().currentMonthFixedExpenses;
                       for (final tx in txState.transactions) {
                         if (tx.isIncome) totalIncome  += tx.amount;
                         else            totalExpense += tx.amount;
@@ -85,202 +86,150 @@ class DashboardPage extends StatelessWidget {
                       totalBalance: totalBalance,
                       totalIncome:  totalIncome,
                       totalExpense: totalExpense,
+                      fixedExpenses: fixedExpenses,
                     );
                   },
                 ),
               ),
-            ),
-
-
+            const SizedBox(height: 16),
 
             // ── My Accounts Section ────────────────────────────────────────
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: _SectionHeader(
-                  title: 'My Accounts',
-                  actionLabel: '',
-                  onAction: null,
-                ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: _SectionHeader(
+                title: 'My Accounts',
+                actionLabel: '',
+                onAction: null,
               ),
             ),
-            const SliverToBoxAdapter(child: SizedBox(height: 12)),
-            SliverToBoxAdapter(
-              child: BlocBuilder<AccountCubit, AccountState>(
-                builder: (context, state) {
-                  if (state is AccountLoading) {
-                    return const SizedBox(
-                      height: 120,
-                      child: Center(child: CircularProgressIndicator()),
+            const SizedBox(height: 12),
+            BlocBuilder<AccountCubit, AccountState>(
+              builder: (context, state) {
+                if (state is AccountLoading) {
+                  return const SizedBox(
+                    height: 120,
+                    child: Center(child: CircularProgressIndicator()),
+                  );
+                }
+                if (state is AccountLoaded) {
+                  return SizedBox(
+                    height: 100, // Decreased height
+                    child: ScrollConfiguration(
+                      behavior: ScrollConfiguration.of(context).copyWith(
+                        dragDevices: {
+                          PointerDeviceKind.touch,
+                          PointerDeviceKind.mouse,
+                          PointerDeviceKind.trackpad,
+                        },
+                      ),
+                      child: ListView.separated(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        scrollDirection: Axis.horizontal,
+                        physics: const BouncingScrollPhysics(),
+                        itemCount: state.accounts.length,
+                        separatorBuilder: (_, __) => const SizedBox(width: 12),
+                        itemBuilder: (context, i) {
+                          return MeshAccountCard(account: state.accounts[i]);
+                        },
+                      ),
+                    ),
+                  );
+                }
+                return const SizedBox.shrink();
+              },
+            ),
+            const SizedBox(height: 16),
+
+            // ── Planning & Tools ───────────────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: _SectionHeader(
+                title: 'Planning & Tools',
+                actionLabel: '',
+                onAction: null,
+              ),
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              height: 95,
+              child: ListView(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                scrollDirection: Axis.horizontal,
+                physics: const BouncingScrollPhysics(),
+                children: [
+                  _ToolCard(
+                    title: 'Budgets',
+                    icon: Icons.check_box_outlined,
+                    color: Colors.blueAccent,
+                    onTap: () => context.push('/budgets-main'),
+                  ),
+                  const SizedBox(width: 12),
+                  _ToolCard(
+                    title: 'Categories',
+                    icon: Icons.category_outlined,
+                    color: Colors.orangeAccent,
+                    onTap: () => context.push('/manage-categories'),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // ── Recent Transactions Header ─────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: _SectionHeader(
+                title: 'Recent Transactions',
+                actionLabel: 'See All',
+                onAction: () => context.push('/all-transactions'),
+              ),
+            ),
+            const SizedBox(height: 8),
+
+            // ── Transaction List ───────────────────────────────────────────
+            Expanded(
+              child: ClipRect(
+                child: BlocBuilder<TransactionCubit, TransactionState>(
+                  builder: (context, txState) {
+                  if (txState is TransactionLoading) {
+                    return ListView.builder(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      itemCount: 6,
+                      itemBuilder: (_, __) => const Padding(
+                        padding: EdgeInsets.only(bottom: 12),
+                        child: ShimmerTile(),
+                      ),
                     );
                   }
-                  if (state is AccountLoaded) {
-                    return SizedBox(
-                      height: 130,
-                      child: ScrollConfiguration(
-                        behavior: ScrollConfiguration.of(context).copyWith(
-                          dragDevices: {
-                            PointerDeviceKind.touch,
-                            PointerDeviceKind.mouse,
-                            PointerDeviceKind.trackpad,
-                          },
-                        ),
-                        child: ListView.separated(
-                          padding:
-                              const EdgeInsets.symmetric(horizontal: 20),
-                          scrollDirection: Axis.horizontal,
+                  if (txState is TransactionLoaded) {
+                    if (txState.transactions.isEmpty) {
+                      return const EmptyStateWidget();
+                    }
+                    return BlocBuilder<AccountCubit, AccountState>(
+                      builder: (context, accState) {
+                        final accounts = accState is AccountLoaded
+                            ? accState.accounts
+                            : <AccountEntity>[];
+                        // Show a reasonable number of recent transactions since it now scrolls independently
+                        final recentTransactions = txState.transactions.take(10).toList();
+                        return ListView(
+                          padding: const EdgeInsets.only(left: 20, right: 20, bottom: 20), // Reduced bottom padding
                           physics: const BouncingScrollPhysics(),
-                          itemCount: state.accounts.length,
-                          separatorBuilder: (_, __) =>
-                              const SizedBox(width: 12),
-                          itemBuilder: (context, i) {
-                            return MeshAccountCard(account: state.accounts[i]);
-                          },
-                        ),
-                      ),
+                          children: _buildGroupedItems(
+                            recentTransactions, accounts, context),
+                        );
+                      },
                     );
                   }
                   return const SizedBox.shrink();
                 },
               ),
-            ),
-
-            // ── Gap ────────────────────────────────────────────────────────
-            const SliverToBoxAdapter(child: SizedBox(height: 24)),
-
-            // ── Budgets Header ─────────────────────────────────────────────
-            BlocBuilder<BudgetCubit, BudgetState>(
-              builder: (context, budgetState) {
-                if (budgetState is BudgetLoaded && budgetState.summaries.isNotEmpty) {
-                  return SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: _SectionHeader(
-                        title: 'Monthly Budgets',
-                        actionLabel: 'See All',
-                        onAction: () => context.push('/budgets'),
-                      ),
-                    ),
-                  );
-                }
-                return SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: _SectionHeader(
-                      title: 'Monthly Budgets',
-                      actionLabel: '+ Add',
-                      onAction: () {
-                        showModalBottomSheet(
-                          context: context,
-                          isScrollControlled: true,
-                          backgroundColor: Colors.transparent,
-                          builder: (_) => const SetBudgetBottomSheet(),
-                        );
-                      },
-                    ),
-                  ),
-                );
-              },
-            ),
-
-            // ── Budgets List ───────────────────────────────────────────────
-            BlocBuilder<BudgetCubit, BudgetState>(
-              builder: (context, budgetState) {
-                if (budgetState is BudgetLoaded && budgetState.summaries.isNotEmpty) {
-                  final sortedSummaries = List.of(budgetState.summaries)
-                    ..sort((a, b) => b.progressPercentage.compareTo(a.progressPercentage));
-                  final topSummaries = sortedSummaries.take(3).toList();
-
-                  return SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
-                    sliver: SliverList(
-                      delegate: SliverChildBuilderDelegate(
-                        (context, index) {
-                          return BudgetProgressCard(
-                            summary: topSummaries[index],
-                          );
-                        },
-                        childCount: topSummaries.length,
-                      ),
-                    ),
-                  );
-                }
-                return const SliverToBoxAdapter(child: SizedBox.shrink());
-              },
-            ),
-            
-            // ── Gap ────────────────────────────────────────────────────────
-            const SliverToBoxAdapter(child: SizedBox(height: 24)),
-
-            // ── Recent Transactions Header ─────────────────────────────────
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: _SectionHeader(
-                  title: 'Recent Transactions',
-                  actionLabel: 'See All',
-                  onAction: () => context.push('/all-transactions'),
-                ),
               ),
             ),
-            const SliverToBoxAdapter(child: SizedBox(height: 8)),
-
-            // ── Transaction List ───────────────────────────────────────────
-            BlocBuilder<TransactionCubit, TransactionState>(
-              builder: (context, txState) {
-                if (txState is TransactionLoading) {
-                  return SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (_, __) => const Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 20),
-                        child: ShimmerTile(),
-                      ),
-                      childCount: 6,
-                    ),
-                  );
-                }
-                if (txState is TransactionLoaded) {
-                  if (txState.transactions.isEmpty) {
-                    return const SliverFillRemaining(
-                      hasScrollBody: false,
-                      child: EmptyStateWidget(),
-                    );
-                  }
-                  return BlocBuilder<AccountCubit, AccountState>(
-                    builder: (context, accState) {
-                      final accounts = accState is AccountLoaded
-                          ? accState.accounts
-                          : <AccountEntity>[];
-                      final recentTransactions = txState.transactions.take(2).toList();
-                      return SliverPadding(
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
-                        sliver: SliverList(
-                          delegate: SliverChildListDelegate(
-                            _buildGroupedItems(
-                                recentTransactions, accounts, context),
-                          ),
-                        ),
-                      );
-                    },
-                  );
-                }
-                return const SliverToBoxAdapter(child: SizedBox.shrink());
-              },
-            ),
-
-            // ── Bottom Padding for FAB ─────────────────────────────────────
-            const SliverToBoxAdapter(child: SizedBox(height: 100)),
           ],
         ),
       ),
-
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => context.push('/add-expense'),
-        backgroundColor: AppTheme.incomeColor,
-        elevation: 3,
-        child: const Icon(Icons.add_rounded, color: Colors.white, size: 28),
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 
@@ -295,14 +244,16 @@ class DashboardPage extends StatelessWidget {
 
     for (final tx in transactions) {
       final dateGroup  = AppFormatters.formatRelativeDate(tx.date);
-      String accountName = accounts
-          .firstWhere(
-            (a) => a.id == tx.accountId,
-            orElse: () => const AccountEntity(
-                id: '', name: 'Unknown', balance: 0,
-                type: AccountType.asset, userId: ''),
-          )
-          .name;
+      String accountName = tx.accountId == 'planned' 
+          ? 'Planned' 
+          : accounts
+              .firstWhere(
+                (a) => a.id == tx.accountId,
+                orElse: () => const AccountEntity(
+                    id: '', name: 'Unknown', balance: 0,
+                    type: AccountType.asset, userId: ''),
+              )
+              .name;
 
       if (tx.transferAccountId != null) {
         final targetName = accounts
@@ -344,92 +295,78 @@ class DashboardPage extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// App Bar
-// ─────────────────────────────────────────────────────────────────────────────
 
-class _DashboardAppBar extends StatelessWidget {
+class _ToolCard extends StatelessWidget {
+  final String title;
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _ToolCard({
+    required this.title,
+    required this.icon,
+    required this.color,
+    required this.onTap,
+  });
+
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    
-    final hour = DateTime.now().hour;
-    String greeting;
-    if (hour < 12) {
-      greeting = 'Good morning 👋';
-    } else if (hour < 17) {
-      greeting = 'Good afternoon 👋';
-    } else {
-      greeting = 'Good evening 👋';
-    }
-
-    return SliverAppBar(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      elevation: 0,
-      pinned: true,
-      titleSpacing: 20,
-      title: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            greeting,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
+    return Container(
+      width: 105,
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.6),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
-          Text('My Wallet', style: theme.textTheme.titleMedium),
         ],
+        border: Border.all(color: Colors.white.withOpacity(0.8), width: 1.5),
       ),
-      actions: [
-        if (FirebaseAuth.instance.currentUser?.email == 'admin@gmail.com')
-          IconButton(
-            tooltip: 'Data Inspector',
-            onPressed: () => GoRouter.of(context).push('/debug'),
-            icon: Icon(Icons.bug_report_outlined,
-                color: theme.colorScheme.onSurfaceVariant),
-          ),
-        Padding(
-          padding: const EdgeInsets.only(right: 16),
-          child: PopupMenuButton<String>(
-            onSelected: (value) {
-              if (value == 'logout') {
-                context.read<AuthCubit>().logout();
-              }
-            },
-            itemBuilder: (context) => [
-              const PopupMenuItem(
-                value: 'logout',
-                child: Row(
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: onTap,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 6.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.logout, size: 20),
-                    SizedBox(width: 8),
-                    Text('Logout'),
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: color.withOpacity(0.15),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(icon, color: color, size: 24),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      title,
+                      style: TextStyle(
+                        color: Colors.grey.shade800,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 12,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ],
-                ),
-              ),
-            ],
-            child: CircleAvatar(
-              radius: 18,
-              backgroundColor: theme.colorScheme.surfaceContainerHighest,
-              child: Text(
-                FirebaseAuth.instance.currentUser?.email?.substring(0, 1).toUpperCase() ?? 'U',
-                style: theme.textTheme.labelLarge?.copyWith(
-                  color: theme.colorScheme.onSurface,
                 ),
               ),
             ),
           ),
         ),
-      ],
+      ),
     );
   }
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-
-
-
-
-
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Section Header

@@ -7,12 +7,12 @@ class AppTheme {
   AppTheme._();
 
   // ─── Brand Colour Palette ───────────────────────────────────────────────────
-  static const Color _primaryColor   = Color(0xFF10B981); // mint/teal green
-  static const Color _secondaryColor = Color(0xFF059669); // darker teal
+  static const Color _primaryColor   = Color(0xFF7C3AED); // vibrant purple
+  static const Color _secondaryColor = Color(0xFF6D28D9); // darker purple
   static const Color _errorColor     = Color(0xFFEF4444);
 
   // ─── Semantic Colours (used directly by widgets) ────────────────────────────
-  static const Color incomeColor  = Color(0xFF10B981); // matches primary teal
+  static const Color incomeColor  = Color(0xFF10B981); // clean green
   static const Color expenseColor = Color(0xFFEF4444); // clean red
   static const Color savingsColor = Color(0xFF42A5F5);
 
@@ -31,10 +31,10 @@ class AppTheme {
   static const Color _darkSubtle   = Color(0xFF8888AA); // secondary text
 
   // ─── Light surface tokens ────────────────────────────────────────────────────
-  static const Color _lightScaffold = Color(0xFFF5F7FA); // very light grey-white
+  static const Color _lightScaffold = Color(0xFFF5F3FF); // soft lilac background
   static const Color _lightSurface  = Color(0xFFFFFFFF); // pure white cards
-  static const Color _lightElevated = Color(0xFFE8FDF5); // pale mint tint
-  static const Color _lightBorder   = Color(0xFFE8EDF2); // barely-there border
+  static const Color _lightElevated = Color(0xFFFFFFFF); // elevated white
+  static const Color _lightBorder   = Color(0xFFE5E7EB); // subtle grey border
   static const Color _lightSubtle   = Color(0xFF9CA3AF); // neutral grey text
 
   // ─── Shared text theme builder ───────────────────────────────────────────────
@@ -94,7 +94,7 @@ class AppTheme {
           elevation: 0,
           margin: EdgeInsets.zero,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(24),
             side: const BorderSide(color: _darkBorder, width: 1),
           ),
         ),
@@ -120,12 +120,23 @@ class AppTheme {
           selectedLabelStyle: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
           unselectedLabelStyle: TextStyle(fontSize: 12),
         ),
+        
+        navigationRailTheme: NavigationRailThemeData(
+          backgroundColor: _darkScaffold,
+          selectedIconTheme: const IconThemeData(color: Colors.white),
+          unselectedIconTheme: const IconThemeData(color: _darkSubtle),
+          selectedLabelTextStyle: const TextStyle(color: _primaryColor, fontWeight: FontWeight.w600),
+          unselectedLabelTextStyle: const TextStyle(color: _darkSubtle),
+          indicatorColor: _primaryColor,
+          indicatorShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
+        ),
 
-        floatingActionButtonTheme: const FloatingActionButtonThemeData(
+        floatingActionButtonTheme: FloatingActionButtonThemeData(
           backgroundColor: _primaryColor,
           foregroundColor: Colors.white,
           elevation: 4,
-          extendedPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 0),
+          extendedPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 0),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         ),
 
         elevatedButtonTheme: ElevatedButtonThemeData(
@@ -133,7 +144,7 @@ class AppTheme {
             backgroundColor: _primaryColor,
             foregroundColor: Colors.white,
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
             textStyle: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600),
             elevation: 0,
           ),
@@ -144,15 +155,15 @@ class AppTheme {
           fillColor: _darkSurface,
           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(16),
             borderSide: const BorderSide(color: _darkBorder),
           ),
           enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(16),
             borderSide: const BorderSide(color: _darkBorder),
           ),
           focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(16),
             borderSide: const BorderSide(color: _primaryColor, width: 2),
           ),
           labelStyle: const TextStyle(color: _darkSubtle),
@@ -161,10 +172,10 @@ class AppTheme {
 
         chipTheme: ChipThemeData(
           backgroundColor: _darkBorder,
-          selectedColor: Color.fromRGBO(108, 99, 255, 0.3),
+          selectedColor: const Color.fromRGBO(124, 58, 237, 0.3),
           labelStyle: GoogleFonts.inter(fontSize: 13),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
         ),
 
         snackBarTheme: SnackBarThemeData(
@@ -210,13 +221,13 @@ class AppTheme {
 
         cardTheme: CardThemeData(
           color: _lightSurface,
-          elevation: 0,
+          elevation: 8,
           margin: EdgeInsets.zero,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(24),
             side: const BorderSide(color: _lightBorder, width: 1),
           ),
-          shadowColor: Color.fromRGBO(108, 99, 255, 0.08),
+          shadowColor: const Color.fromRGBO(124, 58, 237, 0.08),
         ),
 
         listTileTheme: const ListTileThemeData(
@@ -241,11 +252,22 @@ class AppTheme {
           unselectedLabelStyle: TextStyle(fontSize: 12),
         ),
 
-        floatingActionButtonTheme: const FloatingActionButtonThemeData(
+        navigationRailTheme: NavigationRailThemeData(
+          backgroundColor: _lightSurface,
+          selectedIconTheme: const IconThemeData(color: Colors.white),
+          unselectedIconTheme: const IconThemeData(color: _lightSubtle),
+          selectedLabelTextStyle: const TextStyle(color: _primaryColor, fontWeight: FontWeight.w600),
+          unselectedLabelTextStyle: const TextStyle(color: _lightSubtle),
+          indicatorColor: _primaryColor,
+          indicatorShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
+        ),
+
+        floatingActionButtonTheme: FloatingActionButtonThemeData(
           backgroundColor: _primaryColor,
           foregroundColor: Colors.white,
           elevation: 4,
-          extendedPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 0),
+          extendedPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 0),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         ),
 
         elevatedButtonTheme: ElevatedButtonThemeData(
@@ -253,7 +275,7 @@ class AppTheme {
             backgroundColor: _primaryColor,
             foregroundColor: Colors.white,
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
             textStyle: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600),
             elevation: 0,
           ),
@@ -264,15 +286,15 @@ class AppTheme {
           fillColor: _lightElevated,
           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(16),
             borderSide: const BorderSide(color: _lightBorder),
           ),
           enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(16),
             borderSide: const BorderSide(color: _lightBorder),
           ),
           focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(16),
             borderSide: const BorderSide(color: _primaryColor, width: 2),
           ),
           labelStyle: const TextStyle(color: _lightSubtle),
@@ -281,10 +303,10 @@ class AppTheme {
 
         chipTheme: ChipThemeData(
           backgroundColor: _lightElevated,
-          selectedColor: Color.fromRGBO(108, 99, 255, 0.15),
+          selectedColor: const Color.fromRGBO(124, 58, 237, 0.15),
           labelStyle: GoogleFonts.inter(fontSize: 13),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
         ),
 
         snackBarTheme: SnackBarThemeData(

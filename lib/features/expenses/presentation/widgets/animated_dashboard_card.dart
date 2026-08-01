@@ -8,12 +8,14 @@ class AnimatedDashboardCard extends StatefulWidget {
   final double totalBalance;
   final double totalIncome;
   final double totalExpense;
+  final double fixedExpenses;
 
   const AnimatedDashboardCard({
     super.key,
     required this.totalBalance,
     required this.totalIncome,
     required this.totalExpense,
+    required this.fixedExpenses,
   });
 
   @override
@@ -158,6 +160,18 @@ class _AnimatedDashboardCardState extends State<AnimatedDashboardCard>
                           value: AppFormatters.formatCurrency(widget.totalExpense),
                         ),
                       ),
+                      Container(
+                        width: 1,
+                        height: 36,
+                        color: Colors.white.withOpacity(0.3),
+                      ),
+                      Expanded(
+                        child: _CardStat(
+                          icon: Icons.lock_outline_rounded,
+                          label: 'Fixed',
+                          value: AppFormatters.formatCurrency(widget.fixedExpenses),
+                        ),
+                      ),
                     ],
                   ),
                 ],
@@ -184,21 +198,21 @@ class _CardStat extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 4),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(7),
+            padding: const EdgeInsets.all(6),
             decoration: BoxDecoration(
               color: Colors.white.withOpacity(0.25),
-              borderRadius: BorderRadius.circular(9),
+              borderRadius: BorderRadius.circular(8),
               boxShadow: const [
                 BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2))
               ],
             ),
-            child: Icon(icon, color: Colors.white, size: 15),
+            child: Icon(icon, color: Colors.white, size: 14),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 6),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -207,23 +221,26 @@ class _CardStat extends StatelessWidget {
                   label,
                   style: const TextStyle(
                     color: Colors.white70,
-                    fontSize: 11,
+                    fontSize: 10,
                     shadows: [
                       Shadow(color: Colors.black45, blurRadius: 3, offset: Offset(0, 1)),
                     ],
                   ),
                 ),
-                Text(
-                  value,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    shadows: [
-                      Shadow(color: Colors.black54, blurRadius: 4, offset: Offset(0, 2)),
-                    ],
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    value,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      shadows: [
+                        Shadow(color: Colors.black54, blurRadius: 4, offset: Offset(0, 2)),
+                      ],
+                    ),
                   ),
-                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),

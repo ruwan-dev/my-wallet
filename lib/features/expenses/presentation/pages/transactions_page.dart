@@ -138,7 +138,9 @@ class _TransactionsPageState extends State<TransactionsPage> {
                   itemCount: transactions.length,
                   itemBuilder: (context, index) {
                     final tx = transactions[index];
-                    final accountName = accounts
+                    final accountName = tx.accountId == 'planned'
+                        ? 'Planned'
+                        : accounts
                             .where((a) => a.id == tx.accountId)
                             .firstOrNull
                             ?.name ??

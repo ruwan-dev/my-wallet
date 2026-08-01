@@ -19,6 +19,7 @@ class TransactionModel {
   final DateTime? nextDueDate;
   final String? transferAccountId;
   final bool isFavorite;
+  final bool isFixedExpense;
 
   TransactionModel({
     required this.id,
@@ -38,6 +39,7 @@ class TransactionModel {
     this.nextDueDate,
     this.transferAccountId,
     this.isFavorite = false,
+    this.isFixedExpense = false,
   });
 
   factory TransactionModel.fromEntity(TransactionEntity entity) {
@@ -59,6 +61,7 @@ class TransactionModel {
       nextDueDate: entity.nextDueDate,
       transferAccountId: entity.transferAccountId,
       isFavorite: entity.isFavorite,
+      isFixedExpense: entity.isFixedExpense,
     );
   }
 
@@ -81,6 +84,7 @@ class TransactionModel {
       nextDueDate: nextDueDate,
       transferAccountId: transferAccountId,
       isFavorite: isFavorite,
+      isFixedExpense: isFixedExpense,
     );
   }
 
@@ -103,6 +107,7 @@ class TransactionModel {
       nextDueDate: data['nextDueDate'] != null ? (data['nextDueDate'] as Timestamp).toDate() : null,
       transferAccountId: data['transferAccountId'],
       isFavorite: data['isFavorite'] ?? false,
+      isFixedExpense: data['isFixedExpense'] ?? false,
     );
   }
 
@@ -124,6 +129,7 @@ class TransactionModel {
       if (nextDueDate != null) 'nextDueDate': Timestamp.fromDate(nextDueDate!),
       if (transferAccountId != null) 'transferAccountId': transferAccountId,
       'isFavorite': isFavorite,
+      'isFixedExpense': isFixedExpense,
     };
   }
 }

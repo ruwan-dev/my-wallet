@@ -22,6 +22,16 @@ class AccountsPage extends StatelessWidget {
         title: const Text('My Accounts'),
         backgroundColor: Colors.transparent,
         elevation: 0,
+        actions: [
+          IconButton(
+            onPressed: () => _showAddEditAccountDialog(context),
+            icon: const Icon(Icons.add_circle_outline_rounded, size: 28),
+            color: AppTheme.incomeColor,
+            splashRadius: 24,
+            tooltip: 'Add Account',
+          ),
+          const SizedBox(width: 12),
+        ],
       ),
       body: BlocBuilder<AccountCubit, AccountState>(
         builder: (context, state) {
@@ -54,18 +64,13 @@ class AccountsPage extends StatelessWidget {
           return const SizedBox.shrink();
         },
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _showAddAccountDialog(context),
-        backgroundColor: AppTheme.incomeColor,
-        child: const Icon(Icons.add, color: Colors.white),
-      ),
     );
   }
 
-  void _showAddAccountDialog(BuildContext context) {
+  void _showAddEditAccountDialog(BuildContext context, [AccountEntity? account]) {
     showDialog(
       context: context,
-      builder: (ctx) => const _AddAccountDialog(),
+      builder: (ctx) => _AddEditAccountDialog(account: account),
     );
   }
 }
@@ -192,6 +197,16 @@ class _AccountListTile extends StatelessWidget {
                 ],
               ],
             ),
+            const SizedBox(width: 8),
+            IconButton(
+              icon: Icon(Icons.edit_rounded, color: theme.colorScheme.onSurfaceVariant, size: 20),
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  builder: (ctx) => _AddEditAccountDialog(account: account),
+                );
+              },
+            ),
           ],
         ),
       ),
@@ -199,14 +214,15 @@ class _AccountListTile extends StatelessWidget {
   }
 }
 
-class _AddAccountDialog extends StatefulWidget {
-  const _AddAccountDialog();
+class _AddEditAccountDialog extends StatefulWidget {
+  final AccountEntity? account;
+  const _AddEditAccountDialog({this.account});
 
   @override
-  State<_AddAccountDialog> createState() => _AddAccountDialogState();
+  State<_AddEditAccountDialog> createState() => _AddEditAccountDialogState();
 }
 
-class _AddAccountDialogState extends State<_AddAccountDialog> {
+class _AddEditAccountDialogState extends State<_AddEditAccountDialog> {
   final _nameController = TextEditingController();
   final _balanceController = TextEditingController();
   final _limitController = TextEditingController();
@@ -221,6 +237,22 @@ class _AddAccountDialogState extends State<_AddAccountDialog> {
     Color(0xFF00BCD4), // Cyan
   ];
   int _selectedColorIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.account != null) {
+      _nameController.text = widget.account!.name;
+      _balanceController.text = widget.account!.balance.toString();
+      _limitController.text = widget.account!.creditLimit.toString();
+      _selectedType = widget.account!.type;
+      
+      final colorIndex = _availableColors.indexWhere((c) => c.value == widget.account!.colorValue);
+      if (colorIndex != -1) {
+        _selectedColorIndex = colorIndex;
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -244,7 +276,7 @@ class _AddAccountDialogState extends State<_AddAccountDialog> {
     final userId = authState is AuthAuthenticated ? authState.userId : '';
     
     final newAccount = AccountEntity(
-      id: '',
+      id: widget.account?.id ?? '',
       name: name,
       balance: balance,
       creditLimit: _selectedType == AccountType.liability ? limit : 0.0,
@@ -253,14 +285,18 @@ class _AddAccountDialogState extends State<_AddAccountDialog> {
       colorValue: _availableColors[_selectedColorIndex].value,
     );
 
-    context.read<AccountCubit>().addAccount(newAccount);
+    if (widget.account != null) {
+      context.read<AccountCubit>().updateAccount(newAccount);
+    } else {
+      context.read<AccountCubit>().addAccount(newAccount);
+    }
     Navigator.pop(context);
   }
 
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Add Account'),
+      title: Text(widget.account != null ? 'Edit Account' : 'Add Account'),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -333,8 +369,8 @@ class _AddAccountDialogState extends State<_AddAccountDialog> {
           child: const Text('Cancel'),
         ),
         ElevatedButton(
-          onPressed: _submit, // We will implement _submit later after adding method to AccountCubit
-          child: const Text('Add'),
+          onPressed: _submit,
+          child: Text(widget.account != null ? 'Save' : 'Add'),
         ),
       ],
     );

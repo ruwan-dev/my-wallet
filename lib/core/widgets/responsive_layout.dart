@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 // ─── Core Breakpoints ────────────────────────────────────────────────────────
 
@@ -76,16 +77,40 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
       label: 'Accounts',
     ),
     NavigationDestination(
-      icon: Icon(Icons.category_outlined),
-      selectedIcon: Icon(Icons.category_rounded),
-      label: 'Categories',
-    ),
-    NavigationDestination(
       icon: Icon(Icons.person_outline_rounded),
       selectedIcon: Icon(Icons.person_rounded),
       label: 'Profile',
     ),
   ];
+
+  Widget _buildNavItem(int index, IconData icon, IconData activeIcon, String label) {
+    final isSelected = widget.currentIndex == index;
+    final color = isSelected ? Theme.of(context).colorScheme.primary : Colors.grey.shade500;
+    
+    return InkWell(
+      onTap: () => widget.onNavigation?.call(index),
+      borderRadius: BorderRadius.circular(16),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(isSelected ? activeIcon : icon, color: color, size: 24),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: TextStyle(
+                color: color,
+                fontSize: 10,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -128,15 +153,53 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
 
       // Only show bottom navigation on mobile
       bottomNavigationBar: MediaQuery.of(context).size.width < kMobileMaxWidth
-          ? NavigationBar(
-              selectedIndex: widget.currentIndex,
-              onDestinationSelected: widget.onNavigation,
-              destinations: _destinations,
+          ? BottomAppBar(
+              shape: const CircularNotchedRectangle(),
+              notchMargin: 8.0,
+              child: SizedBox(
+                height: 60,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _buildNavItem(0, Icons.home_outlined, Icons.home_rounded, 'Home'),
+                    _buildNavItem(1, Icons.bar_chart_outlined, Icons.bar_chart_rounded, 'Analytics'),
+                    const SizedBox(width: 48), // Space for FAB
+                    _buildNavItem(2, Icons.account_balance_wallet_outlined, Icons.account_balance_wallet_rounded, 'Accounts'),
+                    _buildNavItem(3, Icons.person_outline_rounded, Icons.person_rounded, 'Profile'),
+                  ],
+                ),
+              ),
             )
           : null,
 
-      floatingActionButton: widget.floatingActionButton,
-      floatingActionButtonLocation: widget.floatingActionButtonLocation,
+      floatingActionButton: MediaQuery.of(context).size.width < kMobileMaxWidth
+          ? Container(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF10B981), Color(0xFF059669)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF10B981).withOpacity(0.4),
+                    blurRadius: 12,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: FloatingActionButton(
+                onPressed: () => context.push('/add-expense'),
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+                child: const Icon(Icons.add_rounded, color: Colors.white, size: 28),
+              ),
+            )
+          : widget.floatingActionButton,
+      floatingActionButtonLocation: MediaQuery.of(context).size.width < kMobileMaxWidth
+          ? FloatingActionButtonLocation.centerDocked
+          : widget.floatingActionButtonLocation,
     );
   }
 }

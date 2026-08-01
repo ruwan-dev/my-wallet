@@ -50,10 +50,10 @@ class RecurringTimelineWidget extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         child: Stack(
           children: [
-            // Background Canvas Drawing the Git-Branch Lines
+            // Background Canvas Drawing the Timeline
             Positioned.fill(
               child: CustomPaint(
-                painter: _GitBranchTimelinePainter(
+                painter: _StraightTimelinePainter(
                   events: events,
                   rowHeight: rowHeight,
                 ),
@@ -65,14 +65,10 @@ class RecurringTimelineWidget extends StatelessWidget {
               children: List.generate(events.length, (index) {
                 final event = events[index];
                 
-                bool isDivergent = event.actualDate != null && 
-                  (event.statusText.toLowerCase().contains('early') || 
-                   event.statusText.toLowerCase().contains('late'));
-                
                 return Container(
                   height: rowHeight,
-                  padding: EdgeInsets.only(
-                    left: isDivergent ? 110.0 : 70.0, // Indent based on whether node is on trunk or branch
+                  padding: const EdgeInsets.only(
+                    left: 60.0,
                     right: 16.0,
                   ),
                   alignment: Alignment.centerLeft,
@@ -128,11 +124,11 @@ class RecurringTimelineWidget extends StatelessWidget {
   }
 }
 
-class _GitBranchTimelinePainter extends CustomPainter {
+class _StraightTimelinePainter extends CustomPainter {
   final List<RecurringBranchEvent> events;
   final double rowHeight;
 
-  _GitBranchTimelinePainter({
+  _StraightTimelinePainter({
     required this.events,
     required this.rowHeight,
   });
@@ -140,7 +136,6 @@ class _GitBranchTimelinePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final double trunkX = 30.0;
-    final double branchX = 80.0; // The X coordinate for divergent branches
 
     final trunkPaint = Paint()
       ..color = const Color(0xFFE2E8F0) // slate-200
@@ -148,14 +143,13 @@ class _GitBranchTimelinePainter extends CustomPainter {
       ..style = PaintingStyle.stroke;
 
     // 1. Draw the theoretical schedule Trunk Line from top to bottom
-    // We stop at the last element's Y center
     final lastY = ((events.length - 1) * rowHeight) + (rowHeight / 2);
     final firstY = rowHeight / 2;
     if (events.length > 1) {
       canvas.drawLine(Offset(trunkX, firstY), Offset(trunkX, lastY), trunkPaint);
     }
 
-    // 2. Draw lines for Actual Payments (branches and merges)
+    // 2. Draw lines for Actual Payments straight down the trunk
     for (int i = 0; i < events.length; i++) {
       final event = events[i];
       final y = (i * rowHeight) + (rowHeight / 2);
@@ -167,77 +161,37 @@ class _GitBranchTimelinePainter extends CustomPainter {
           ..style = PaintingStyle.stroke
           ..strokeCap = StrokeCap.round;
 
-        bool isDivergent = event.actualDate != null && 
-                  (event.statusText.toLowerCase().contains('early') || 
-                   event.statusText.toLowerCase().contains('late'));
-
-        if (isDivergent) {
-          final path = Path();
-          
-          double startY = i == 0 ? 0 : y - (rowHeight / 2);
-          double endY = i == events.length - 1 ? size.height : y + (rowHeight / 2);
-
-          // Start from trunk
-          path.moveTo(trunkX, startY);
-          
-          // Curve out to branch node
-          path.cubicTo(
-            trunkX, startY + 15,
-            branchX, y - 15,
-            branchX, y,
-          );
-          
-          // Curve back to trunk if it's not the very last event
-          if (i != events.length - 1) {
-            path.cubicTo(
-              branchX, y + 15,
-              trunkX, endY - 15,
-              trunkX, endY,
-            );
-          }
-
-          canvas.drawPath(path, branchPaint);
-        } else {
-          // On time: draw the colored line directly OVER the trunk for this segment
-          double startY = i == 0 ? y : y - (rowHeight / 2);
-          double endY = i == events.length - 1 ? y : y + (rowHeight / 2);
-          canvas.drawLine(Offset(trunkX, startY), Offset(trunkX, endY), branchPaint);
-        }
+        double startY = i == 0 ? y : y - (rowHeight / 2);
+        double endY = i == events.length - 1 ? y : y + (rowHeight / 2);
+        canvas.drawLine(Offset(trunkX, startY), Offset(trunkX, endY), branchPaint);
       }
     }
 
-    // 3. Draw Nodes (Dots) on top of lines
+    // 3. Draw Nodes (Dots) strictly on the single line
     for (int i = 0; i < events.length; i++) {
       final event = events[i];
       final y = (i * rowHeight) + (rowHeight / 2);
 
-      bool isDivergent = event.isPaid && event.actualDate != null && 
-                  (event.statusText.toLowerCase().contains('early') || 
-                   event.statusText.toLowerCase().contains('late'));
-
-      // Draw the Scheduled trunk dot (small, grey)
+      // Base dot
       final trunkDotPaint = Paint()
         ..color = const Color(0xFFCBD5E1) // slate-300
         ..style = PaintingStyle.fill;
       canvas.drawCircle(Offset(trunkX, y), 5, trunkDotPaint);
 
-      // Draw the Actual Payment dot (colored)
       if (event.isPaid) {
-        final double nodeX = isDivergent ? branchX : trunkX;
-
         // Outer colored ring
         final nodeOuterPaint = Paint()
           ..color = event.statusColor
           ..style = PaintingStyle.fill;
-        canvas.drawCircle(Offset(nodeX, y), 8, nodeOuterPaint);
+        canvas.drawCircle(Offset(trunkX, y), 8, nodeOuterPaint);
 
         // Inner white circle
         final nodeInnerPaint = Paint()
           ..color = Colors.white
           ..style = PaintingStyle.fill;
-        canvas.drawCircle(Offset(nodeX, y), 4, nodeInnerPaint);
+        canvas.drawCircle(Offset(trunkX, y), 4, nodeInnerPaint);
       } else {
-        // Pending Payment: Draw a hollow colored ring over the trunk dot
+        // Pending Payment: hollow ring
         final pendingPaint = Paint()
           ..color = event.statusColor
           ..strokeWidth = 2.0
@@ -248,7 +202,7 @@ class _GitBranchTimelinePainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _GitBranchTimelinePainter oldDelegate) {
+  bool shouldRepaint(covariant _StraightTimelinePainter oldDelegate) {
     return oldDelegate.events != events || oldDelegate.rowHeight != rowHeight;
   }
 }

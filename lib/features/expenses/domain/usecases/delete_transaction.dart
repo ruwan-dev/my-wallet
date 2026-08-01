@@ -14,7 +14,11 @@ class DeleteTransactionUseCase implements UseCase<void, TransactionEntity> {
 
   @override
   Future<Either<Failure, void>> call(TransactionEntity params) async {
-    // 1. Revert account balance
+    // 1. Revert account balance (if not planned)
+    if (params.accountId == 'planned') {
+      return transactionRepository.deleteTransaction(params.userId, params.id);
+    }
+
     final accountResult = await accountRepository.getAccount(params.userId, params.accountId);
     
     return accountResult.fold(

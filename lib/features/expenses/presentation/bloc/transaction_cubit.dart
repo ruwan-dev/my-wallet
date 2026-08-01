@@ -85,6 +85,25 @@ class TransactionCubit extends Cubit<TransactionState> {
 
 
 
+  double get currentMonthFixedExpenses {
+    if (state is! TransactionLoaded) return 0.0;
+    
+    final transactions = (state as TransactionLoaded).transactions;
+    final now = DateTime.now();
+    double total = 0.0;
+    
+    for (final tx in transactions) {
+      if (!tx.isIncome && 
+          tx.isFixedExpense && 
+          tx.date.year == now.year && 
+          tx.date.month == now.month) {
+        total += tx.amount;
+      }
+    }
+    
+    return total;
+  }
+
   @override
   Future<void> close() {
     _subscription?.cancel();

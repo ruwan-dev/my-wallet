@@ -15,8 +15,9 @@ class MeshAccountCard extends StatelessWidget {
     final baseColor = Color(account.colorValue);
 
     return Container(
-      width: 180, // Same width as original _AccountCard
-      height: 110, // Same approximate height
+      width: 170, // Slightly narrower
+      height: 95, // Decreased height
+
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
@@ -60,7 +61,7 @@ class MeshAccountCard extends StatelessWidget {
             
             // Card Content
             Padding(
-              padding: const EdgeInsets.all(14.0),
+              padding: const EdgeInsets.all(12.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -68,7 +69,7 @@ class MeshAccountCard extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       // Chip icon
-                      Icon(Icons.memory, color: baseColor.withOpacity(0.8), size: 24),
+                      Icon(Icons.memory, color: baseColor.withOpacity(0.8), size: 20),
                       
                       // Account type label
                       Container(
@@ -95,7 +96,7 @@ class MeshAccountCard extends StatelessWidget {
                     account.name,
                     style: TextStyle(
                       color: Colors.grey.shade600,
-                      fontSize: 12,
+                      fontSize: 11,
                       fontWeight: FontWeight.w500,
                     ),
                     maxLines: 1,
@@ -106,7 +107,7 @@ class MeshAccountCard extends StatelessWidget {
                     AppFormatters.formatCurrency(account.balance.abs()),
                     style: const TextStyle(
                       color: Color(0xFF1E293B), // Dark Slate
-                      fontSize: 18,
+                      fontSize: 16,
                       fontWeight: FontWeight.bold,
                       letterSpacing: -0.5,
                     ),

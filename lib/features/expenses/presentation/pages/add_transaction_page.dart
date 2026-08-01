@@ -55,6 +55,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
   String? _recurrenceFrequency;
   final _amountController = TextEditingController();
   bool _isSaving = false;
+  bool _isFixedExpense = false;
 
   // ── Init ─────────────────────────────────────────────────────────────────
   @override
@@ -86,6 +87,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
       final raw = e.amount.toStringAsFixed(2);
       _amountController.text =
           raw.endsWith('.00') ? raw.substring(0, raw.length - 3) : raw;
+      _isFixedExpense = e.isFixedExpense;
     }
   }
 
@@ -123,7 +125,11 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
 
   void _advance() {
     if (_currentStep >= _kTotalSteps - 1) return;
-    setState(() => _currentStep++);
+    int nextStep = _currentStep + 1;
+    if (_isFixedExpense && nextStep == 2) {
+      nextStep = 3; // Skip Account step
+    }
+    setState(() => _currentStep = nextStep);
     _pageController.animateToPage(
       _currentStep,
       duration: const Duration(milliseconds: 380),
@@ -133,7 +139,11 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
 
   void _back() {
     if (_currentStep > 0) {
-      setState(() => _currentStep--);
+      int prevStep = _currentStep - 1;
+      if (_isFixedExpense && prevStep == 2) {
+        prevStep = 1; // Skip Account step backwards
+      }
+      setState(() => _currentStep = prevStep);
       _pageController.animateToPage(
         _currentStep,
         duration: const Duration(milliseconds: 380),
@@ -165,7 +175,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
       _snack('Enter a valid amount greater than zero');
       return;
     }
-    if (_selectedAccount == null) {
+    if (!_isFixedExpense && _selectedAccount == null) {
       _snack('Please select an account first');
       return;
     }
@@ -225,7 +235,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
 
     final tx = TransactionEntity(
       id:           widget.existingTransaction?.id ?? '',
-      accountId:    _selectedAccount!.id,
+      accountId:    _isFixedExpense ? 'planned' : _selectedAccount!.id,
       userId:       '',
       title:        title,
       amount:       amount,
@@ -240,6 +250,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
       recurrenceFrequency: freq == 'None' ? null : freq,
       nextDueDate:  nextDueDate,
       transferAccountId: _transferTargetAccount?.id,
+      isFixedExpense: _isFixedExpense,
     );
 
     if (widget.existingTransaction == null) {
@@ -358,10 +369,11 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
               children: [
                 // Step 1 — Type
                 _Step1Type(
-                  onSelected: (value) {
+                  onSelected: (isIncome, isFixedExpense) {
                     setState(() {
-                      _isIncome = value;
-                      final typeCategories = DefaultCategories.all.where((c) => c.isIncome == value).toList();
+                      _isIncome = isIncome;
+                      _isFixedExpense = isFixedExpense;
+                      final typeCategories = DefaultCategories.all.where((c) => c.isIncome == isIncome).toList();
                       if (typeCategories.isNotEmpty && !typeCategories.any((c) => c.id == _selectedCategory.id)) {
                         _selectedCategory = typeCategories.first;
                         _categoryExplicitlySet = false;
@@ -491,7 +503,7 @@ class _StepProgressBar extends StatelessWidget {
 // ─── Step 1: Transaction Type ─────────────────────────────────────────────────
 
 class _Step1Type extends StatelessWidget {
-  final ValueChanged<bool> onSelected;
+  final void Function(bool isIncome, bool isFixedExpense) onSelected;
   final void Function(TransactionEntity) onFavoriteTapped;
 
   const _Step1Type({
@@ -527,7 +539,7 @@ class _Step1Type extends StatelessWidget {
             label: 'Expense',
             sublabel: 'Money going out',
             color: AppTheme.expenseColor,
-            onTap: () => onSelected(false),
+            onTap: () => onSelected(false, false),
           ),
           const SizedBox(height: 16),
           _TypeCard(
@@ -535,7 +547,15 @@ class _Step1Type extends StatelessWidget {
             label: 'Income',
             sublabel: 'Money coming in',
             color: AppTheme.incomeColor,
-            onTap: () => onSelected(true),
+            onTap: () => onSelected(true, false),
+          ),
+          const SizedBox(height: 16),
+          _TypeCard(
+            emoji: '🔒',
+            label: 'Planned Fixed Expense',
+            sublabel: 'Mandatory planned overhead',
+            color: theme.colorScheme.primary,
+            onTap: () => onSelected(false, true),
           ),
           const SizedBox(height: 48),
 

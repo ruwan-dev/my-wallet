@@ -22,6 +22,7 @@ import '../../features/auth/data/repositories/firebase_auth_repository_impl.dart
 import '../../features/auth/presentation/bloc/auth_cubit.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../features/expenses/domain/usecases/add_account.dart';
+import '../../features/expenses/domain/usecases/update_account.dart';
 import '../../features/expenses/domain/usecases/delete_account.dart';
 import '../../features/expenses/domain/usecases/add_transaction.dart';
 import '../../features/expenses/domain/usecases/delete_transaction.dart';
@@ -36,6 +37,13 @@ import '../../features/expenses/data/datasources/budget_remote_datasource.dart';
 import '../../features/expenses/data/repositories/budget_repository_impl.dart';
 import '../../features/expenses/domain/repositories/budget_repository.dart';
 import '../../features/expenses/presentation/bloc/budget_cubit.dart';
+import '../../features/expenses/domain/repositories/monthly_budget_repository.dart';
+import '../../features/expenses/data/repositories/monthly_budget_repository_impl.dart';
+import '../../features/expenses/presentation/bloc/monthly_budget_cubit.dart';
+
+import '../../features/budgets/domain/repositories/custom_budget_repository.dart';
+import '../../features/budgets/data/repositories/custom_budget_repository_impl.dart';
+import '../../features/budgets/presentation/bloc/custom_budget_cubit.dart';
 
 final sl = GetIt.instance;
 
@@ -79,9 +87,16 @@ Future<void> configureDependencies() async {
   sl.registerLazySingleton<BudgetRepository>(
     () => BudgetRepositoryImpl(sl()),
   );
+  sl.registerLazySingleton<MonthlyBudgetRepository>(
+    () => MonthlyBudgetRepositoryImpl(sl()),
+  );
+  sl.registerLazySingleton<CustomBudgetRepository>(
+    () => CustomBudgetRepositoryImpl(sl()),
+  );
 
   // --- UseCases ---
   sl.registerLazySingleton(() => AddAccountUseCase(sl()));
+  sl.registerLazySingleton(() => UpdateAccountUseCase(sl()));
   sl.registerLazySingleton(() => DeleteAccountUseCase(sl()));
   sl.registerLazySingleton(() => WatchAccountsUseCase(sl()));
 
@@ -96,6 +111,7 @@ Future<void> configureDependencies() async {
     () => AccountCubit(
       watchAccounts: sl(),
       addAccount: sl(),
+      updateAccount: sl(),
       deleteAccount: sl(),
       authRepository: sl(),
     ),
@@ -127,6 +143,17 @@ Future<void> configureDependencies() async {
       budgetRepository: sl(),
       transactionCubit: sl(),
       authRepository: sl(),
+    ),
+  );
+
+  sl.registerLazySingleton(
+    () => MonthlyBudgetCubit(repository: sl()),
+  );
+
+  sl.registerLazySingleton(
+    () => CustomBudgetCubit(
+      repository: sl(),
+      authCubit: sl(),
     ),
   );
 }

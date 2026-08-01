@@ -18,6 +18,7 @@ class TransactionEntity extends Equatable {
   final DateTime? nextDueDate;
   final String? transferAccountId;
   final bool isFavorite;
+  final bool isFixedExpense;
 
   const TransactionEntity({
     required this.id,
@@ -37,6 +38,7 @@ class TransactionEntity extends Equatable {
     this.nextDueDate,
     this.transferAccountId,
     this.isFavorite = false,
+    this.isFixedExpense = false,
   });
 
   double get signedAmount => isIncome ? amount : -amount;
@@ -59,6 +61,7 @@ class TransactionEntity extends Equatable {
     DateTime? nextDueDate,
     String? transferAccountId,
     bool? isFavorite,
+    bool? isFixedExpense,
   }) =>
       TransactionEntity(
         id:           id           ?? this.id,
@@ -78,6 +81,7 @@ class TransactionEntity extends Equatable {
         nextDueDate:  nextDueDate  ?? this.nextDueDate,
         transferAccountId: transferAccountId ?? this.transferAccountId,
         isFavorite:   isFavorite   ?? this.isFavorite,
+        isFixedExpense: isFixedExpense ?? this.isFixedExpense,
       );
 
   @override
@@ -85,5 +89,6 @@ class TransactionEntity extends Equatable {
         id, accountId, userId, title, amount, categoryId,
         categoryName, subCategory, date, isIncome, note, createdAt, updatedAt,
         recurrenceFrequency, nextDueDate, transferAccountId, isFavorite,
+        isFixedExpense,
       ];
 }
