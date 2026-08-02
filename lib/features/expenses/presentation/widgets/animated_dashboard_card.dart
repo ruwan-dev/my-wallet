@@ -2,7 +2,6 @@ import 'dart:math';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../../../../core/utils/formatters.dart';
-import 'mesh_account_card.dart';
 
 class AnimatedDashboardCard extends StatefulWidget {
   final double totalBalance;
@@ -43,214 +42,117 @@ class _AnimatedDashboardCardState extends State<AnimatedDashboardCard>
 
   @override
   Widget build(BuildContext context) {
-    double total = widget.totalIncome + widget.totalExpense;
-    double incomeRatio = total == 0 ? 0.5 : widget.totalIncome / total;
-
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(30),
+        borderRadius: BorderRadius.circular(20), // Uniform radius
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            const Color(0xFF6366F1).withOpacity(0.85), // Soft deep purple/indigo
+            const Color(0xFF8B5CF6).withOpacity(0.85), // Royal lavender
+          ],
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.15),
-            blurRadius: 30,
-            offset: const Offset(0, 12),
-          ),
-          BoxShadow(
-            color: const Color(0xFF10B981).withOpacity(0.15),
+            color: const Color(0xFF6366F1).withOpacity(0.2),
             blurRadius: 20,
-            offset: const Offset(0, 6),
+            offset: const Offset(0, 8),
           ),
         ],
+        border: Border.all(color: Colors.white.withOpacity(0.2), width: 1.5),
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(30),
-        child: Stack(
-          children: [
-            // 1. Fluid Animated Background (Income/Expense Ratio)
-            Positioned.fill(
-              child: AnimatedBuilder(
-                animation: _controller,
-                builder: (context, child) {
-                  return CustomPaint(
-                    painter: _FluidPainter(
-                      animationValue: _controller.value,
-                      incomeRatio: incomeRatio,
-                    ),
-                  );
-                },
-              ),
-            ),
-
-            // 2. Glassmorphism Blur
-            Positioned.fill(
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                child: const SizedBox.shrink(),
-              ),
-            ),
-
-            // 3. Glassy curves overlay (matching the Account Cards)
-            Positioned.fill(
-              child: CustomPaint(
-                painter: GlassCurvePainter(),
-              ),
-            ),
-
-            // 4. Foreground UI
-            Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Total Balance',
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                      shadows: [
-                        Shadow(color: Colors.black45, blurRadius: 4, offset: Offset(0, 2)),
-                      ],
-                    ),
+        borderRadius: BorderRadius.circular(20),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Total Balance',
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    AppFormatters.formatCurrency(widget.totalBalance),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 36,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -1.5,
-                      height: 1.1,
-                      shadows: [
-                        Shadow(color: Colors.black54, blurRadius: 8, offset: Offset(0, 4)),
-                      ],
-                    ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  AppFormatters.formatCurrency(widget.totalBalance),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 48,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -1.5,
+                    height: 1.1,
                   ),
-                  const SizedBox(height: 20),
-                  Container(
-                    height: 1,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.3),
-                      boxShadow: const [
-                        BoxShadow(color: Colors.black26, blurRadius: 2, offset: Offset(0, 1))
-                      ]
-                    ),
+                ),
+                const SizedBox(height: 24),
+                Container(
+                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.white.withOpacity(0.1)),
                   ),
-                  const SizedBox(height: 18),
-                  Row(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
-                      Expanded(
-                        child: _CardStat(
-                          icon: Icons.arrow_downward_rounded,
-                          label: 'Income',
-                          value: AppFormatters.formatCurrency(widget.totalIncome),
-                        ),
-                      ),
-                      Container(
-                        width: 1,
-                        height: 36,
-                        color: Colors.white.withOpacity(0.3),
-                      ),
-                      Expanded(
-                        child: _CardStat(
-                          icon: Icons.arrow_upward_rounded,
-                          label: 'Expenses',
-                          value: AppFormatters.formatCurrency(widget.totalExpense),
-                        ),
-                      ),
-                      Container(
-                        width: 1,
-                        height: 36,
-                        color: Colors.white.withOpacity(0.3),
-                      ),
-                      Expanded(
-                        child: _CardStat(
-                          icon: Icons.lock_outline_rounded,
-                          label: 'Fixed',
-                          value: AppFormatters.formatCurrency(widget.fixedExpenses),
-                        ),
-                      ),
+                      _buildStatItem('Income', widget.totalIncome, Icons.arrow_downward_rounded, const Color(0xFF0EA5E9)),
+                      Container(width: 1, height: 32, color: Colors.white.withOpacity(0.2)),
+                      _buildStatItem('Expenses', widget.totalExpense, Icons.arrow_upward_rounded, const Color(0xFF9333EA)),
+                      Container(width: 1, height: 32, color: Colors.white.withOpacity(0.2)),
+                      _buildStatItem('Fixed', widget.fixedExpenses, Icons.push_pin_rounded, Colors.white.withOpacity(0.8)),
                     ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
   }
-}
 
-class _CardStat extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-
-  const _CardStat({
-    required this.icon,
-    required this.label,
-    required this.value,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4),
-      child: Row(
+  Widget _buildStatItem(String label, double amount, IconData icon, Color color) {
+    return Expanded(
+      child: Column(
         children: [
-          Container(
-            padding: const EdgeInsets.all(6),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.25),
-              borderRadius: BorderRadius.circular(8),
-              boxShadow: const [
-                BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2))
-              ],
-            ),
-            child: Icon(icon, color: Colors.white, size: 14),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 14, color: color),
+              const SizedBox(width: 4),
+              Text(
+                label,
+                style: const TextStyle(
+                  color: Colors.white70,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
           ),
-          const SizedBox(width: 6),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 10,
-                    shadows: [
-                      Shadow(color: Colors.black45, blurRadius: 3, offset: Offset(0, 1)),
-                    ],
-                  ),
-                ),
-                FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    value,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      shadows: [
-                        Shadow(color: Colors.black54, blurRadius: 4, offset: Offset(0, 2)),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
+          const SizedBox(height: 4),
+          Text(
+            AppFormatters.formatCurrency(amount),
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
             ),
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
     );
   }
 }
-
 class _FluidPainter extends CustomPainter {
   final double animationValue;
   final double incomeRatio;

@@ -92,9 +92,7 @@ class ExpenseTrackerApp extends StatelessWidget {
         child: MaterialApp.router(
           title: 'ExpenseTracker',
           debugShowCheckedModeBanner: false,
-          theme: AppTheme.lightTheme,
-          darkTheme: AppTheme.darkTheme,
-          themeMode: ThemeMode.light,
+          theme: AppTheme.getTheme(),
           routerConfig: appRouter,
         ),
       ),

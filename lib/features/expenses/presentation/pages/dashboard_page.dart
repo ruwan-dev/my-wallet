@@ -53,8 +53,8 @@ class DashboardPage extends StatelessWidget {
           }
         },
         child: Column(
-          children: [
-            // ── Balance Card ───────────────────────────────────────────────
+            children: [
+              // ── Balance Card ───────────────────────────────────────────────
             Padding(
                 padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
                 child: BlocBuilder<AccountCubit, AccountState>(
@@ -165,10 +165,17 @@ class DashboardPage extends StatelessWidget {
                   ),
                   const SizedBox(width: 12),
                   _ToolCard(
-                    title: 'Categories',
-                    icon: Icons.category_outlined,
+                    title: 'Analytics',
+                    icon: Icons.bar_chart_outlined,
                     color: Colors.orangeAccent,
-                    onTap: () => context.push('/manage-categories'),
+                    onTap: () => context.push('/analytics'),
+                  ),
+                  const SizedBox(width: 12),
+                  _ToolCard(
+                    title: 'Recurring',
+                    icon: Icons.repeat_rounded,
+                    color: Colors.purpleAccent,
+                    onTap: () => context.push('/recurring-bills'),
                   ),
                 ],
               ),
@@ -176,15 +183,15 @@ class DashboardPage extends StatelessWidget {
             const SizedBox(height: 16),
 
             // ── Recent Transactions Header ─────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+            Container(
+              color: Theme.of(context).scaffoldBackgroundColor,
+              padding: const EdgeInsets.only(left: 20, right: 20, bottom: 8, top: 4),
               child: _SectionHeader(
                 title: 'Recent Transactions',
                 actionLabel: 'See All',
                 onAction: () => context.push('/all-transactions'),
               ),
             ),
-            const SizedBox(height: 8),
 
             // ── Transaction List ───────────────────────────────────────────
             Expanded(
@@ -193,14 +200,15 @@ class DashboardPage extends StatelessWidget {
                   builder: (context, txState) {
                   if (txState is TransactionLoading) {
                     return ListView.builder(
+                      physics: const BouncingScrollPhysics(),
                       padding: const EdgeInsets.symmetric(horizontal: 20),
                       itemCount: 6,
-                      itemBuilder: (_, __) => const Padding(
-                        padding: EdgeInsets.only(bottom: 12),
-                        child: ShimmerTile(),
-                      ),
-                    );
-                  }
+                        itemBuilder: (_, __) => const Padding(
+                          padding: EdgeInsets.only(bottom: 12),
+                          child: ShimmerTile(),
+                        ),
+                      );
+                    }
                   if (txState is TransactionLoaded) {
                     if (txState.transactions.isEmpty) {
                       return const EmptyStateWidget();
@@ -213,8 +221,8 @@ class DashboardPage extends StatelessWidget {
                         // Show a reasonable number of recent transactions since it now scrolls independently
                         final recentTransactions = txState.transactions.take(10).toList();
                         return ListView(
-                          padding: const EdgeInsets.only(left: 20, right: 20, bottom: 20), // Reduced bottom padding
                           physics: const BouncingScrollPhysics(),
+                          padding: const EdgeInsets.only(left: 20, right: 20, bottom: 100, top: 8), 
                           children: _buildGroupedItems(
                             recentTransactions, accounts, context),
                         );
@@ -224,7 +232,7 @@ class DashboardPage extends StatelessWidget {
                   return const SizedBox.shrink();
                 },
               ),
-              ),
+            ),
             ),
           ],
         ),
@@ -314,16 +322,16 @@ class _ToolCard extends StatelessWidget {
     return Container(
       width: 105,
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.6),
+        color: Colors.white.withOpacity(0.15),
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [
+        boxShadow: const [
           BoxShadow(
-            color: color.withOpacity(0.1),
+            color: Color(0x0A000000), // Very soft shadow instead of glow
             blurRadius: 10,
-            offset: const Offset(0, 4),
+            offset: Offset(0, 4),
           ),
         ],
-        border: Border.all(color: Colors.white.withOpacity(0.8), width: 1.5),
+        border: Border.all(color: Colors.white.withOpacity(0.4), width: 1.0),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(20),
@@ -341,16 +349,16 @@ class _ToolCard extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: color.withOpacity(0.15),
+                        color: Colors.white.withOpacity(0.2), // Subtle white circle behind icon
                         shape: BoxShape.circle,
                       ),
-                      child: Icon(icon, color: color, size: 24),
+                      child: Icon(icon, color: Colors.white, size: 24),
                     ),
                     const SizedBox(height: 6),
                     Text(
                       title,
-                      style: TextStyle(
-                        color: Colors.grey.shade800,
+                      style: const TextStyle(
+                        color: Colors.white,
                         fontWeight: FontWeight.w600,
                         fontSize: 12,
                       ),
@@ -391,17 +399,21 @@ class _SectionHeader extends StatelessWidget {
       children: [
         Text(title, style: theme.textTheme.titleMedium),
         if (onAction != null && actionLabel.isNotEmpty)
-          TextButton(
-            onPressed: onAction,
-            style: TextButton.styleFrom(
-              padding: EdgeInsets.zero,
-              minimumSize: Size.zero,
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            ),
-            child: Text(
-              actionLabel,
-              style: theme.textTheme.labelMedium?.copyWith(
-                color: AppTheme.incomeColor,
+          InkWell(
+            onTap: onAction,
+            borderRadius: BorderRadius.circular(20),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                actionLabel,
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ),

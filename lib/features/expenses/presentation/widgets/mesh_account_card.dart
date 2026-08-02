@@ -23,21 +23,18 @@ class MeshAccountCard extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            baseColor.withOpacity(0.08),
-            Colors.white,
+            Color.alphaBlend(baseColor.withOpacity(0.15), Colors.white.withOpacity(0.9)),
+            Color.alphaBlend(baseColor.withOpacity(0.25), Colors.white.withOpacity(0.85)),
           ],
         ),
         borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withOpacity(0.6), width: 1.0),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withOpacity(0.05), // Extremely soft, diffused shadow
             blurRadius: 15,
+            spreadRadius: 0,
             offset: const Offset(0, 5),
-          ),
-          BoxShadow(
-            color: baseColor.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
           ),
         ],
       ),
@@ -53,7 +50,7 @@ class MeshAccountCard extends StatelessWidget {
             Positioned.fill(
               child: CustomPaint(
                 painter: ConnectedNodesPainter(
-                  color: baseColor,
+                  color: baseColor.withOpacity(0.35), // Colored nodes over pastel
                   seed: account.id.hashCode,
                 ),
               ),
@@ -69,13 +66,13 @@ class MeshAccountCard extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       // Chip icon
-                      Icon(Icons.memory, color: baseColor.withOpacity(0.8), size: 20),
+                      Icon(Icons.memory, color: baseColor.withOpacity(0.9), size: 20),
                       
                       // Account type label
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
-                          color: baseColor.withOpacity(0.1),
+                          color: baseColor.withOpacity(0.12),
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(color: baseColor.withOpacity(0.2)),
                         ),
@@ -84,7 +81,7 @@ class MeshAccountCard extends StatelessWidget {
                           style: TextStyle(
                             color: baseColor,
                             fontSize: 10,
-                            fontWeight: FontWeight.w600,
+                            fontWeight: FontWeight.w700,
                             letterSpacing: 0.5,
                           ),
                         ),
@@ -95,9 +92,9 @@ class MeshAccountCard extends StatelessWidget {
                   Text(
                     account.name,
                     style: TextStyle(
-                      color: Colors.grey.shade600,
+                      color: Colors.grey.shade700,
                       fontSize: 11,
-                      fontWeight: FontWeight.w500,
+                      fontWeight: FontWeight.w600,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -108,7 +105,7 @@ class MeshAccountCard extends StatelessWidget {
                     style: const TextStyle(
                       color: Color(0xFF1E293B), // Dark Slate
                       fontSize: 16,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w800,
                       letterSpacing: -0.5,
                     ),
                   ),

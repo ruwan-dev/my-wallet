@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -67,9 +68,9 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
       label: 'Home',
     ),
     NavigationDestination(
-      icon: Icon(Icons.bar_chart_outlined),
-      selectedIcon: Icon(Icons.bar_chart_rounded),
-      label: 'Analytics',
+      icon: Icon(Icons.category_outlined),
+      selectedIcon: Icon(Icons.category_rounded),
+      label: 'Categories',
     ),
     NavigationDestination(
       icon: Icon(Icons.account_balance_wallet_outlined),
@@ -85,13 +86,20 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
 
   Widget _buildNavItem(int index, IconData icon, IconData activeIcon, String label) {
     final isSelected = widget.currentIndex == index;
-    final color = isSelected ? Theme.of(context).colorScheme.primary : Colors.grey.shade500;
+    final activeColor = const Color(0xFF6D28D9); // Deep Purple
+    final inactiveColor = Colors.grey.shade500;
+    final color = isSelected ? activeColor : inactiveColor;
     
     return InkWell(
       onTap: () => widget.onNavigation?.call(index),
-      borderRadius: BorderRadius.circular(16),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      borderRadius: BorderRadius.circular(20),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: isSelected ? activeColor.withOpacity(0.15) : Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
@@ -103,7 +111,7 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
               style: TextStyle(
                 color: color,
                 fontSize: 10,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
               ),
             ),
           ],
@@ -124,20 +132,7 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
         desktop: Row(
           children: [
             // Side Navigation
-            NavigationRail(
-              selectedIndex: widget.currentIndex,
-              onDestinationSelected: widget.onNavigation,
-              labelType: NavigationRailLabelType.all,
-              backgroundColor: Theme.of(context).colorScheme.surface,
-              destinations: _destinations.map((d) {
-                return NavigationRailDestination(
-                  icon: d.icon,
-                  selectedIcon: d.selectedIcon,
-                  label: Text(d.label),
-                );
-              }).toList(),
-            ),
-            const VerticalDivider(thickness: 1, width: 1),
+            _buildDesktopSidebar(context),
             // Centered Main Content
             Expanded(
               child: Center(
@@ -177,13 +172,13 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: const LinearGradient(
-                  colors: [Color(0xFF10B981), Color(0xFF059669)],
+                  colors: [Color(0xFF8B5CF6), Color(0xFF6D28D9)], // Deep Purple gradient
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF10B981).withOpacity(0.4),
+                    color: const Color(0xFF8B5CF6).withOpacity(0.4),
                     blurRadius: 12,
                     offset: const Offset(0, 6),
                   ),
@@ -200,6 +195,115 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
       floatingActionButtonLocation: MediaQuery.of(context).size.width < kMobileMaxWidth
           ? FloatingActionButtonLocation.centerDocked
           : widget.floatingActionButtonLocation,
+    );
+  }
+
+  Widget _buildDesktopSidebar(BuildContext context) {
+    final theme = Theme.of(context);
+    
+    return Container(
+      width: 90,
+      margin: const EdgeInsets.only(left: 16, top: 16, bottom: 16, right: 16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface.withOpacity(0.4),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 24,
+            offset: const Offset(0, 8),
+          ),
+        ],
+        border: Border.all(color: Colors.white.withOpacity(0.3), width: 1.5),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+          child: Column(
+            children: [
+              const SizedBox(height: 48),
+              
+              // Nav Items
+              _buildDesktopNavItem(0, Icons.home_outlined, Icons.home_rounded, 'Home'),
+              const SizedBox(height: 24),
+              _buildDesktopNavItem(1, Icons.bar_chart_outlined, Icons.bar_chart_rounded, 'Analytics'),
+              
+              const SizedBox(height: 32),
+              
+              // Add Button
+              GestureDetector(
+                onTap: () => context.push('/add-expense'),
+                child: Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF8B5CF6), Color(0xFF6D28D9)], // Deep Purple gradient
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF8B5CF6).withOpacity(0.4),
+                        blurRadius: 12,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(Icons.add_rounded, color: Colors.white, size: 28),
+                ),
+              ),
+              
+              const SizedBox(height: 32),
+              
+              _buildDesktopNavItem(2, Icons.account_balance_wallet_outlined, Icons.account_balance_wallet_rounded, 'Accounts'),
+              const SizedBox(height: 24),
+              _buildDesktopNavItem(3, Icons.person_outline_rounded, Icons.person_rounded, 'Profile'),
+              
+              const Spacer(),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDesktopNavItem(int index, IconData icon, IconData activeIcon, String label) {
+    final isSelected = widget.currentIndex == index;
+    final activeColor = const Color(0xFF6D28D9); // Deep Purple
+    final inactiveColor = Colors.grey.shade500;
+    final color = isSelected ? activeColor : inactiveColor;
+    
+    return InkWell(
+      onTap: () => widget.onNavigation?.call(index),
+      splashColor: Colors.transparent,
+      highlightColor: Colors.transparent,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        margin: const EdgeInsets.symmetric(horizontal: 12),
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: isSelected ? activeColor.withOpacity(0.15) : Colors.transparent,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(isSelected ? activeIcon : icon, color: color, size: 26),
+            const SizedBox(height: 6),
+            Text(
+              label,
+              style: TextStyle(
+                color: color,
+                fontSize: 10,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

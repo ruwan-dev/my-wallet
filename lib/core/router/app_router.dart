@@ -12,6 +12,7 @@ import '../../features/auth/presentation/pages/register_page.dart';
 import '../../features/auth/presentation/bloc/auth_cubit.dart';
 import '../../features/auth/presentation/bloc/auth_state.dart';
 import '../../features/auth/presentation/bloc/auth_state.dart';
+import '../widgets/premium_aurora_vector_background.dart';
 import '../di/injection.dart';
 import '../../features/analytics/presentation/pages/analytics_page.dart';
 import '../../features/accounts/presentation/pages/accounts_page.dart';
@@ -23,7 +24,7 @@ import '../../features/expenses/presentation/pages/account_transactions_page.dar
 import '../../features/expenses/domain/entities/account.dart';
 import '../widgets/responsive_layout.dart';
 import '../../features/budgets/presentation/pages/budgets_main_page.dart';
-
+import '../../features/expenses/presentation/pages/recurring_bills_page.dart';
 class GoRouterRefreshStream extends ChangeNotifier {
   GoRouterRefreshStream(Stream<dynamic> stream) {
     notifyListeners();
@@ -68,15 +69,17 @@ final appRouter = GoRouter(
     ),
     StatefulShellRoute.indexedStack(
       builder: (context, state, navigationShell) {
-        return ResponsiveScaffold(
-          body: navigationShell,
-          currentIndex: navigationShell.currentIndex,
-          onNavigation: (index) {
-            navigationShell.goBranch(
-              index,
-              initialLocation: index == navigationShell.currentIndex,
-            );
-          },
+        return PremiumAuroraVectorBackground(
+          child: ResponsiveScaffold(
+            body: navigationShell,
+            currentIndex: navigationShell.currentIndex,
+            onNavigation: (index) {
+              navigationShell.goBranch(
+                index,
+                initialLocation: index == navigationShell.currentIndex,
+              );
+            },
+          ),
         );
       },
       branches: [
@@ -91,8 +94,8 @@ final appRouter = GoRouter(
         StatefulShellBranch(
           routes: [
             GoRoute(
-              path: '/analytics',
-              builder: (context, state) => const AnalyticsPage(),
+              path: '/manage-categories',
+              builder: (context, state) => const ManageCategoriesPage(),
             ),
           ],
         ),
@@ -119,8 +122,8 @@ final appRouter = GoRouter(
       builder: (context, state) => const BudgetsMainPage(),
     ),
     GoRoute(
-      path: '/manage-categories',
-      builder: (context, state) => const ManageCategoriesPage(),
+      path: '/analytics',
+      builder: (context, state) => const AnalyticsPage(),
     ),
     GoRoute(
       path: '/add-expense',
@@ -171,6 +174,10 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/all-transactions',
       builder: (context, state) => const TransactionsPage(),
+    ),
+    GoRoute(
+      path: '/recurring-bills',
+      builder: (context, state) => const RecurringBillsPage(),
     ),
   ],
 );

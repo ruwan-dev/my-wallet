@@ -19,13 +19,12 @@ import '../widgets/recurring_timeline_widget.dart';
 
 // ─── Step metadata ────────────────────────────────────────────────────────────
 
-const int _kTotalSteps = 5;
+const int _kTotalSteps = 4;
 const List<String> _kStepTitles = [
   'Transaction Type',
   'Category',
   'Account',
   'Title & Date',
-  'How much?',
 ];
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
@@ -426,6 +425,8 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                 // Step 4 — Title & Date
                 _Step4TitleDate(
                   titleController: _titleController,
+                  amountController: _amountController,
+                  isSaving: _isSaving,
                   selectedDate:    _selectedDate,
                   onDateTap:       _pickDate,
                   recurrenceFrequency: _recurrenceFrequency,
@@ -433,17 +434,9 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                     setState(() => _recurrenceFrequency = val);
                   },
                   isIncome: _isIncome,
-                  onNext:   _advance,
+                  onSave:   _save,
                   selectedCategory: _selectedCategory,
                   selectedSubCategory: _subCategoryController.text.trim().isEmpty ? null : _subCategoryController.text.trim(),
-                ),
-
-                // Step 5 — Amount
-                _Step5Amount(
-                  isIncome:          _isIncome,
-                  amountController:  _amountController,
-                  isSaving:          _isSaving,
-                  onSave:            _save,
                 ),
               ],
             ),
@@ -708,6 +701,7 @@ class _Step2CategoryState extends State<_Step2Category> {
           title: const Text('Add Subcategory'),
           content: TextField(
             controller: ctrl,
+            maxLength: 15,
             decoration: const InputDecoration(hintText: 'Subcategory Name'),
             textCapitalization: TextCapitalization.words,
             autofocus: true,
@@ -801,10 +795,10 @@ class _Step2CategoryState extends State<_Step2Category> {
                   physics: const NeverScrollableScrollPhysics(),
                   itemCount: currentSelected.subcategories.length + 2, // +1 for Back, +1 for Add
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 3,
+                    crossAxisCount: 2,
                     crossAxisSpacing: 12,
                     mainAxisSpacing: 12,
-                    childAspectRatio: 2.2,
+                    childAspectRatio: 3.0,
                   ),
                   itemBuilder: (_, i) {
                     if (i == 0) {
@@ -884,10 +878,10 @@ class _Step2CategoryState extends State<_Step2Category> {
                 physics: const NeverScrollableScrollPhysics(),
                 itemCount: categories.length + 1,
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3,
+                  crossAxisCount: 2,
                   crossAxisSpacing: 12,
                   mainAxisSpacing: 12,
-                  childAspectRatio: 2.2,
+                  childAspectRatio: 3.0,
                 ),
                 itemBuilder: (_, i) {
                   if (i == categories.length) {
@@ -1211,9 +1205,11 @@ class _AccountRow extends StatelessWidget {
 
 class _Step4TitleDate extends StatelessWidget {
   final TextEditingController titleController;
+  final TextEditingController amountController;
   final DateTime selectedDate;
   final VoidCallback onDateTap;
-  final VoidCallback onNext;
+  final VoidCallback onSave;
+  final bool isSaving;
   final String? recurrenceFrequency;
   final ValueChanged<String?> onRecurrenceChanged;
   final bool isIncome;
@@ -1222,9 +1218,11 @@ class _Step4TitleDate extends StatelessWidget {
 
   const _Step4TitleDate({
     required this.titleController,
+    required this.amountController,
     required this.selectedDate,
     required this.onDateTap,
-    required this.onNext,
+    required this.onSave,
+    required this.isSaving,
     this.recurrenceFrequency,
     required this.onRecurrenceChanged,
     required this.isIncome,
@@ -1300,6 +1298,28 @@ class _Step4TitleDate extends StatelessWidget {
                       return const SizedBox.shrink();
                     },
                   ),
+                  Text('Amount', style: theme.textTheme.titleLarge),
+                  const SizedBox(height: 6),
+                  TextField(
+                    controller: amountController,
+                    autofocus: true,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    style: theme.textTheme.displaySmall?.copyWith(
+                      color: isIncome ? AppTheme.incomeColor : AppTheme.expenseColor,
+                      fontWeight: FontWeight.w800,
+                    ),
+                    decoration: InputDecoration(
+                      hintText: '0.00',
+                      prefixText: isIncome ? '+' : '',
+                      prefixStyle: TextStyle(
+                        color: isIncome ? AppTheme.incomeColor : AppTheme.expenseColor,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    onSubmitted: (_) => onSave(),
+                  ),
+                  const SizedBox(height: 32),
+                  
                   Text('Add a title', style: theme.textTheme.titleLarge),
                   const SizedBox(height: 6),
                   Text(
@@ -1308,7 +1328,7 @@ class _Step4TitleDate extends StatelessWidget {
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 16),
 
                   // Title field
                   TextField(
@@ -1320,7 +1340,7 @@ class _Step4TitleDate extends StatelessWidget {
                       hintText: 'e.g. Groceries, Salary, Netflix…',
                       prefixIcon: Icon(Icons.title_rounded),
                     ),
-                    onSubmitted: (_) => onNext(),
+                    onSubmitted: (_) => onSave(),
                   ),
                   const SizedBox(height: 20),
 
@@ -1395,13 +1415,35 @@ class _Step4TitleDate extends StatelessWidget {
           
           const SizedBox(height: 16),
 
-          // Next button
+          // Save button
           SizedBox(
             width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: onNext,
-              icon: const Icon(Icons.arrow_forward_rounded),
-              label: const Text('Next'),
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: theme.colorScheme.primary,
+                foregroundColor: Colors.white,
+                minimumSize: const Size.fromHeight(52),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              onPressed: isSaving ? null : onSave,
+              child: isSaving
+                  ? const SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.5,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Text(
+                      'Save Transaction',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 16,
+                      ),
+                    ),
             ),
           ),
         ],
@@ -1453,117 +1495,6 @@ class _Step4TitleDate extends StatelessWidget {
   }
 }
 
-// ─── Step 5: Amount ───────────────────────────────────────────────────────────
-
-class _Step5Amount extends StatelessWidget {
-  final bool isIncome;
-  final TextEditingController amountController;
-  final bool isSaving;
-  final VoidCallback onSave;
-
-  const _Step5Amount({
-    required this.isIncome,
-    required this.amountController,
-    required this.isSaving,
-    required this.onSave,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme       = Theme.of(context);
-    final accentColor = isIncome ? AppTheme.incomeColor : AppTheme.expenseColor;
-    final prefix      = isIncome ? '+Rs ' : '-Rs ';
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 32, 24, 40),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Enter the amount', style: theme.textTheme.titleLarge),
-          const SizedBox(height: 6),
-          Text(
-            isIncome ? 'How much did you receive?' : 'How much did you spend?',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-          const SizedBox(height: 40),
-
-          // Large amount display built from the text field value
-          Center(
-            child: ValueListenableBuilder<TextEditingValue>(
-              valueListenable: amountController,
-              builder: (_, val, __) {
-                final display =
-                    val.text.isEmpty || val.text == '0' ? '0' : val.text;
-                return Text(
-                  '$prefix$display',
-                  style: theme.textTheme.displayMedium?.copyWith(
-                    color: accentColor,
-                    fontWeight: FontWeight.w800,
-                  ),
-                );
-              },
-            ),
-          ),
-          const SizedBox(height: 32),
-
-          // Amount text field — autofocus brings up native keyboard
-          TextField(
-            controller: amountController,
-            autofocus: true,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            style: theme.textTheme.bodyLarge,
-            textAlign: TextAlign.center,
-            decoration: InputDecoration(
-              hintText: '0.00',
-              prefixText: isIncome ? '+' : '-',
-              prefixStyle: TextStyle(
-                color: accentColor,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            onSubmitted: (_) => onSave(),
-          ),
-
-          const Spacer(),
-
-          // Save button
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: accentColor,
-                foregroundColor: Colors.white,
-                minimumSize: const Size.fromHeight(52),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
-              ),
-              onPressed: isSaving ? null : onSave,
-              child: isSaving
-                  ? const SizedBox(
-                      width: 22,
-                      height: 22,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2.5,
-                        color: Colors.white,
-                      ),
-                    )
-                  : const Text(
-                      'Save Transaction',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 16,
-                      ),
-                    ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 class _FavoriteTemplateCard extends StatelessWidget {
   final TransactionEntity transaction;

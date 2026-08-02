@@ -29,8 +29,8 @@ class TransactionCard extends StatelessWidget {
       orElse: () => DefaultCategories.all.last,
     );
 
-    // Amount colour: green for income, red for expense
-    final amountColor = isIncome ? AppTheme.incomeColor : AppTheme.expenseColor;
+    // Amount colour: softer crimson for high contrast but harmonious with pastels
+    final amountColor = isIncome ? Colors.green.shade600 : const Color(0xFFE05263); // Soft Crimson/Coral
 
     final amountText =
         '${isIncome ? '+' : '-'}${AppFormatters.formatCurrency(transaction.amount)}';
@@ -40,9 +40,23 @@ class TransactionCard extends StatelessWidget {
         '/edit-expense/${transaction.id}',
         extra: transaction,
       ),
-      borderRadius: BorderRadius.circular(16),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 12),
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.7),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.white.withOpacity(0.5), width: 1),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x0A000000), // Very soft shadow
+              blurRadius: 10,
+              offset: Offset(0, 4),
+            )
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
           child: Row(
             children: [
               // ── Leading: circular icon bubble ──────────────────────────────
@@ -119,8 +133,8 @@ class TransactionCard extends StatelessWidget {
                       icon: Icon(
                         transaction.isFavorite ? Icons.favorite : Icons.favorite_border,
                         color: transaction.isFavorite 
-                            ? Colors.redAccent 
-                            : theme.colorScheme.onSurfaceVariant.withOpacity(0.3),
+                            ? const Color(0xFFE05263) // Match the soft crimson
+                            : theme.colorScheme.onSurfaceVariant.withOpacity(0.5), // Increased contrast
                         size: 20,
                       ),
                       onPressed: () {
@@ -137,7 +151,8 @@ class TransactionCard extends StatelessWidget {
             ],
           ),
         ),
-      );
+      ),
+    );
     if (onDelete == null) {
       return cardContent;
     }

@@ -92,6 +92,7 @@ class _AddCategoryBottomSheetState extends State<AddCategoryBottomSheet> {
           const SizedBox(height: 24),
           TextField(
             controller: _nameController,
+            maxLength: 15,
             decoration: InputDecoration(
               labelText: 'Category Name',
               hintText: 'e.g. Groceries',
