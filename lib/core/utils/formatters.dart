@@ -1,15 +1,19 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import '../bloc/settings_cubit.dart';
 
 /// Currency and date formatting utilities.
 class AppFormatters {
   AppFormatters._();
 
-  /// Format [amount] as currency with the given [symbol].
+  /// Format [amount] as currency using the global [SettingsCubit] symbol.
   static String formatCurrency(
+    BuildContext context,
     double amount, {
-    String symbol = 'Rs ',
     String locale = 'en_US',
   }) {
+    final symbol = context.watch<SettingsCubit>().state.currencySymbol;
     final formatter = NumberFormat.currency(
       locale: locale,
       symbol: symbol,

@@ -30,6 +30,12 @@ class CategoryModel extends HiveObject {
   @HiveField(7)
   final Map<dynamic, dynamic>? recurringConfigs;
 
+  @HiveField(8, defaultValue: 'none')
+  final String bucketType;
+
+  @HiveField(9, defaultValue: {})
+  final Map<dynamic, dynamic>? subcategoryBuckets;
+
   CategoryModel({
     required this.id,
     required this.name,
@@ -39,6 +45,8 @@ class CategoryModel extends HiveObject {
     required this.isIncome,
     required this.subcategories,
     this.recurringConfigs,
+    this.bucketType = 'none',
+    this.subcategoryBuckets = const {},
   });
 
   factory CategoryModel.fromEntity(Category entity) {
@@ -51,7 +59,15 @@ class CategoryModel extends HiveObject {
       isIncome: entity.isIncome,
       subcategories: entity.subcategories,
       recurringConfigs: entity.recurringConfigs,
+      bucketType: entity.bucketType.name,
+      subcategoryBuckets: entity.subcategoryBuckets.map((key, value) => MapEntry(key, value.name)),
     );
+  }
+
+  BucketType _mapBucketType(String bt) {
+    if (bt == 'blow') return BucketType.dailyExpenses;
+    if (bt == 'grow') return BucketType.grow;
+    return BucketType.values.firstWhere((e) => e.name == bt, orElse: () => BucketType.none);
   }
 
   Category toEntity() {
@@ -64,6 +80,11 @@ class CategoryModel extends HiveObject {
       isIncome: isIncome,
       subcategories: subcategories,
       recurringConfigs: recurringConfigs?.map((key, value) => MapEntry(key.toString(), value)) ?? const {},
+      bucketType: _mapBucketType(bucketType),
+      subcategoryBuckets: subcategoryBuckets?.map((key, value) => MapEntry(
+        key.toString(), 
+        _mapBucketType(value.toString())
+      )) ?? const {},
     );
   }
 
@@ -77,6 +98,8 @@ class CategoryModel extends HiveObject {
       isIncome: json['isIncome'] as bool? ?? false,
       subcategories: List<String>.from(json['subcategories'] as List? ?? []),
       recurringConfigs: json['recurringConfigs'] as Map<dynamic, dynamic>?,
+      bucketType: json['bucketType'] as String? ?? 'none',
+      subcategoryBuckets: json['subcategoryBuckets'] as Map<dynamic, dynamic>?,
     );
   }
 
@@ -90,6 +113,8 @@ class CategoryModel extends HiveObject {
       'isIncome': isIncome,
       'subcategories': subcategories,
       'recurringConfigs': recurringConfigs,
+      'bucketType': bucketType,
+      'subcategoryBuckets': subcategoryBuckets,
     };
   }
 }

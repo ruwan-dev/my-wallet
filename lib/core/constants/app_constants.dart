@@ -24,6 +24,7 @@ class AppConstants {
   static const String themeKey = 'theme_mode';
   static const String currencyKey = 'currency';
   static const String onboardingKey = 'onboarding_complete';
+  static const String lastSweepMonthKey = 'last_sweep_month';
 
   // Default Values
   static const String defaultCurrency = 'USD';

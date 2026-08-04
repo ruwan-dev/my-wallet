@@ -45,13 +45,19 @@ import '../../features/budgets/domain/repositories/custom_budget_repository.dart
 import '../../features/budgets/data/repositories/custom_budget_repository_impl.dart';
 import '../../features/budgets/presentation/bloc/custom_budget_cubit.dart';
 
+import 'package:shared_preferences/shared_preferences.dart';
+import '../../core/bloc/settings_cubit.dart';
+
 final sl = GetIt.instance;
 
 Future<void> configureDependencies() async {
-  // --- External / Hive ---
+  // --- External / Hive / Prefs ---
   sl.registerLazySingleton(() => FirebaseAuth.instance);
   sl.registerLazySingleton(() => FirebaseFirestore.instance);
   
+  final sharedPreferences = await SharedPreferences.getInstance();
+  sl.registerLazySingleton(() => sharedPreferences);
+
   final categoriesBox   = Hive.box<CategoryModel>(AppConstants.categoriesBox);
 
   // --- Datasources ---
@@ -155,5 +161,9 @@ Future<void> configureDependencies() async {
       repository: sl(),
       authCubit: sl(),
     ),
+  );
+
+  sl.registerLazySingleton(
+    () => SettingsCubit(Hive.box(AppConstants.settingsBox)),
   );
 }

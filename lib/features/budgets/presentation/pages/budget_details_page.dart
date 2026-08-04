@@ -20,6 +20,7 @@ class BudgetDetailsPage extends StatelessWidget {
           final budgetIndex = state.budgets.indexWhere((b) => b.id == budgetId);
           if (budgetIndex == -1) {
             return Scaffold(
+              backgroundColor: Colors.transparent,
               appBar: AppBar(title: const Text('Budget Not Found')),
               body: const Center(child: Text('This budget no longer exists.')),
             );
@@ -33,8 +34,8 @@ class BudgetDetailsPage extends StatelessWidget {
               ? (budget.totalSpent / budget.totalAllocated).clamp(0.0, 1.0) 
               : 0.0;
 
-          return Scaffold(
-            backgroundColor: theme.colorScheme.surface,
+            return Scaffold(
+              backgroundColor: Colors.transparent,
             appBar: AppBar(
               title: Text(budget.title),
               backgroundColor: Colors.transparent,
@@ -141,11 +142,11 @@ class BudgetDetailsPage extends StatelessWidget {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              'Allocated: ${AppFormatters.formatCurrency(budget.totalAllocated)}',
+                              'Allocated: ${AppFormatters.formatCurrency(context, budget.totalAllocated)}',
                               style: theme.textTheme.bodyMedium,
                             ),
                             Text(
-                              'Limit: ${AppFormatters.formatCurrency(budget.totalBudgetLimit)}',
+                              'Limit: ${AppFormatters.formatCurrency(context, budget.totalBudgetLimit)}',
                               style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
                             ),
                           ],
@@ -165,7 +166,7 @@ class BudgetDetailsPage extends StatelessWidget {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              'Spent: ${AppFormatters.formatCurrency(budget.totalSpent)}',
+                              'Spent: ${AppFormatters.formatCurrency(context, budget.totalSpent)}',
                               style: theme.textTheme.bodyMedium,
                             ),
                           ],
@@ -226,7 +227,7 @@ class BudgetDetailsPage extends StatelessWidget {
                               ),
                             ],
                           ),
-                          subtitle: Text(AppFormatters.formatCurrency(item.allocatedAmount)),
+                          subtitle: Text(AppFormatters.formatCurrency(context, item.allocatedAmount)),
                           value: item.isCompleted,
                           onChanged: (val) {
                             if (val != null) {
@@ -245,7 +246,8 @@ class BudgetDetailsPage extends StatelessWidget {
         }
 
         return Scaffold(
-          appBar: AppBar(),
+          backgroundColor: Colors.transparent,
+          appBar: AppBar(title: const Text('Error')),
           body: const Center(child: CircularProgressIndicator()),
         );
       },

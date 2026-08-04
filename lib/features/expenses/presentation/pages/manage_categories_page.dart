@@ -14,12 +14,19 @@ class ManageCategoriesPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return DefaultTabController(
       length: 2,
       child: Scaffold(
+        backgroundColor: Colors.transparent,
         appBar: AppBar(
-          title: const Text('Categories'),
+          title: const Text('Categories', style: TextStyle(color: Color(0xFF1E293B))),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
           bottom: const TabBar(
+            indicatorColor: Color(0xFF6D28D9), // Deep Purple
+            labelColor: Color(0xFF6D28D9), // Deep Purple
+            unselectedLabelColor: Colors.black54,
             tabs: [
               Tab(text: 'Expense'),
               Tab(text: 'Income'),
@@ -39,6 +46,9 @@ class ManageCategoriesPage extends StatelessWidget {
                 final isIncome = DefaultTabController.of(context).index == 1;
                 _addCategory(context, isIncome);
               },
+              backgroundColor: const Color(0xFF6D28D9), // Deep Purple
+              foregroundColor: Colors.white,
+              elevation: 4,
               icon: const Icon(Icons.add),
               label: const Text('Add Category'),
             );
@@ -79,15 +89,22 @@ class _CategoryListView extends StatelessWidget {
           }
 
           return ListView.builder(
-            padding: const EdgeInsets.only(bottom: 80),
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
             itemCount: categories.length,
             itemBuilder: (context, index) {
               final cat = categories[index];
-              return ListTile(
-                leading: CircleAvatar(
-                  backgroundColor: cat.color.withOpacity(0.2),
-                  child: Text(cat.icon, style: const TextStyle(fontSize: 20)),
+              return Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.7),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.white, width: 1.5),
                 ),
+                child: ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor: cat.color.withOpacity(0.2),
+                    child: Text(cat.icon, style: const TextStyle(fontSize: 20)),
+                  ),
                 title: Text(cat.name, style: const TextStyle(fontWeight: FontWeight.w600)),
                 subtitle: Text('${cat.subcategories.length} subcategories'),
                 trailing: Row(
@@ -107,10 +124,10 @@ class _CategoryListView extends StatelessWidget {
                       ),
                     if (!cat.isDefault)
                       IconButton(
-                        icon: const Icon(Icons.delete_outline, color: Colors.red),
+                        icon: Icon(Icons.delete_outline, color: Colors.red.shade300),
                         onPressed: () => _deleteCategory(context, cat),
                       ),
-                    const Icon(Icons.chevron_right),
+                    Icon(Icons.chevron_right, color: Colors.grey.shade400),
                   ],
                 ),
                 onTap: () {
@@ -121,7 +138,8 @@ class _CategoryListView extends StatelessWidget {
                     ),
                   );
                 },
-              );
+              ),
+            );
             },
           );
         }

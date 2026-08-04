@@ -17,6 +17,7 @@ import 'features/auth/presentation/bloc/auth_state.dart';
 import 'features/expenses/presentation/bloc/budget_cubit.dart';
 import 'features/expenses/presentation/bloc/monthly_budget_cubit.dart';
 import 'features/budgets/presentation/bloc/custom_budget_cubit.dart';
+import 'core/bloc/settings_cubit.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -74,6 +75,9 @@ class ExpenseTrackerApp extends StatelessWidget {
         ),
         BlocProvider.value(
           value: sl<CustomBudgetCubit>(),
+        ),
+        BlocProvider.value(
+          value: sl<SettingsCubit>(),
         ),
       ],
       child: BlocListener<AuthCubit, AuthState>(

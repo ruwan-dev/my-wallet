@@ -20,9 +20,18 @@ class _AddCategoryBottomSheetState extends State<AddCategoryBottomSheet> {
   final _nameController = TextEditingController();
   String _selectedIcon = '📝';
   Color _selectedColor = const Color(0xFF42A5F5);
+  BucketType _selectedBucket = BucketType.dailyExpenses;
 
   final List<String> _icons = [
-    '📝', '🍔', '🚗', '🛍️', '🎬', '💊', '💡', '📚', '💰', '💻', '📦', '🏠', '🐶', '✈️', '📱'
+    '📝', '🍔', '🍕', '☕', '🍎', // Food & Dining
+    '🚗', '✈️', '🚂', '⛽', '🏖️', // Transport & Travel
+    '🛍️', '👗', '💄', '💅', '💇‍♀️', // Shopping & Beauty
+    '🎬', '🎮', '🎵', '🎫', '⚽', // Entertainment & Sports
+    '💊', '🏥', '🏋️', '🧘', '💆', // Health & Wellness
+    '💡', '⚡', '💧', '📶', '🔧', // Utilities & Repairs
+    '📚', '🎓', '💼', '💻', '📱', // Education & Work
+    '💰', '🏦', '🏠', '📦', '🛒', // Finance & Household
+    '🐶', '👶', '🎁', '🎉', '💍', // Pets, Kids & Events
   ];
 
   final List<Color> _colors = [
@@ -55,6 +64,7 @@ class _AddCategoryBottomSheetState extends State<AddCategoryBottomSheet> {
       color: _selectedColor,
       isDefault: false,
       isIncome: widget.isIncome,
+      bucketType: _selectedBucket,
     );
 
     context.read<CategoryCubit>().addCustomCategory(category);
@@ -68,9 +78,9 @@ class _AddCategoryBottomSheetState extends State<AddCategoryBottomSheet> {
 
     return Container(
       padding: EdgeInsets.fromLTRB(24, 24, 24, 24 + bottomPadding),
-      decoration: BoxDecoration(
-        color: theme.scaffoldBackgroundColor,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -79,9 +89,9 @@ class _AddCategoryBottomSheetState extends State<AddCategoryBottomSheet> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
+              const Text(
                 'Add Custom Category',
-                style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
               ),
               IconButton(
                 icon: const Icon(Icons.close),
@@ -96,12 +106,23 @@ class _AddCategoryBottomSheetState extends State<AddCategoryBottomSheet> {
             decoration: InputDecoration(
               labelText: 'Category Name',
               hintText: 'e.g. Groceries',
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.grey.shade300),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.grey.shade300),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: Color(0xFF6D28D9), width: 2),
+              ),
             ),
             autofocus: true,
           ),
           const SizedBox(height: 24),
-          Text('Select Icon', style: theme.textTheme.titleMedium),
+          const Text('Select Icon', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Color(0xFF1E293B))),
           const SizedBox(height: 12),
           SizedBox(
             height: 60,
@@ -117,9 +138,9 @@ class _AddCategoryBottomSheetState extends State<AddCategoryBottomSheet> {
                     margin: const EdgeInsets.only(right: 12),
                     width: 50,
                     decoration: BoxDecoration(
-                      color: isSelected ? theme.colorScheme.primary.withOpacity(0.2) : theme.colorScheme.surfaceContainerHighest,
+                      color: isSelected ? const Color(0xFF6D28D9).withOpacity(0.1) : Colors.grey.shade100,
                       shape: BoxShape.circle,
-                      border: isSelected ? Border.all(color: theme.colorScheme.primary, width: 2) : null,
+                      border: isSelected ? Border.all(color: const Color(0xFF6D28D9), width: 2) : null,
                     ),
                     child: Center(
                       child: Text(icon, style: const TextStyle(fontSize: 24)),
@@ -130,7 +151,7 @@ class _AddCategoryBottomSheetState extends State<AddCategoryBottomSheet> {
             ),
           ),
           const SizedBox(height: 24),
-          Text('Select Color', style: theme.textTheme.titleMedium),
+          const Text('Select Color', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Color(0xFF1E293B))),
           const SizedBox(height: 12),
           SizedBox(
             height: 50,
@@ -155,10 +176,44 @@ class _AddCategoryBottomSheetState extends State<AddCategoryBottomSheet> {
               },
             ),
           ),
+          const SizedBox(height: 24),
+          const Text('Assign to Bucket', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Color(0xFF1E293B))),
+          const SizedBox(height: 12),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: BucketType.values.where((b) => b != BucketType.none).map((bucket) {
+                final isSelected = _selectedBucket == bucket;
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8.0),
+                  child: ChoiceChip(
+                    label: Text(
+                      bucket.displayName,
+                      style: TextStyle(
+                        color: isSelected ? Colors.white : const Color(0xFF1E293B),
+                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                      ),
+                    ),
+                    selected: isSelected,
+                    onSelected: (selected) {
+                      if (selected) {
+                        setState(() => _selectedBucket = bucket);
+                      }
+                    },
+                    selectedColor: const Color(0xFF6D28D9),
+                    backgroundColor: Colors.grey.shade200,
+                    side: BorderSide.none,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
           const SizedBox(height: 32),
           FilledButton(
             onPressed: _save,
             style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFF6D28D9),
               padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             ),

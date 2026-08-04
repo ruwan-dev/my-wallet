@@ -104,7 +104,7 @@ class RecurringBillsPage extends StatelessWidget {
             child: Text(cat.icon, style: const TextStyle(fontSize: 20)),
           ),
           title: Text('$subCat (${cat.name})', style: const TextStyle(fontWeight: FontWeight.bold)),
-          subtitle: Text('${frequency ?? 'One-time'} • ${AppFormatters.formatCurrency(expectedAmount)}', style: const TextStyle(color: Colors.grey, fontSize: 13)),
+          subtitle: Text('${frequency ?? 'One-time'} • ${AppFormatters.formatCurrency(context, expectedAmount)}', style: const TextStyle(color: Colors.grey, fontSize: 13)),
           children: [
             const Divider(height: 1, indent: 20, endIndent: 20, color: Color(0xFFF1F5F9)),
             Padding(
@@ -163,11 +163,11 @@ class RecurringBillsPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Recurring Bills'),
-        backgroundColor: Theme.of(context).colorScheme.surface,
+        backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
       ),
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: Colors.transparent,
       body: BlocBuilder<CategoryCubit, CategoryState>(
         builder: (context, catState) {
           if (catState is! CategoryLoaded) return const Center(child: CircularProgressIndicator());

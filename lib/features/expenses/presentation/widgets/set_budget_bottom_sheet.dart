@@ -77,7 +77,16 @@ class _SetBudgetBottomSheetState extends State<SetBudgetBottomSheet> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text('Set Monthly Budget', style: theme.textTheme.titleLarge),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('Set Monthly Budget', style: theme.textTheme.titleLarge),
+              IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ],
+          ),
           const SizedBox(height: 24),
           
           if (_selectedCategory == null)

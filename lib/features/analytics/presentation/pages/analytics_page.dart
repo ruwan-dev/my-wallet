@@ -49,7 +49,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
+      backgroundColor: Colors.transparent,
       body: SafeArea(
         child: BlocBuilder<CategoryCubit, CategoryState>(
         builder: (context, catState) {
@@ -322,7 +322,7 @@ class MonthlyCategoryView extends StatelessWidget {
                       children: [
                         const Text('Total', style: TextStyle(color: Color(0xFF64748B), fontSize: 12)),
                         Text(
-                          AppFormatters.formatCurrency(totalExpense),
+                          AppFormatters.formatCurrency(context, totalExpense),
                           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Color(0xFF1E293B)),
                         ),
                       ],
@@ -375,7 +375,7 @@ class MonthlyCategoryView extends StatelessWidget {
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          AppFormatters.formatCurrency(e.value),
+                          AppFormatters.formatCurrency(context, e.value),
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w500,
@@ -442,7 +442,7 @@ class CashFlowMacroCard extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            'Avg. Monthly Savings: ${AppFormatters.formatCurrency(avgSavings)}',
+            'Avg. Monthly Savings: ${AppFormatters.formatCurrency(context, avgSavings)}',
             style: const TextStyle(fontSize: 13, color: Color(0xFF64748B), fontWeight: FontWeight.w500),
           ),
           const SizedBox(height: 24),
@@ -465,7 +465,7 @@ class CashFlowMacroCard extends StatelessWidget {
                         const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
                         children: [
                           TextSpan(
-                            text: AppFormatters.formatCurrency(rod.toY),
+                            text: AppFormatters.formatCurrency(context, rod.toY),
                             style: TextStyle(
                               color: isIncome ? const Color(0xFF10B981) : const Color(0xFFF43F5E),
                               fontSize: 14,
@@ -676,7 +676,7 @@ class TopExpensesView extends StatelessWidget {
                   style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
                 ),
                 trailing: Text(
-                  AppFormatters.formatCurrency(tx.amount),
+                  AppFormatters.formatCurrency(context, tx.amount),
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 15,
@@ -779,7 +779,7 @@ class SpendingHeatmapCard extends StatelessWidget {
                       }
 
                       return Tooltip(
-                        message: '$day ${AppFormatters.formatDate(DateTime(selectedMonth.year, selectedMonth.month, day)).split(' ').last}\nSpent: ${AppFormatters.formatCurrency(expense)}',
+                        message: '$day ${AppFormatters.formatDate(DateTime(selectedMonth.year, selectedMonth.month, day)).split(' ').last}\nSpent: ${AppFormatters.formatCurrency(context, expense)}',
                         decoration: BoxDecoration(
                           color: const Color(0xFF1E293B).withOpacity(0.9),
                           borderRadius: BorderRadius.circular(8),

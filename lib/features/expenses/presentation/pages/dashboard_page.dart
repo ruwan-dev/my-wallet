@@ -3,10 +3,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:uuid/uuid.dart';
 import '../../../auth/presentation/bloc/auth_cubit.dart';
+import '../../../../core/constants/app_constants.dart';
 
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/formatters.dart';
+import '../../../../core/utils/sweep_util.dart';
+import '../../../../core/bloc/settings_cubit.dart';
 import '../../domain/entities/account.dart';
 import '../../domain/entities/transaction.dart';
 import '../bloc/account_cubit.dart';
@@ -15,6 +20,9 @@ import '../bloc/transaction_cubit.dart';
 import '../bloc/transaction_state.dart';
 import '../bloc/budget_cubit.dart';
 import '../bloc/budget_state.dart';
+import '../bloc/category_cubit.dart';
+import '../bloc/category_state.dart';
+import '../../domain/entities/category.dart';
 import '../widgets/empty_state_widget.dart';
 import '../widgets/shimmer_tile.dart';
 import '../widgets/transaction_card.dart';
@@ -28,28 +36,38 @@ import '../pages/budget_setup_page.dart';
 // DashboardPage
 // ─────────────────────────────────────────────────────────────────────────────
 
-class DashboardPage extends StatelessWidget {
+class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
 
   @override
+  State<DashboardPage> createState() => _DashboardPageState();
+}
+
+class _DashboardPageState extends State<DashboardPage> {
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: Colors.transparent,
       body: SafeArea(
         child: BlocListener<TransactionCubit, TransactionState>(
         listenWhen: (previous, current) {
-          return current is TransactionLoaded && 
-                 current.deletedTransaction != null && 
-                 (previous is! TransactionLoaded || previous.deletedTransaction != current.deletedTransaction);
+          // Listen for sweeps when transactions load, AND listen for deletes
+          return current is TransactionLoaded;
         },
         listener: (context, state) {
-          if (state is TransactionLoaded && state.deletedTransaction != null) {
-            ScaffoldMessenger.of(context)
-              ..hideCurrentSnackBar()
-              ..showSnackBar(const SnackBar(
-                content: Text('Transaction deleted'),
-                duration: Duration(seconds: 3),
-              ));
+          if (state is TransactionLoaded) {
+            SweepUtil.checkAndTriggerAutoSweep(context);
+            
+            // To prevent multiple snackbars for the same deletion, we can just rely on the state
+            if (state.deletedTransaction != null) {
+              ScaffoldMessenger.of(context)
+                ..hideCurrentSnackBar()
+                ..showSnackBar(const SnackBar(
+                  content: Text('Transaction deleted'),
+                  duration: Duration(seconds: 3),
+                ));
+              // We should really clear it from state but the cubit handles it after a delay
+            }
           }
         },
         child: Column(
@@ -169,6 +187,13 @@ class DashboardPage extends StatelessWidget {
                     icon: Icons.bar_chart_outlined,
                     color: Colors.orangeAccent,
                     onTap: () => context.push('/analytics'),
+                  ),
+                  const SizedBox(width: 12),
+                  _ToolCard(
+                    title: 'Buckets',
+                    icon: Icons.water_drop_outlined, // or another appropriate icon like an umbrella or wallet
+                    color: Colors.tealAccent,
+                    onTap: () => context.push('/buckets-planner'),
                   ),
                   const SizedBox(width: 12),
                   _ToolCard(
@@ -359,7 +384,7 @@ class _ToolCard extends StatelessWidget {
                       title,
                       style: const TextStyle(
                         color: Colors.white,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w300,
                         fontSize: 12,
                       ),
                       maxLines: 1,
@@ -397,7 +422,12 @@ class _SectionHeader extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(title, style: theme.textTheme.titleMedium),
+        Text(
+          title, 
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w300,
+          ),
+        ),
         if (onAction != null && actionLabel.isNotEmpty)
           InkWell(
             onTap: onAction,
@@ -412,7 +442,7 @@ class _SectionHeader extends StatelessWidget {
                 actionLabel,
                 style: theme.textTheme.labelMedium?.copyWith(
                   color: Colors.white,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w300,
                 ),
               ),
             ),

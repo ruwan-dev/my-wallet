@@ -61,6 +61,7 @@ class AppTheme {
   static ThemeData get darkTheme => ThemeData(
         useMaterial3: true,
         brightness: Brightness.dark,
+        fontFamilyFallback: const ['Noto Color Emoji', 'Noto Sans Sinhala'],
 
         colorScheme: const ColorScheme.dark(
           primary:                _primaryColor,
@@ -191,6 +192,7 @@ class AppTheme {
   static ThemeData get lightTheme => ThemeData(
         useMaterial3: true,
         brightness: Brightness.light,
+        fontFamilyFallback: const ['Noto Color Emoji', 'Noto Sans Sinhala'],
 
         colorScheme: const ColorScheme.light(
           primary:                _primaryColor,

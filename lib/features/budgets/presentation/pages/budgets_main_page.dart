@@ -17,7 +17,7 @@ class BudgetsMainPage extends StatelessWidget {
     return DefaultTabController(
       length: 2,
       child: Scaffold(
-        backgroundColor: theme.colorScheme.surface,
+        backgroundColor: Colors.transparent,
         appBar: AppBar(
           title: const Text('My Budgets'),
           backgroundColor: Colors.transparent,
@@ -127,7 +127,7 @@ class BudgetsMainPage extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        AppFormatters.formatCurrency(budget.totalBudgetLimit),
+                        AppFormatters.formatCurrency(context, budget.totalBudgetLimit),
                         style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w700, 
                           color: isHistory ? theme.colorScheme.onSurface : theme.colorScheme.primary

@@ -1,6 +1,8 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 
+enum BucketType { dailyExpenses, splurge, smile, fire, mojo, grow, none }
+
 /// Domain entity representing an expense category.
 class Category extends Equatable {
   final String id;
@@ -11,6 +13,8 @@ class Category extends Equatable {
   final bool isIncome;
   final List<String> subcategories;
   final Map<String, dynamic> recurringConfigs;
+  final BucketType bucketType;
+  final Map<String, BucketType> subcategoryBuckets;
 
   const Category({
     required this.id,
@@ -21,6 +25,8 @@ class Category extends Equatable {
     this.isIncome = false,
     this.subcategories = const [],
     this.recurringConfigs = const {},
+    this.bucketType = BucketType.none,
+    this.subcategoryBuckets = const {},
   });
 
   Category copyWith({
@@ -32,6 +38,8 @@ class Category extends Equatable {
     bool? isIncome,
     List<String>? subcategories,
     Map<String, dynamic>? recurringConfigs,
+    BucketType? bucketType,
+    Map<String, BucketType>? subcategoryBuckets,
   }) {
     return Category(
       id: id ?? this.id,
@@ -42,11 +50,27 @@ class Category extends Equatable {
       isIncome: isIncome ?? this.isIncome,
       subcategories: subcategories ?? this.subcategories,
       recurringConfigs: recurringConfigs ?? this.recurringConfigs,
+      bucketType: bucketType ?? this.bucketType,
+      subcategoryBuckets: subcategoryBuckets ?? this.subcategoryBuckets,
     );
   }
 
   @override
-  List<Object?> get props => [id, name, icon, color, isDefault, isIncome, subcategories, recurringConfigs];
+  List<Object?> get props => [id, name, icon, color, isDefault, isIncome, subcategories, recurringConfigs, bucketType, subcategoryBuckets];
+}
+
+extension BucketTypeExtension on BucketType {
+  String get displayName {
+    switch (this) {
+      case BucketType.dailyExpenses: return 'Daily Expenses';
+      case BucketType.splurge: return 'Splurge';
+      case BucketType.smile: return 'Smile';
+      case BucketType.fire: return 'Fire';
+      case BucketType.mojo: return 'Mojo';
+      case BucketType.grow: return 'Grow';
+      case BucketType.none: return 'None';
+    }
+  }
 }
 
 /// Pre-defined default categories shipped with the app.
@@ -78,6 +102,8 @@ class DefaultCategories {
           recurringConfigs: e.containsKey('recurringConfigs') 
               ? Map<String, dynamic>.from(e['recurringConfigs'] as Map)
               : {},
+          bucketType: BucketType.none,
+          subcategoryBuckets: const {},
         ),
       )
       .toList();

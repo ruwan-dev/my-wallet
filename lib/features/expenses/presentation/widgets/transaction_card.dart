@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
+
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../domain/entities/transaction.dart';
 import '../../domain/entities/category.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../bloc/transaction_cubit.dart';
+import 'package:go_router/go_router.dart';
 
 class TransactionCard extends StatelessWidget {
   final TransactionEntity transaction;
@@ -33,11 +34,11 @@ class TransactionCard extends StatelessWidget {
     final amountColor = isIncome ? Colors.green.shade600 : const Color(0xFFE05263); // Soft Crimson/Coral
 
     final amountText =
-        '${isIncome ? '+' : '-'}${AppFormatters.formatCurrency(transaction.amount)}';
+        '${isIncome ? '+' : '-'}${AppFormatters.formatCurrency(context, transaction.amount)}';
 
     final cardContent = InkWell(
       onTap: () => context.push(
-        '/edit-expense/${transaction.id}',
+        '/add-transaction',
         extra: transaction,
       ),
       borderRadius: BorderRadius.circular(20),

@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../domain/entities/transaction.dart';
+import '../../domain/entities/category.dart';
 
 class TransactionModel {
   final String id;
@@ -20,6 +21,7 @@ class TransactionModel {
   final String? transferAccountId;
   final bool isFavorite;
   final bool isFixedExpense;
+  final BucketType? bucketType;
 
   TransactionModel({
     required this.id,
@@ -40,6 +42,7 @@ class TransactionModel {
     this.transferAccountId,
     this.isFavorite = false,
     this.isFixedExpense = false,
+    this.bucketType,
   });
 
   factory TransactionModel.fromEntity(TransactionEntity entity) {
@@ -62,6 +65,7 @@ class TransactionModel {
       transferAccountId: entity.transferAccountId,
       isFavorite: entity.isFavorite,
       isFixedExpense: entity.isFixedExpense,
+      bucketType: entity.bucketType,
     );
   }
 
@@ -85,10 +89,18 @@ class TransactionModel {
       transferAccountId: transferAccountId,
       isFavorite: isFavorite,
       isFixedExpense: isFixedExpense,
+      bucketType: bucketType,
     );
   }
 
   factory TransactionModel.fromFirestore(Map<String, dynamic> data, String documentId) {
+    BucketType? parsedBucketType;
+    if (data['bucketType'] != null) {
+      try {
+        parsedBucketType = BucketType.values.firstWhere((e) => e.name == data['bucketType']);
+      } catch (_) {}
+    }
+
     return TransactionModel(
       id: documentId,
       userId: data['userId'] ?? '',
@@ -108,6 +120,7 @@ class TransactionModel {
       transferAccountId: data['transferAccountId'],
       isFavorite: data['isFavorite'] ?? false,
       isFixedExpense: data['isFixedExpense'] ?? false,
+      bucketType: parsedBucketType,
     );
   }
 
@@ -130,6 +143,7 @@ class TransactionModel {
       if (transferAccountId != null) 'transferAccountId': transferAccountId,
       'isFavorite': isFavorite,
       'isFixedExpense': isFixedExpense,
+      if (bucketType != null) 'bucketType': bucketType!.name,
     };
   }
 }

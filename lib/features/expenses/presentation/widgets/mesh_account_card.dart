@@ -101,7 +101,7 @@ class MeshAccountCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    AppFormatters.formatCurrency(account.balance.abs()),
+                    AppFormatters.formatCurrency(context, account.balance.abs()),
                     style: const TextStyle(
                       color: Color(0xFF1E293B), // Dark Slate
                       fontSize: 16,

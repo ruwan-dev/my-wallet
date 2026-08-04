@@ -17,7 +17,7 @@ class AccountsPage extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         title: const Text('My Accounts'),
         backgroundColor: Colors.transparent,
@@ -174,14 +174,14 @@ class _AccountListTile extends StatelessWidget {
               children: [
                 if (account.type == AccountType.liability) ...[
                   Text(
-                    AppFormatters.formatCurrency(account.creditLimit - account.balance),
+                    AppFormatters.formatCurrency(context, account.creditLimit - account.balance),
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    AppFormatters.formatCurrency(account.balance),
+                    AppFormatters.formatCurrency(context, account.balance),
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.error,
                       fontWeight: FontWeight.w600,
@@ -189,7 +189,7 @@ class _AccountListTile extends StatelessWidget {
                   ),
                 ] else ...[
                   Text(
-                    AppFormatters.formatCurrency(account.balance),
+                    AppFormatters.formatCurrency(context, account.balance),
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),

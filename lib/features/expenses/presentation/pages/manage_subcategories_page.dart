@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../../core/bloc/settings_cubit.dart';
 import '../../domain/entities/category.dart';
 import '../bloc/category_cubit.dart';
 import '../bloc/category_state.dart';
@@ -13,7 +15,9 @@ class ManageSubcategoriesPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
         title: BlocBuilder<CategoryCubit, CategoryState>(
           builder: (context, state) {
             if (state is CategoryLoaded) {
@@ -60,6 +64,10 @@ class ManageSubcategoriesPage extends StatelessWidget {
                         onPressed: () => _showRecurringSetup(context, category, sub),
                       ),
                       IconButton(
+                        icon: const Icon(Icons.edit, color: Colors.blue),
+                        onPressed: () => _editSubcategory(context, category, sub),
+                      ),
+                      IconButton(
                         icon: const Icon(Icons.delete_outline, color: Colors.red),
                         onPressed: () => _deleteSubcategory(context, category, sub),
                       ),
@@ -93,33 +101,187 @@ class ManageSubcategoriesPage extends StatelessWidget {
       context: context,
       builder: (ctx) {
         final ctrl = TextEditingController();
-        return AlertDialog(
-          title: const Text('Add Subcategory'),
-          content: TextField(
-            controller: ctrl,
-            decoration: const InputDecoration(hintText: 'Subcategory Name'),
-            textCapitalization: TextCapitalization.words,
-            autofocus: true,
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () {
-                final text = ctrl.text.trim();
-                if (text.isNotEmpty && !category.subcategories.contains(text)) {
-                  final updated = category.copyWith(
-                    subcategories: [...category.subcategories, text],
-                  );
-                  context.read<CategoryCubit>().updateCategory(updated);
-                }
-                Navigator.pop(ctx);
-              },
-              child: const Text('Add'),
-            ),
-          ],
+        BucketType selectedBucket = category.bucketType != BucketType.none ? category.bucketType : BucketType.dailyExpenses;
+
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('Add Subcategory'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  TextField(
+                    controller: ctrl,
+                    decoration: const InputDecoration(hintText: 'Subcategory Name'),
+                    textCapitalization: TextCapitalization.words,
+                    autofocus: true,
+                  ),
+                  const SizedBox(height: 24),
+                  const Text('Assign to Bucket', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF1E293B))),
+                  const SizedBox(height: 12),
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: BucketType.values.where((b) => b != BucketType.none).map((bucket) {
+                        final isSelected = selectedBucket == bucket;
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 8.0),
+                          child: ChoiceChip(
+                            label: Text(
+                              bucket.displayName,
+                              style: TextStyle(
+                                color: isSelected ? Colors.white : const Color(0xFF1E293B),
+                                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                              ),
+                            ),
+                            selected: isSelected,
+                            onSelected: (selected) {
+                              if (selected) {
+                                setState(() => selectedBucket = bucket);
+                              }
+                            },
+                            selectedColor: const Color(0xFF6D28D9),
+                            backgroundColor: Colors.grey.shade200,
+                            side: BorderSide.none,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Cancel'),
+                ),
+                FilledButton(
+                  onPressed: () {
+                    final text = ctrl.text.trim();
+                    if (text.isNotEmpty && !category.subcategories.contains(text)) {
+                      final updatedBuckets = Map<String, BucketType>.from(category.subcategoryBuckets);
+                      updatedBuckets[text] = selectedBucket;
+
+                      final updated = category.copyWith(
+                        subcategories: [...category.subcategories, text],
+                        subcategoryBuckets: updatedBuckets,
+                      );
+                      context.read<CategoryCubit>().updateCategory(updated);
+                    }
+                    Navigator.pop(ctx);
+                  },
+                  child: const Text('Add'),
+                ),
+              ],
+            );
+          }
+        );
+      },
+    );
+  }
+
+  void _editSubcategory(BuildContext context, Category category, String oldName) {
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        final ctrl = TextEditingController(text: oldName);
+        BucketType selectedBucket = category.subcategoryBuckets[oldName] ?? BucketType.none;
+
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('Edit Subcategory'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  TextField(
+                    controller: ctrl,
+                    decoration: const InputDecoration(hintText: 'Subcategory Name'),
+                    textCapitalization: TextCapitalization.words,
+                    autofocus: true,
+                  ),
+                  const SizedBox(height: 24),
+                  const Text('Assign to Bucket', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF1E293B))),
+                  const SizedBox(height: 12),
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: BucketType.values.where((b) => b != BucketType.none).map((bucket) {
+                        final isSelected = selectedBucket == bucket;
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 8.0),
+                          child: ChoiceChip(
+                            label: Text(
+                              bucket.displayName,
+                              style: TextStyle(
+                                color: isSelected ? Colors.white : const Color(0xFF1E293B),
+                                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                              ),
+                            ),
+                            selected: isSelected,
+                            onSelected: (selected) {
+                              if (selected) {
+                                setState(() => selectedBucket = bucket);
+                              }
+                            },
+                            selectedColor: const Color(0xFF6D28D9), // Deep Purple
+                            backgroundColor: Colors.grey.shade200,
+                            side: BorderSide.none,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Cancel'),
+                ),
+                FilledButton(
+                  style: FilledButton.styleFrom(backgroundColor: const Color(0xFF6D28D9)),
+                  onPressed: () {
+                    final newName = ctrl.text.trim();
+                    if (newName.isEmpty) return;
+
+                    // Rename logic
+                    final updatedSubcategories = List<String>.from(category.subcategories);
+                    final index = updatedSubcategories.indexOf(oldName);
+                    if (index != -1) {
+                      updatedSubcategories[index] = newName;
+                    }
+
+                    // Update buckets map
+                    final updatedBuckets = Map<String, BucketType>.from(category.subcategoryBuckets);
+                    updatedBuckets.remove(oldName);
+                    if (selectedBucket != BucketType.none) {
+                      updatedBuckets[newName] = selectedBucket;
+                    }
+
+                    // Update recurring configs map
+                    final updatedRecurringConfigs = Map<String, dynamic>.from(category.recurringConfigs);
+                    if (updatedRecurringConfigs.containsKey(oldName)) {
+                      updatedRecurringConfigs[newName] = updatedRecurringConfigs.remove(oldName);
+                    }
+
+                    final updated = category.copyWith(
+                      subcategories: updatedSubcategories,
+                      subcategoryBuckets: updatedBuckets,
+                      recurringConfigs: updatedRecurringConfigs,
+                    );
+                    context.read<CategoryCubit>().updateCategory(updated);
+                    Navigator.pop(ctx);
+                  },
+                  child: const Text('Save Changes', style: TextStyle(color: Colors.white)),
+                ),
+              ],
+            );
+          }
         );
       },
     );
@@ -201,10 +363,10 @@ class ManageSubcategoriesPage extends StatelessWidget {
                   TextField(
                     controller: amountController,
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: 'Expected Amount',
-                      border: OutlineInputBorder(),
-                      prefixText: '\$ ',
+                      border: const OutlineInputBorder(),
+                      prefixText: '${ctx.watch<SettingsCubit>().state.currencySymbol} ',
                     ),
                   ),
                   const SizedBox(height: 16),

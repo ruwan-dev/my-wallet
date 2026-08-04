@@ -90,7 +90,7 @@ class FixedExpensesTile extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      AppFormatters.formatCurrency(fixedExpenses),
+                      AppFormatters.formatCurrency(context, fixedExpenses),
                       style: theme.textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: AppTheme.expenseColor,

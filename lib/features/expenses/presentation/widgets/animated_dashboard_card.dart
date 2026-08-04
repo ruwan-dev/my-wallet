@@ -82,7 +82,7 @@ class _AnimatedDashboardCardState extends State<AnimatedDashboardCard>
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  AppFormatters.formatCurrency(widget.totalBalance),
+                  AppFormatters.formatCurrency(context, widget.totalBalance),
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 48,
@@ -140,7 +140,7 @@ class _AnimatedDashboardCardState extends State<AnimatedDashboardCard>
           ),
           const SizedBox(height: 4),
           Text(
-            AppFormatters.formatCurrency(amount),
+            AppFormatters.formatCurrency(context, amount),
             style: const TextStyle(
               color: Colors.white,
               fontSize: 14,

@@ -90,7 +90,7 @@ class MonthlyBudgetProgressCard extends StatelessWidget {
                       style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
                     ),
                     Text(
-                      '${AppFormatters.formatCurrency(totalSpent)} / ${AppFormatters.formatCurrency(budget.totalBudgetLimit)}',
+                      '${AppFormatters.formatCurrency(context, totalSpent)} / ${AppFormatters.formatCurrency(context, budget.totalBudgetLimit)}',
                       style: theme.textTheme.bodyMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: isTotalOver ? theme.colorScheme.error : theme.colorScheme.primary,
@@ -131,7 +131,7 @@ class MonthlyBudgetProgressCard extends StatelessWidget {
                                         children: [
                                           Text(cat.name, style: theme.textTheme.bodySmall),
                                           Text(
-                                            '${AppFormatters.formatCurrency(spent)} / ${AppFormatters.formatCurrency(limit)}',
+                                            '${AppFormatters.formatCurrency(context, spent)} / ${AppFormatters.formatCurrency(context, limit)}',
                                             style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                                           ),
                                         ],

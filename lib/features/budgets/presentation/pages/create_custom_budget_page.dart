@@ -235,7 +235,7 @@ class _CreateCustomBudgetPageState extends State<CreateCustomBudgetPage> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: theme.colorScheme.surface,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         title: Text(widget.existingBudget == null ? 'Create Budget' : 'Edit Budget'),
         backgroundColor: Colors.transparent,
@@ -410,7 +410,7 @@ class _CreateCustomBudgetPageState extends State<CreateCustomBudgetPage> {
                 Text('Total Allocated', style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
                 const SizedBox(height: 4),
                 Text(
-                  AppFormatters.formatCurrency(totalAllocated),
+                  AppFormatters.formatCurrency(context, totalAllocated),
                   style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: theme.colorScheme.primary),
                 ),
                 const SizedBox(height: 16),

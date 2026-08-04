@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'category.dart';
 
 class TransactionEntity extends Equatable {
   final String id;
@@ -19,6 +20,7 @@ class TransactionEntity extends Equatable {
   final String? transferAccountId;
   final bool isFavorite;
   final bool isFixedExpense;
+  final BucketType? bucketType;
 
   const TransactionEntity({
     required this.id,
@@ -39,6 +41,7 @@ class TransactionEntity extends Equatable {
     this.transferAccountId,
     this.isFavorite = false,
     this.isFixedExpense = false,
+    this.bucketType,
   });
 
   double get signedAmount => isIncome ? amount : -amount;
@@ -62,33 +65,51 @@ class TransactionEntity extends Equatable {
     String? transferAccountId,
     bool? isFavorite,
     bool? isFixedExpense,
-  }) =>
-      TransactionEntity(
-        id:           id           ?? this.id,
-        accountId:    accountId    ?? this.accountId,
-        userId:       userId       ?? this.userId,
-        title:        title        ?? this.title,
-        amount:       amount       ?? this.amount,
-        categoryId:   categoryId   ?? this.categoryId,
-        categoryName: categoryName ?? this.categoryName,
-        subCategory:  subCategory  ?? this.subCategory,
-        date:         date         ?? this.date,
-        isIncome:     isIncome     ?? this.isIncome,
-        note:         note         ?? this.note,
-        createdAt:    createdAt    ?? this.createdAt,
-        updatedAt:    updatedAt    ?? this.updatedAt,
-        recurrenceFrequency: recurrenceFrequency ?? this.recurrenceFrequency,
-        nextDueDate:  nextDueDate  ?? this.nextDueDate,
-        transferAccountId: transferAccountId ?? this.transferAccountId,
-        isFavorite:   isFavorite   ?? this.isFavorite,
-        isFixedExpense: isFixedExpense ?? this.isFixedExpense,
-      );
+    BucketType? bucketType,
+  }) {
+    return TransactionEntity(
+      id: id ?? this.id,
+      accountId: accountId ?? this.accountId,
+      userId: userId ?? this.userId,
+      title: title ?? this.title,
+      amount: amount ?? this.amount,
+      categoryId: categoryId ?? this.categoryId,
+      categoryName: categoryName ?? this.categoryName,
+      subCategory: subCategory ?? this.subCategory,
+      date: date ?? this.date,
+      isIncome: isIncome ?? this.isIncome,
+      note: note ?? this.note,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      recurrenceFrequency: recurrenceFrequency ?? this.recurrenceFrequency,
+      nextDueDate: nextDueDate ?? this.nextDueDate,
+      transferAccountId: transferAccountId ?? this.transferAccountId,
+      isFavorite: isFavorite ?? this.isFavorite,
+      isFixedExpense: isFixedExpense ?? this.isFixedExpense,
+      bucketType: bucketType ?? this.bucketType,
+    );
+  }
 
   @override
   List<Object?> get props => [
-        id, accountId, userId, title, amount, categoryId,
-        categoryName, subCategory, date, isIncome, note, createdAt, updatedAt,
-        recurrenceFrequency, nextDueDate, transferAccountId, isFavorite,
+        id,
+        accountId,
+        userId,
+        title,
+        amount,
+        categoryId,
+        categoryName,
+        subCategory,
+        date,
+        isIncome,
+        note,
+        createdAt,
+        updatedAt,
+        recurrenceFrequency,
+        nextDueDate,
+        transferAccountId,
+        isFavorite,
         isFixedExpense,
+        bucketType,
       ];
 }

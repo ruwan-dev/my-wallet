@@ -1,6 +1,8 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../features/expenses/presentation/pages/transactions_page.dart';
+import '../../features/expenses/presentation/pages/account_transactions_page.dart';
 
 // ─── Core Breakpoints ────────────────────────────────────────────────────────
 
@@ -93,18 +95,21 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
     return InkWell(
       onTap: () => widget.onNavigation?.call(index),
       borderRadius: BorderRadius.circular(20),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: isSelected ? activeColor.withOpacity(0.15) : Colors.transparent,
-          borderRadius: BorderRadius.circular(20),
-        ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(isSelected ? activeIcon : icon, color: color, size: 24),
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: isSelected ? activeColor.withOpacity(0.15) : Colors.transparent,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(isSelected ? activeIcon : icon, color: color, size: 24),
+            ),
             const SizedBox(height: 2),
             Text(
               label,
@@ -157,7 +162,7 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
                     _buildNavItem(0, Icons.home_outlined, Icons.home_rounded, 'Home'),
-                    _buildNavItem(1, Icons.bar_chart_outlined, Icons.bar_chart_rounded, 'Analytics'),
+                    _buildNavItem(1, Icons.category_outlined, Icons.category_rounded, 'Categories'),
                     const SizedBox(width: 48), // Space for FAB
                     _buildNavItem(2, Icons.account_balance_wallet_outlined, Icons.account_balance_wallet_rounded, 'Accounts'),
                     _buildNavItem(3, Icons.person_outline_rounded, Icons.person_rounded, 'Profile'),
@@ -185,7 +190,7 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
                 ],
               ),
               child: FloatingActionButton(
-                onPressed: () => context.push('/add-expense'),
+                onPressed: () => context.push('/add-transaction'),
                 backgroundColor: Colors.transparent,
                 elevation: 0,
                 child: const Icon(Icons.add_rounded, color: Colors.white, size: 28),
@@ -227,13 +232,13 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
               // Nav Items
               _buildDesktopNavItem(0, Icons.home_outlined, Icons.home_rounded, 'Home'),
               const SizedBox(height: 24),
-              _buildDesktopNavItem(1, Icons.bar_chart_outlined, Icons.bar_chart_rounded, 'Analytics'),
+              _buildDesktopNavItem(1, Icons.category_outlined, Icons.category_rounded, 'Categories'),
               
               const SizedBox(height: 32),
               
               // Add Button
               GestureDetector(
-                onTap: () => context.push('/add-expense'),
+                onTap: () => context.push('/add-transaction'),
                 child: Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
@@ -279,20 +284,23 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
       onTap: () => widget.onNavigation?.call(index),
       splashColor: Colors.transparent,
       highlightColor: Colors.transparent,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
+      child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 12),
-        padding: const EdgeInsets.symmetric(vertical: 12),
+        padding: const EdgeInsets.symmetric(vertical: 8),
         width: double.infinity,
-        decoration: BoxDecoration(
-          color: isSelected ? activeColor.withOpacity(0.15) : Colors.transparent,
-          borderRadius: BorderRadius.circular(16),
-        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(isSelected ? activeIcon : icon, color: color, size: 26),
-            const SizedBox(height: 6),
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: isSelected ? activeColor.withOpacity(0.15) : Colors.transparent,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(isSelected ? activeIcon : icon, color: color, size: 26),
+            ),
+            const SizedBox(height: 4),
             Text(
               label,
               style: TextStyle(

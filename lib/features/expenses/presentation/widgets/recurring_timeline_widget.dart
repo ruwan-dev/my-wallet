@@ -85,7 +85,7 @@ class RecurringTimelineWidget extends StatelessWidget {
                           ),
                           if (event.amount > 0)
                             Text(
-                              AppFormatters.formatCurrency(event.amount),
+                              AppFormatters.formatCurrency(context, event.amount),
                               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF1E293B)),
                             ),
                         ],

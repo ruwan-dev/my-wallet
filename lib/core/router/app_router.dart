@@ -7,6 +7,7 @@ import '../../features/debug/presentation/pages/debug_database_page.dart';
 import '../../features/expenses/domain/entities/transaction.dart';
 import '../../features/expenses/presentation/pages/dashboard_page.dart';
 import '../../features/expenses/presentation/pages/add_transaction_page.dart';
+
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/register_page.dart';
 import '../../features/auth/presentation/bloc/auth_cubit.dart';
@@ -25,6 +26,7 @@ import '../../features/expenses/domain/entities/account.dart';
 import '../widgets/responsive_layout.dart';
 import '../../features/budgets/presentation/pages/budgets_main_page.dart';
 import '../../features/expenses/presentation/pages/recurring_bills_page.dart';
+import '../../features/budgets/presentation/pages/bucket_planner_page.dart';
 class GoRouterRefreshStream extends ChangeNotifier {
   GoRouterRefreshStream(Stream<dynamic> stream) {
     notifyListeners();
@@ -67,6 +69,29 @@ final appRouter = GoRouter(
       path: '/register',
       builder: (context, state) => const RegisterPage(),
     ),
+    GoRoute(
+      path: '/add-transaction',
+      pageBuilder: (context, state) => CustomTransitionPage(
+        key: state.pageKey,
+        child: PremiumAuroraVectorBackground(
+          child: AddTransactionPage(
+            existingTransaction: state.extra as TransactionEntity?,
+          ),
+        ),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(0, 1),
+              end: Offset.zero,
+            ).animate(CurvedAnimation(
+              parent: animation,
+              curve: Curves.easeOutCubic,
+            )),
+            child: child,
+          );
+        },
+      ),
+    ),
     StatefulShellRoute.indexedStack(
       builder: (context, state, navigationShell) {
         return PremiumAuroraVectorBackground(
@@ -88,6 +113,40 @@ final appRouter = GoRouter(
             GoRoute(
               path: '/',
               builder: (context, state) => const DashboardPage(),
+              routes: [
+                GoRoute(
+                  path: 'budgets-main',
+                  pageBuilder: (context, state) {
+                    final isDesktop = MediaQuery.of(context).size.width >= kTabletMaxWidth;
+                    if (isDesktop) return const NoTransitionPage(child: BudgetsMainPage());
+                    return const MaterialPage(child: BudgetsMainPage());
+                  },
+                ),
+                GoRoute(
+                  path: 'buckets-planner',
+                  pageBuilder: (context, state) {
+                    final isDesktop = MediaQuery.of(context).size.width >= kTabletMaxWidth;
+                    if (isDesktop) return const NoTransitionPage(child: BucketPlannerPage());
+                    return const MaterialPage(child: BucketPlannerPage());
+                  },
+                ),
+                GoRoute(
+                  path: 'analytics',
+                  pageBuilder: (context, state) {
+                    final isDesktop = MediaQuery.of(context).size.width >= kTabletMaxWidth;
+                    if (isDesktop) return const NoTransitionPage(child: AnalyticsPage());
+                    return const MaterialPage(child: AnalyticsPage());
+                  },
+                ),
+                GoRoute(
+                  path: 'recurring-bills',
+                  pageBuilder: (context, state) {
+                    final isDesktop = MediaQuery.of(context).size.width >= kTabletMaxWidth;
+                    if (isDesktop) return const NoTransitionPage(child: RecurringBillsPage());
+                    return const MaterialPage(child: RecurringBillsPage());
+                  },
+                ),
+              ],
             ),
           ],
         ),
@@ -117,45 +176,7 @@ final appRouter = GoRouter(
         ),
       ],
     ),
-    GoRoute(
-      path: '/budgets-main',
-      builder: (context, state) => const BudgetsMainPage(),
-    ),
-    GoRoute(
-      path: '/analytics',
-      builder: (context, state) => const AnalyticsPage(),
-    ),
-    GoRoute(
-      path: '/add-expense',
-      pageBuilder: (context, state) => CustomTransitionPage(
-        key: state.pageKey,
-        child: const AddTransactionPage(),
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return SlideTransition(
-            position: Tween<Offset>(begin: const Offset(0, 1), end: Offset.zero)
-                .animate(CurvedAnimation(parent: animation, curve: Curves.easeOut)),
-            child: child,
-          );
-        },
-      ),
-    ),
-    GoRoute(
-      path: '/edit-expense/:id',
-      pageBuilder: (context, state) {
-        final transaction = state.extra as TransactionEntity?;
-        return CustomTransitionPage(
-          key: state.pageKey,
-          child: AddTransactionPage(existingTransaction: transaction),
-          transitionsBuilder: (context, animation, secondaryAnimation, child) {
-            return SlideTransition(
-              position: Tween<Offset>(begin: const Offset(0, 1), end: Offset.zero)
-                  .animate(CurvedAnimation(parent: animation, curve: Curves.easeOut)),
-              child: child,
-            );
-          },
-        );
-      },
-    ),
+
     GoRoute(
       path: '/debug',
       builder: (context, state) => const DebugDatabasePage(),
@@ -174,10 +195,6 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/all-transactions',
       builder: (context, state) => const TransactionsPage(),
-    ),
-    GoRoute(
-      path: '/recurring-bills',
-      builder: (context, state) => const RecurringBillsPage(),
     ),
   ],
 );
