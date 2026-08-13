@@ -29,7 +29,7 @@ class CategoryRepositoryImpl implements CategoryRepository {
         final remoteModels = await remoteDatasource.getAllCategories(userId);
         return remoteModels.map((e) => e.toEntity()).toList();
       } else {
-        final localModels = await localDatasource.getAllCategories();
+        final localModels = await localDatasource.getAllCategories(userId);
         // Since local categories don't enforce userId in get all yet, filter them if needed or just return.
         return localModels.map((e) => e.toEntity()).toList();
       }
@@ -47,14 +47,14 @@ class CategoryRepositoryImpl implements CategoryRepository {
       });
     } else {
       // Assuming no watch stream for Hive categories yet, just return single future as stream
-      yield* Stream.fromFuture(localDatasource.getAllCategories())
+      yield* Stream.fromFuture(localDatasource.getAllCategories(userId))
           .map((localModels) => localModels.map((e) => e.toEntity()).toList());
     }
   }
 
   @override
   Future<void> saveCategory(String userId, Category category) async {
-    final model = CategoryModel.fromEntity(category);
+    final model = CategoryModel.fromEntity(category, userId: userId);
     final isPremium = await _isPremium();
     if (isPremium) {
       await remoteDatasource.saveCategory(userId, model);

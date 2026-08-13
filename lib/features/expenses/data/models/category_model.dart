@@ -36,6 +36,9 @@ class CategoryModel extends HiveObject {
   @HiveField(9, defaultValue: {})
   final Map<dynamic, dynamic>? subcategoryBuckets;
 
+  @HiveField(10, defaultValue: '')
+  final String userId;
+
   CategoryModel({
     required this.id,
     required this.name,
@@ -47,9 +50,10 @@ class CategoryModel extends HiveObject {
     this.recurringConfigs,
     this.bucketType = 'none',
     this.subcategoryBuckets = const {},
+    this.userId = '',
   });
 
-  factory CategoryModel.fromEntity(Category entity) {
+  factory CategoryModel.fromEntity(Category entity, {String userId = ''}) {
     return CategoryModel(
       id: entity.id,
       name: entity.name,
@@ -61,6 +65,7 @@ class CategoryModel extends HiveObject {
       recurringConfigs: entity.recurringConfigs,
       bucketType: entity.bucketType.name,
       subcategoryBuckets: entity.subcategoryBuckets.map((key, value) => MapEntry(key, value.name)),
+      userId: userId,
     );
   }
 
@@ -100,6 +105,7 @@ class CategoryModel extends HiveObject {
       recurringConfigs: json['recurringConfigs'] as Map<dynamic, dynamic>?,
       bucketType: json['bucketType'] as String? ?? 'none',
       subcategoryBuckets: json['subcategoryBuckets'] as Map<dynamic, dynamic>?,
+      userId: json['userId'] as String? ?? '',
     );
   }
 
@@ -115,6 +121,7 @@ class CategoryModel extends HiveObject {
       'recurringConfigs': recurringConfigs,
       'bucketType': bucketType,
       'subcategoryBuckets': subcategoryBuckets,
+      'userId': userId,
     };
   }
 }

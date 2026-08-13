@@ -29,13 +29,14 @@ class CategoryModelAdapter extends TypeAdapter<CategoryModel> {
       subcategoryBuckets: fields[9] == null
           ? {}
           : (fields[9] as Map?)?.cast<dynamic, dynamic>(),
+      userId: fields[10] == null ? '' : fields[10] as String,
     );
   }
 
   @override
   void write(BinaryWriter writer, CategoryModel obj) {
     writer
-      ..writeByte(10)
+      ..writeByte(11)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -55,7 +56,9 @@ class CategoryModelAdapter extends TypeAdapter<CategoryModel> {
       ..writeByte(8)
       ..write(obj.bucketType)
       ..writeByte(9)
-      ..write(obj.subcategoryBuckets);
+      ..write(obj.subcategoryBuckets)
+      ..writeByte(10)
+      ..write(obj.userId);
   }
 
   @override
