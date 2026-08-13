@@ -31,8 +31,120 @@
 
   <title>expense_tracker</title>
   <link rel="manifest" href="manifest.json">
+  <style>
+    body {
+      background-color: #1E1B4B;
+      margin: 0;
+      height: 100vh;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    .loader-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: #0F0C29;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      overflow: hidden;
+    }
+    .aurora-blob {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(100px);
+      z-index: -1;
+      animation: float 10s infinite ease-in-out alternate;
+    }
+    .blob-1 {
+      top: -20%; left: -10%; width: 60vw; height: 60vw; background: rgba(124, 58, 237, 0.4);
+    }
+    .blob-2 {
+      bottom: -20%; right: -10%; width: 70vw; height: 70vw; background: rgba(49, 16, 96, 0.6); animation-delay: -5s;
+    }
+    .blob-3 {
+      top: 30%; left: 20%; width: 50vw; height: 50vw; background: rgba(167, 139, 250, 0.2); animation-duration: 15s;
+    }
+    @keyframes float {
+      0% { transform: translate(0, 0) scale(1); }
+      100% { transform: translate(5vw, 5vh) scale(1.1); }
+    }
+    .progress-bar {
+      width: 200px;
+      height: 2px;
+      background: rgba(255, 255, 255, 0.1);
+      margin-bottom: 24px;
+      position: relative;
+      overflow: hidden;
+      border-radius: 2px;
+    }
+    .progress-bar::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 40%;
+      height: 100%;
+      background: #A78BFA;
+      border-radius: 2px;
+      animation: progress 1.5s ease-in-out infinite;
+    }
+    @keyframes progress {
+      0% { left: -40%; }
+      100% { left: 100%; }
+    }
+    .statement {
+      font-size: 1.4rem;
+      font-weight: 500;
+      color: #E2E8F0;
+      letter-spacing: 0.5px;
+      animation: pulse 2s infinite ease-in-out;
+      text-align: center;
+      max-width: 80%;
+    }
+    .company {
+      font-size: 0.75rem;
+      color: #94A3B8;
+      margin-top: 8px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+    }
+    @keyframes pulse {
+      0% { opacity: 0.7; }
+      50% { opacity: 1; }
+      100% { opacity: 0.7; }
+    }
+  </style>
 </head>
 <body>
+  <div id="loading-screen" class="loader-container">
+    <div class="aurora-blob blob-1"></div>
+    <div class="aurora-blob blob-2"></div>
+    <div class="aurora-blob blob-3"></div>
+    <div class="progress-bar"></div>
+    <div class="statement" id="loading-statement">Focus on the discipline, not the amount..</div>
+    <div class="company">OrbitView Innovations</div>
+  </div>
+
   <script src="flutter_bootstrap.js" async></script>
+  
+  <script>
+    // Remove the loading screen once Flutter renders the first frame
+    window.addEventListener('flutter-first-frame', function() {
+      var loadingScreen = document.getElementById('loading-screen');
+      if (loadingScreen) {
+        // Fade out transition
+        loadingScreen.style.transition = 'opacity 0.5s ease-out';
+        loadingScreen.style.opacity = '0';
+        setTimeout(function() {
+          loadingScreen.remove();
+        }, 500);
+      }
+    });
+  </script>
 </body>
 </html>
