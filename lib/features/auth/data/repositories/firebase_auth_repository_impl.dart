@@ -30,19 +30,14 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
           forceSync: data['forceSync'] ?? false,
         );
       } else {
-        // Fallback for old users
-        final user = UserEntity(id: uid, email: email, isPremium: false, isAdmin: false, forceSync: false);
-        await _firestore.collection('users').doc(uid).set({
-          'email': email,
-          'isPremium': false,
-          'isAdmin': false,
-          'forceSync': false,
-        });
-        return user;
+        // Prevent login if Firestore document was deleted
+        await _firebaseAuth.signOut();
+        throw Exception('User data not found in the database. Please register again.');
       }
     } on FirebaseAuthException catch (e) {
       throw Exception(_mapAuthErrorCode(e.code));
     } catch (e) {
+      if (e.toString().contains('User data not found')) rethrow;
       throw Exception('An unexpected error occurred during login.');
     }
   }
@@ -86,6 +81,18 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
   Future<UserEntity?> getCurrentUser() async {
     final firebaseUser = _firebaseAuth.currentUser;
     if (firebaseUser != null) {
+      try {
+        // Force verification with Firebase servers to ensure the user wasn't manually deleted or disabled
+        await firebaseUser.reload();
+      } on FirebaseAuthException catch (e) {
+        if (e.code == 'user-not-found' || e.code == 'user-disabled') {
+          await _firebaseAuth.signOut();
+          return null;
+        }
+      } catch (_) {
+        // Ignore network errors so the app still works offline
+      }
+
       final doc = await _firestore.collection('users').doc(firebaseUser.uid).get();
       if (doc.exists) {
         final data = doc.data()!;
@@ -98,16 +105,9 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
         );
       }
       
-      // Auto-migrate existing old users who authenticated before we had a users collection
-      final email = firebaseUser.email ?? '';
-      await _firestore.collection('users').doc(firebaseUser.uid).set({
-        'email': email,
-        'isPremium': false,
-        'isAdmin': false,
-        'forceSync': false,
-      });
-      
-      return UserEntity(id: firebaseUser.uid, email: email, isPremium: false, isAdmin: false, forceSync: false);
+      // If Firestore document doesn't exist (e.g. manually deleted), invalidate session
+      await _firebaseAuth.signOut();
+      return null;
     }
     return null;
   }

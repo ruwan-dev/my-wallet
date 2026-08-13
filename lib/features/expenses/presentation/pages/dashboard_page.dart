@@ -130,6 +130,25 @@ class _DashboardPageState extends State<DashboardPage> {
                   );
                 }
                 if (state is AccountLoaded) {
+                  if (state.accounts.isEmpty) {
+                    return SizedBox(
+                      height: 95,
+                      child: ListView(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        scrollDirection: Axis.horizontal,
+                        physics: const BouncingScrollPhysics(),
+                        children: [
+                          _ToolCard(
+                            title: 'Add Account',
+                            icon: Icons.add,
+                            color: Colors.white,
+                            onTap: () => context.push('/accounts/add-account'),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+
                   return SizedBox(
                     height: 100, // Decreased height
                     child: ScrollConfiguration(

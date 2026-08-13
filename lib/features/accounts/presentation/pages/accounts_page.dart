@@ -47,8 +47,17 @@ class AccountsPage extends StatelessWidget {
             final accounts = state.accounts;
 
             if (accounts.isEmpty) {
-              return const Center(
-                child: Text('No accounts found. Add one to get started!'),
+              return Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.account_balance_wallet_outlined, size: 64, color: theme.colorScheme.onSurfaceVariant.withOpacity(0.5)),
+                    const SizedBox(height: 16),
+                    Text('No accounts found.', style: theme.textTheme.titleMedium),
+                    const SizedBox(height: 8),
+                    Text('Create your first account to start tracking.', style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+                  ],
+                ),
               );
             }
 

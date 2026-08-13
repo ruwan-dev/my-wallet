@@ -14,7 +14,7 @@ class EmptyStateWidget extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text('💸', style: TextStyle(fontSize: 64)),
+              Icon(Icons.receipt_long_rounded, size: 64, color: theme.colorScheme.onSurfaceVariant.withOpacity(0.5)),
               const SizedBox(height: 16),
               Text(
                 'No transactions yet',
