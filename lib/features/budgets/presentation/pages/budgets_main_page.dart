@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/utils/formatters.dart';
@@ -6,6 +7,9 @@ import '../bloc/custom_budget_cubit.dart';
 import '../bloc/custom_budget_state.dart';
 import 'create_custom_budget_page.dart';
 import 'budget_details_page.dart';
+import 'package:expense_tracker/features/expenses/presentation/widgets/shimmer_tile.dart';
+import 'package:expense_tracker/core/widgets/glass_list_tile.dart';
+import '../../../../features/expenses/domain/entities/category.dart';
 
 class BudgetsMainPage extends StatelessWidget {
   const BudgetsMainPage({super.key});
@@ -24,8 +28,8 @@ class BudgetsMainPage extends StatelessWidget {
           elevation: 0,
           bottom: TabBar(
             indicatorSize: TabBarIndicatorSize.label,
-            indicatorColor: theme.colorScheme.primary,
-            labelColor: theme.colorScheme.primary,
+            indicatorColor: const Color(0xFF6D28D9), // Deep Purple
+            labelColor: const Color(0xFF6D28D9), // Deep Purple
             unselectedLabelColor: theme.colorScheme.onSurfaceVariant,
             tabs: const [
               Tab(text: 'Active'),
@@ -36,7 +40,7 @@ class BudgetsMainPage extends StatelessWidget {
         body: BlocBuilder<CustomBudgetCubit, CustomBudgetState>(
           builder: (context, state) {
             if (state is CustomBudgetLoading) {
-              return const Center(child: CircularProgressIndicator());
+              return const ShimmerTile();
             }
             
             if (state is CustomBudgetLoaded) {
@@ -58,7 +62,7 @@ class BudgetsMainPage extends StatelessWidget {
             return const SizedBox.shrink();
           },
         ),
-        floatingActionButton: FloatingActionButton(
+        floatingActionButton: FloatingActionButton.extended(
           onPressed: () {
             Navigator.push(
               context,
@@ -67,7 +71,11 @@ class BudgetsMainPage extends StatelessWidget {
               ),
             );
           },
-          child: const Icon(Icons.add),
+          backgroundColor: const Color(0xFF7C3AED),
+          foregroundColor: Colors.white,
+          elevation: 4,
+          icon: const Icon(Icons.add),
+          label: const Text('Create Budget'),
         ),
       ),
     );
@@ -89,7 +97,7 @@ class BudgetsMainPage extends StatelessWidget {
           : 0.0;
         final isWarning = progress > 0.9;
 
-        return GestureDetector(
+        return GlassListTile(
           onTap: () {
             Navigator.push(
               context,
@@ -98,60 +106,118 @@ class BudgetsMainPage extends StatelessWidget {
               ),
             );
           },
-          child: Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: isHistory 
-                  ? theme.colorScheme.surfaceContainerHighest.withOpacity(0.1)
-                  : theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: isHistory 
-                    ? theme.colorScheme.outlineVariant.withOpacity(0.2)
-                    : theme.colorScheme.outlineVariant.withOpacity(0.5)
-              ),
-            ),
-            child: Opacity(
-              opacity: isHistory ? 0.6 : 1.0,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        budget.title,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
-                          decoration: isHistory ? TextDecoration.lineThrough : null,
+          tileColor: Colors.white.withOpacity(isHistory ? 0.05 : 0.15),
+          contentPadding: const EdgeInsets.all(20),
+          title: Opacity(
+            opacity: isHistory ? 0.6 : 1.0,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Row(
+                        children: [
+                          Builder(
+                            builder: (context) {
+                              IconData icon = Icons.circle;
+                              Color color = Colors.white;
+                              String bucketName = 'Blow';
+                              switch (budget.bucketType) {
+                                case BucketType.dailyExpenses: bucketName = 'Blow'; icon = Icons.work_outline; color = Colors.white; break;
+                                case BucketType.smile: bucketName = 'Smile'; icon = Icons.flight_takeoff; color = const Color(0xFF34D399); break;
+                                case BucketType.fire: bucketName = 'Fire'; icon = Icons.local_fire_department; color = const Color(0xFFF87171); break;
+                                case BucketType.mojo: bucketName = 'Mojo'; icon = Icons.security; color = const Color(0xFFEAB308); break;
+                                case BucketType.grow: bucketName = 'Grow'; icon = Icons.eco; color = const Color(0xFF60A5FA); break;
+                                default: break;
+                              }
+                              return Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: color.withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: color.withValues(alpha: 0.3)),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(icon, color: Colors.black, size: 14),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      bucketName,
+                                      style: const TextStyle(
+                                        color: Colors.black,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              budget.title,
+                              style: const TextStyle(
+                                color: Colors.black,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                decoration: null,
+                              ).copyWith(
+                                decoration: isHistory ? TextDecoration.lineThrough : null,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      AppFormatters.formatCurrency(context, budget.totalBudgetLimit),
+                      style: const TextStyle(
+                        color: Colors.black,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '${budget.items.where((i) => i.isCompleted).length} / ${budget.items.length} completed',
+                  style: const TextStyle(
+                    color: Colors.black,
+                    fontSize: 12,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Stack(
+                  children: [
+                    Container(
+                      height: 8,
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                    FractionallySizedBox(
+                      widthFactor: progress,
+                      child: Container(
+                        height: 8,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(4),
                         ),
                       ),
-                      Text(
-                        AppFormatters.formatCurrency(context, budget.totalBudgetLimit),
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w700, 
-                          color: isHistory ? theme.colorScheme.onSurface : theme.colorScheme.primary
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '${budget.items.where((i) => i.isCompleted).length} / ${budget.items.length} completed',
-                    style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-                  ),
-                  const SizedBox(height: 12),
-                  LinearProgressIndicator(
-                    value: progress,
-                    backgroundColor: theme.colorScheme.surfaceContainerHighest,
-                    color: isHistory 
-                        ? Colors.grey
-                        : (isWarning ? theme.colorScheme.error : theme.colorScheme.primary),
-                    minHeight: 8,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                ],
-              ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
         );
@@ -184,18 +250,6 @@ class BudgetsMainPage extends StatelessWidget {
           ),
           if (!isHistory) ...[
             const SizedBox(height: 32),
-            FilledButton.icon(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const CreateCustomBudgetPage(),
-                  ),
-                );
-              },
-              icon: const Icon(Icons.add),
-              label: const Text('Create Budget'),
-            ),
           ],
         ],
       ),

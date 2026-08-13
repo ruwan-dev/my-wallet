@@ -4,12 +4,25 @@ import '../../../../core/errors/failures.dart';
 import '../../domain/entities/transaction.dart';
 import '../../domain/repositories/transaction_repository.dart';
 import '../datasources/transaction_remote_datasource.dart';
+import '../datasources/transaction_local_datasource.dart';
+import '../../../auth/domain/repositories/auth_repository.dart';
 import '../models/transaction_model.dart';
 
 class TransactionRepositoryImpl implements TransactionRepository {
   final TransactionRemoteDataSource remoteDataSource;
+  final TransactionLocalDatasource localDataSource;
+  final AuthRepository authRepository;
 
-  TransactionRepositoryImpl(this.remoteDataSource);
+  TransactionRepositoryImpl({
+    required this.remoteDataSource,
+    required this.localDataSource,
+    required this.authRepository,
+  });
+
+  Future<bool> _isPremium() async {
+    final user = await authRepository.getCurrentUser();
+    return user?.isPremium ?? false;
+  }
 
   @override
   Stream<Either<Failure, List<TransactionEntity>>> watchTransactions({
@@ -19,8 +32,13 @@ class TransactionRepositoryImpl implements TransactionRepository {
     String? categoryId,
     bool? isIncome,
     String? accountId,
-  }) {
-    return remoteDataSource.watchAllTransactions(userId).map((models) {
+  }) async* {
+    final isPremium = await _isPremium();
+    final stream = isPremium 
+        ? remoteDataSource.watchAllTransactions(userId) 
+        : localDataSource.watchAllTransactions(userId);
+
+    yield* stream.map((models) {
       try {
         var filtered = models.where((model) {
           bool matches = true;
@@ -48,7 +66,10 @@ class TransactionRepositoryImpl implements TransactionRepository {
     String? accountId,
   }) async {
     try {
-      var models = await remoteDataSource.getAllTransactions(userId);
+      final isPremium = await _isPremium();
+      var models = isPremium 
+          ? await remoteDataSource.getAllTransactions(userId)
+          : await localDataSource.getAllTransactions(userId);
       
       var filtered = models;
       if (lastDate != null) {
@@ -71,8 +92,13 @@ class TransactionRepositoryImpl implements TransactionRepository {
   @override
   Future<Either<Failure, TransactionEntity>> addTransaction(TransactionEntity transaction) async {
     try {
+      final isPremium = await _isPremium();
       final model = TransactionModel.fromEntity(transaction);
-      await remoteDataSource.saveTransaction(transaction.userId, model);
+      if (isPremium) {
+        await remoteDataSource.saveTransaction(transaction.userId, model);
+      } else {
+        await localDataSource.saveTransaction(model);
+      }
       return Right(transaction);
     } on CacheException catch (e) {
       return Left(CacheFailure(message: e.message));
@@ -84,8 +110,13 @@ class TransactionRepositoryImpl implements TransactionRepository {
   @override
   Future<Either<Failure, TransactionEntity>> updateTransaction(TransactionEntity transaction) async {
     try {
+      final isPremium = await _isPremium();
       final model = TransactionModel.fromEntity(transaction);
-      await remoteDataSource.updateTransaction(transaction.userId, model);
+      if (isPremium) {
+        await remoteDataSource.updateTransaction(transaction.userId, model);
+      } else {
+        await localDataSource.updateTransaction(model);
+      }
       return Right(transaction);
     } on CacheException catch (e) {
       return Left(CacheFailure(message: e.message));
@@ -97,7 +128,12 @@ class TransactionRepositoryImpl implements TransactionRepository {
   @override
   Future<Either<Failure, void>> deleteTransaction(String userId, String id) async {
     try {
-      await remoteDataSource.deleteTransaction(userId, id);
+      final isPremium = await _isPremium();
+      if (isPremium) {
+        await remoteDataSource.deleteTransaction(userId, id);
+      } else {
+        await localDataSource.deleteTransaction(id);
+      }
       return const Right(null);
     } on CacheException catch (e) {
       return Left(CacheFailure(message: e.message));
@@ -115,7 +151,11 @@ class TransactionRepositoryImpl implements TransactionRepository {
     String? accountId,
   }) async {
     try {
-      var models = await remoteDataSource.getAllTransactions(userId);
+      final isPremium = await _isPremium();
+      var models = isPremium 
+          ? await remoteDataSource.getAllTransactions(userId)
+          : await localDataSource.getAllTransactions(userId);
+          
       final sum = models
           .where((m) => 
               m.date.month == month && 

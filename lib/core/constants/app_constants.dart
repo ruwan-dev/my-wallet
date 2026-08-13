@@ -19,6 +19,7 @@ class AppConstants {
   static const String categoriesBox = 'categories_box';
   static const String settingsBox = 'settings_box';
   static const String userBox = 'user_box';
+  static const String debtsBox = 'debts_box';
 
   // SharedPreferences Keys
   static const String themeKey = 'theme_mode';

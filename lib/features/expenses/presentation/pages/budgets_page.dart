@@ -4,6 +4,7 @@ import '../bloc/budget_cubit.dart';
 import '../bloc/budget_state.dart';
 import '../widgets/budget_progress_card.dart';
 import '../widgets/set_budget_bottom_sheet.dart';
+import 'package:expense_tracker/features/expenses/presentation/widgets/shimmer_tile.dart';
 
 class BudgetsPage extends StatelessWidget {
   const BudgetsPage({super.key});
@@ -32,7 +33,7 @@ class BudgetsPage extends StatelessWidget {
       body: BlocBuilder<BudgetCubit, BudgetState>(
         builder: (context, state) {
           if (state is BudgetLoading) {
-            return const Center(child: CircularProgressIndicator());
+            return const ShimmerTile();
           }
           if (state is BudgetLoaded) {
             if (state.summaries.isEmpty) {

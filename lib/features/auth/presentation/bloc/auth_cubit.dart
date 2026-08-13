@@ -17,9 +17,18 @@ class AuthCubit extends Cubit<AuthState> {
   }
 
   void _init() {
-    _authSubscription = firebaseAuth.authStateChanges().listen((user) {
+    _authSubscription = firebaseAuth.authStateChanges().listen((user) async {
       if (user != null) {
-        emit(AuthAuthenticated(user.uid));
+        try {
+          final userEntity = await repository.getCurrentUser();
+          if (userEntity != null) {
+            emit(AuthAuthenticated(userEntity));
+          } else {
+            emit(AuthUnauthenticated());
+          }
+        } catch (_) {
+          emit(AuthUnauthenticated());
+        }
       } else {
         emit(AuthUnauthenticated());
       }
@@ -29,9 +38,11 @@ class AuthCubit extends Cubit<AuthState> {
   Future<void> login(String email, String password) async {
     emit(AuthLoading());
     try {
-      await repository.login(email, password);
+      final user = await repository.login(email, password);
+      emit(AuthAuthenticated(user));
     } catch (e) {
-      emit(AuthError(e.toString()));
+      final errorMsg = e.toString().replaceAll('Exception: ', '');
+      emit(AuthError(errorMsg));
       emit(AuthUnauthenticated());
     }
   }
@@ -39,9 +50,23 @@ class AuthCubit extends Cubit<AuthState> {
   Future<void> register(String email, String password) async {
     emit(AuthLoading());
     try {
-      await repository.register(email, password);
+      final user = await repository.register(email, password);
+      emit(AuthAuthenticated(user));
     } catch (e) {
-      emit(AuthError(e.toString()));
+      final errorMsg = e.toString().replaceAll('Exception: ', '');
+      emit(AuthError(errorMsg));
+      emit(AuthUnauthenticated());
+    }
+  }
+
+  Future<void> resetPassword(String email) async {
+    emit(AuthLoading());
+    try {
+      await repository.resetPassword(email);
+      emit(AuthUnauthenticated()); // Back to unauthenticated state after sending
+    } catch (e) {
+      final errorMsg = e.toString().replaceAll('Exception: ', '');
+      emit(AuthError(errorMsg));
       emit(AuthUnauthenticated());
     }
   }
@@ -50,10 +75,13 @@ class AuthCubit extends Cubit<AuthState> {
     emit(AuthLoading());
     try {
       await repository.logout();
+      emit(AuthUnauthenticated());
     } catch (e) {
-      emit(AuthError(e.toString()));
-      if (firebaseAuth.currentUser != null) {
-        emit(AuthAuthenticated(firebaseAuth.currentUser!.uid));
+      final errorMsg = e.toString().replaceAll('Exception: ', '');
+      emit(AuthError(errorMsg));
+      final user = await repository.getCurrentUser();
+      if (user != null) {
+        emit(AuthAuthenticated(user));
       } else {
         emit(AuthUnauthenticated());
       }

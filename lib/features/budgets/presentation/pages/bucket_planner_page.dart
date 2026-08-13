@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'dart:ui';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../core/widgets/premium_aurora_vector_background.dart';
@@ -8,9 +9,21 @@ import '../../../expenses/presentation/bloc/transaction_state.dart';
 import '../../../expenses/presentation/bloc/category_cubit.dart';
 import '../../../expenses/presentation/bloc/category_state.dart';
 import '../../../expenses/domain/entities/category.dart';
+import '../../../expenses/domain/entities/transaction.dart';
+import '../../../expenses/presentation/bloc/account_cubit.dart';
+import '../../../expenses/presentation/bloc/account_state.dart';
+import '../../../auth/presentation/bloc/auth_cubit.dart';
 import '../../../../core/bloc/settings_cubit.dart';
 import '../../../../core/bloc/settings_state.dart';
+import '../../../debts/presentation/bloc/debt_cubit.dart';
+import '../../../debts/presentation/bloc/debt_state.dart';
+import '../../../debts/presentation/widgets/debt_card.dart';
+import '../../../debts/presentation/widgets/debt_timeline.dart';
+import '../../../debts/presentation/widgets/inline_debt_editor.dart';
+import '../widgets/inline_fund_editor.dart';
+
 import '../widgets/barefoot_settings_sheet.dart';
+import 'package:expense_tracker/features/expenses/presentation/widgets/shimmer_tile.dart';
 
 class BucketPlannerPage extends StatefulWidget {
   const BucketPlannerPage({super.key});
@@ -25,6 +38,9 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
   int _selectedMainTab = 0; // 0=Blow, 1=Mojo, 2=Grow
   int _selectedBucketIndex =
       -1; // -1 for Total, 0=Daily Expenses, 1=Splurge, 2=Smile, 3=Fire
+  bool _isAddingDebt = false;
+  bool _isAddingMojoFunds = false;
+  bool _showSinhalaPhilosophy = false;
 
   @override
   void initState() {
@@ -47,6 +63,93 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
     );
   }
 
+  void _addMojoFunds(double amount, String sourceId) {
+    final catState = context.read<CategoryCubit>().state;
+    Category? mojoCategory;
+    if (catState is CategoryLoaded) {
+      mojoCategory = catState.categories.cast<Category?>().firstWhere(
+            (c) => c!.bucketType == BucketType.mojo,
+            orElse: () => null,
+          );
+    }
+
+    final accountState = context.read<AccountCubit>().state;
+    String accId = 'planned';
+    if (accountState is AccountLoaded && accountState.accounts.isNotEmpty) {
+      accId = accountState.accounts.first.id;
+    }
+
+    final now = DateTime.now();
+    final tx = TransactionEntity(
+      id: now.millisecondsSinceEpoch.toString(),
+      accountId: accId,
+      userId: '',
+      title: 'Manual Mojo Deposit',
+      amount: amount,
+      categoryId: mojoCategory?.id ?? 'mojo_fallback',
+      categoryName: mojoCategory?.name ?? 'Mojo Deposit',
+      date: now,
+      isIncome: true,
+      note: 'Added funds to Mojo Vault manually',
+      createdAt: now,
+      updatedAt: now,
+      bucketType: BucketType.mojo,
+    );
+
+    TransactionEntity? sourceTx;
+    if (sourceId == 'bucket_fire') {
+      sourceTx = TransactionEntity(
+         id: (now.millisecondsSinceEpoch + 1).toString(),
+         accountId: accId,
+         userId: '',
+         title: 'Transfer to Mojo',
+         amount: amount,
+         categoryId: 'transfer',
+         categoryName: 'Transfer',
+         date: now,
+         isIncome: false,
+         note: 'Transferred to Mojo',
+         createdAt: now,
+         updatedAt: now,
+         bucketType: BucketType.fire,
+      );
+    } else if (sourceId == 'bucket_smile') {
+      sourceTx = TransactionEntity(
+         id: (now.millisecondsSinceEpoch + 1).toString(),
+         accountId: accId,
+         userId: '',
+         title: 'Transfer to Mojo',
+         amount: amount,
+         categoryId: 'transfer',
+         categoryName: 'Transfer',
+         date: now,
+         isIncome: false,
+         note: 'Transferred to Mojo',
+         createdAt: now,
+         updatedAt: now,
+         bucketType: BucketType.smile,
+      );
+    } else {
+      sourceTx = TransactionEntity(
+         id: (now.millisecondsSinceEpoch + 1).toString(),
+         accountId: sourceId,
+         userId: '',
+         title: 'Transfer to Mojo',
+         amount: amount,
+         categoryId: 'transfer',
+         categoryName: 'Transfer',
+         date: now,
+         isIncome: false,
+         note: 'Transferred to Mojo',
+         createdAt: now,
+         updatedAt: now,
+      );
+    }
+
+    context.read<TransactionCubit>().addTransaction(tx);
+    context.read<TransactionCubit>().addTransaction(sourceTx);
+  }
+
   @override
   Widget build(BuildContext context) {
     final txState = context.watch<TransactionCubit>().state;
@@ -58,38 +161,35 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
     double spentSmile = 0;
     double spentFire = 0;
 
-    // Mojo is all time
-    double spentMojoAllTime = 0;
-
-    // Grow is all time
-    double spentGrowAllTime = 0;
+    double calculatedMojo = 0;
+    double calculatedGrow = 0;
 
     if (txState is TransactionLoaded && catState is CategoryLoaded) {
       final now = DateTime.now();
 
       // Calculate all-time Mojo and Grow
       for (final tx in txState.transactions) {
-        if (!tx.isIncome) {
-          final category = catState.categories.firstWhere(
-            (c) => c.id == tx.categoryId,
-            orElse: () => const Category(
-                id: '',
-                name: 'Unknown',
-                icon: '',
-                color: Colors.grey,
-                isIncome: false,
-                subcategories: []),
-          );
-          BucketType bucket = tx.bucketType ?? category.bucketType;
-          if (tx.bucketType == null && tx.subCategory != null &&
-              category.subcategoryBuckets.containsKey(tx.subCategory)) {
-            bucket = category.subcategoryBuckets[tx.subCategory]!;
-          }
-          if (bucket == BucketType.mojo) {
-            spentMojoAllTime += tx.amount;
-          } else if (bucket == BucketType.grow) {
-            spentGrowAllTime += tx.amount;
-          }
+        final category = catState.categories.firstWhere(
+          (c) => c.id == tx.categoryId,
+          orElse: () => const Category(
+              id: '',
+              name: 'Unknown',
+              icon: '',
+              color: Colors.grey,
+              isIncome: false,
+              subcategories: []),
+        );
+        BucketType bucket = tx.bucketType ?? category.bucketType;
+        if (tx.bucketType == null &&
+            tx.subCategory != null &&
+            category.subcategoryBuckets.containsKey(tx.subCategory)) {
+          bucket = category.subcategoryBuckets[tx.subCategory]!;
+        }
+
+        if (bucket == BucketType.mojo) {
+          calculatedMojo += tx.isIncome ? tx.amount : -tx.amount;
+        } else if (bucket == BucketType.grow) {
+          calculatedGrow += tx.isIncome ? tx.amount : -tx.amount;
         }
       }
 
@@ -113,7 +213,8 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
           );
 
           BucketType bucket = tx.bucketType ?? category.bucketType;
-          if (tx.bucketType == null && tx.subCategory != null &&
+          if (tx.bucketType == null &&
+              tx.subCategory != null &&
               category.subcategoryBuckets.containsKey(tx.subCategory)) {
             bucket = category.subcategoryBuckets[tx.subCategory]!;
           }
@@ -142,9 +243,9 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
     final double totalRemaining = totalIncome -
         (spentDailyExpenses + spentSplurge + spentSmile + spentFire);
 
-    // Balance is negative spent because expenses are positive, sweeps are negative expenses.
-    final double mojoBalance = -spentMojoAllTime;
-    final double growBalance = -spentGrowAllTime;
+    // Balance is calculated from both income and expenses above.
+    final double mojoBalance = calculatedMojo;
+    final double growBalance = calculatedGrow;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -160,20 +261,6 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
           style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
         ),
         centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.settings, color: Colors.white),
-            onPressed: () {
-              showModalBottomSheet(
-                context: context,
-                isScrollControlled: true,
-                backgroundColor: Colors.transparent,
-                builder: (context) => const BarefootSettingsSheet(),
-              );
-            },
-          ),
-          const SizedBox(width: 8),
-        ],
       ),
       body: SafeArea(
         child: Column(
@@ -195,13 +282,25 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
                     spentDailyExpenses: spentDailyExpenses,
                     allocatedSplurge: allocatedSplurge,
                     spentSplurge: spentSplurge,
-                    allocatedSmile: allocatedSmile,
-                    spentSmile: spentSmile,
-                    allocatedFire: allocatedFire,
-                    spentFire: spentFire,
                     totalRemaining: totalRemaining,
                   ),
-                  _buildMojoTab(context, mojoBalance),
+                  _buildSmileTab(
+                    context: context,
+                    allocatedSmile: allocatedSmile,
+                    spentSmile: spentSmile,
+                  ),
+                  _buildFireTab(
+                    context: context,
+                    allocatedFire: allocatedFire,
+                    spentFire: spentFire,
+                  ),
+                  _buildMojoTab(
+                    context, 
+                    mojoBalance, 
+                    allocatedDailyExpenses, 
+                    allocatedFire - spentFire, 
+                    allocatedSmile - spentSmile
+                  ),
                   _buildGrowTab(context, growBalance),
                 ],
               ),
@@ -232,8 +331,10 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
         child: Row(
           children: [
             _buildSegmentTab(0, 'Blow', Icons.work_outline),
-            _buildSegmentTab(1, 'Mojo', Icons.security),
-            _buildSegmentTab(2, 'Grow', Icons.eco),
+            _buildSegmentTab(1, 'Smile', Icons.flight_takeoff),
+            _buildSegmentTab(2, 'Fire', Icons.local_fire_department),
+            _buildSegmentTab(3, 'Mojo', Icons.security),
+            _buildSegmentTab(4, 'Grow', Icons.eco),
           ],
         ),
       ),
@@ -247,33 +348,22 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
         onTap: () => _onTabSelected(index),
         behavior: HitTestBehavior.opaque,
         child: Container(
-          margin: const EdgeInsets.all(4),
-          decoration: BoxDecoration(
-            color: isSelected
-                ? Colors.white.withOpacity(0.25)
-                : Colors.transparent,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: isSelected
-                ? [
-                    BoxShadow(
-                        color: Colors.white.withOpacity(0.1),
-                        blurRadius: 4,
-                        offset: const Offset(0, 2))
-                  ]
-                : null,
-          ),
+          color: Colors.transparent,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(icon,
-                  size: 16, color: isSelected ? Colors.white : Colors.white70),
-              const SizedBox(width: 6),
-              Text(
-                title,
-                style: TextStyle(
-                  color: isSelected ? Colors.white : Colors.white70,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                  fontSize: 14,
+                  size: 14, color: isSelected ? Colors.white : Colors.white54),
+              const SizedBox(width: 4),
+              Flexible(
+                child: Text(
+                  title,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: isSelected ? Colors.white : Colors.white54,
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                    fontSize: 12,
+                  ),
                 ),
               ),
             ],
@@ -289,25 +379,19 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
     required double spentDailyExpenses,
     required double allocatedSplurge,
     required double spentSplurge,
-    required double allocatedSmile,
-    required double spentSmile,
-    required double allocatedFire,
-    required double spentFire,
     required double totalRemaining,
   }) {
     final settings = context.watch<SettingsCubit>().state;
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final bool isSmallScreen = constraints.maxHeight < 600;
-
         Widget content = Column(
           children: [
             // Top Half: Responsive Credit Cards
             LayoutBuilder(
               builder: (context, constraints) {
                 final bool isDesktop = constraints.maxWidth > 800;
-                final int columns = isDesktop ? 4 : 2;
+                final int columns = isDesktop ? 2 : 1;
                 final double spacing = 12.0;
                 final double horizontalPadding = 40.0;
                 final double totalSpacing = spacing * (columns - 1);
@@ -331,6 +415,7 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
                           badgeText: '60%',
                           balance: allocatedDailyExpenses - spentDailyExpenses,
                           cardNumberEnding: '**** 0001',
+                          description: 'Things that keep you running.\n• Examples: Utility bills, groceries.',
                         ),
                       ),
                       SizedBox(
@@ -342,36 +427,7 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
                           badgeText: '10%',
                           balance: allocatedSplurge - spentSplurge,
                           cardNumberEnding: '**** 0002',
-                        ),
-                      ),
-                      SizedBox(
-                        width: cardWidth,
-                        child: _buildCreditCard(
-                          title: 'Smile Wallet',
-                          icon: Icons.flight_takeoff,
-                          color: const Color(0xFF10B981),
-                          badgeText: '10%',
-                          balance: allocatedSmile - spentSmile,
-                          cardNumberEnding: '**** 0003',
-                          targetAmount: settings.smileTargetAmount,
-                          goalName: settings.smileGoalName,
-                        ),
-                      ),
-                      SizedBox(
-                        width: cardWidth,
-                        child: _buildCreditCard(
-                          title: 'Fire Wallet',
-                          icon: Icons.local_fire_department,
-                          color: const Color(0xFFEF4444),
-                          badgeText: '20%',
-                          balance: allocatedFire - spentFire,
-                          cardNumberEnding: '**** 0004',
-                          isRedirected: settings.fireRedirection !=
-                              FireRedirectionTarget.fire,
-                          redirectTarget: settings.fireRedirection ==
-                                  FireRedirectionTarget.mojo
-                              ? 'Mojo'
-                              : 'Grow',
+                          description: 'Things you enjoy purely for fun, without any guilt or second-guessing.\n• Examples: Ordering takeout, dining out, fancy coffee, or music festivals.',
                         ),
                       ),
                     ],
@@ -400,254 +456,216 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
                       Row(
                         children: [
                           const Text(
-                            '📊 Balance Overview',
+                            'Balance Overview',
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          const Spacer(),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: const Text(
-                              'Nested',
-                              style: TextStyle(
-                                  color: Colors.white70,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w600),
-                            ),
-                          ),
                         ],
                       ),
                       const SizedBox(height: 12),
 
-                      // Interactive Donut Chart
+                      // Interactive Donut Chart & Legend
                       Expanded(
-                        child: LayoutBuilder(builder: (context, constraints) {
-                          final size = math.min(
-                              constraints.maxWidth, constraints.maxHeight);
-                          return GestureDetector(
-                            onTapUp: (details) {
-                              final center = Offset(constraints.maxWidth / 2,
-                                  constraints.maxHeight / 2);
-                              final dx = details.localPosition.dx - center.dx;
-                              final dy = details.localPosition.dy - center.dy;
-                              final distance = math.sqrt(dx * dx + dy * dy);
+                        child: Row(
+                          children: [
+                            Expanded(
+                              flex: 5,
+                              child: LayoutBuilder(
+                                  builder: (context, constraints) {
+                                final size = math.min(constraints.maxWidth,
+                                    constraints.maxHeight);
+                                return GestureDetector(
+                                  onTapUp: (details) {
+                                    final center = Offset(
+                                        constraints.maxWidth / 2,
+                                        constraints.maxHeight / 2);
+                                    final dx =
+                                        details.localPosition.dx - center.dx;
+                                    final dy =
+                                        details.localPosition.dy - center.dy;
+                                    final distance =
+                                        math.sqrt(dx * dx + dy * dy);
 
-                              // Only register taps near the donut ring
-                              if (distance < (size / 2) - 80 ||
-                                  distance > (size / 2)) {
-                                // Tapped outside or in center hole: reset to total
-                                setState(() => _selectedBucketIndex = -1);
-                                return;
-                              }
+                                    // Only register taps near the donut ring
+                                    if (distance < (size / 2) - 80 ||
+                                        distance > (size / 2)) {
+                                      // Tapped outside or in center hole: reset to total
+                                      setState(() => _selectedBucketIndex = -1);
+                                      return;
+                                    }
 
-                              double angle = math.atan2(dy, dx);
-                              angle += math.pi / 2; // start from top
-                              if (angle < 0) angle += 2 * math.pi;
+                                    double angle = math.atan2(dy, dx);
+                                    angle += math.pi / 2; // start from top
+                                    if (angle < 0) angle += 2 * math.pi;
 
-                              final pct = angle / (2 * math.pi);
-                              setState(() {
-                                if (pct < 0.60)
-                                  _selectedBucketIndex = 0;
-                                else if (pct < 0.70)
-                                  _selectedBucketIndex = 1;
-                                else if (pct < 0.80)
-                                  _selectedBucketIndex = 2;
-                                else
-                                  _selectedBucketIndex = 3;
-                              });
-                            },
-                            child: Stack(
-                              alignment: Alignment.center,
-                              children: [
-                                // Donut Chart Custom Painter
-                                SizedBox(
-                                  width: size,
-                                  height: size,
-                                  child: CustomPaint(
-                                    painter: _ConcentricDonutPainter(
-                                      dailyExpensesSpentPct:
-                                          allocatedDailyExpenses > 0
-                                              ? (spentDailyExpenses /
-                                                      allocatedDailyExpenses)
-                                                  .clamp(0.0, 1.0)
-                                              : 0.0,
-                                      splurgeSpentPct: allocatedSplurge > 0
-                                          ? (spentSplurge / allocatedSplurge)
-                                              .clamp(0.0, 1.0)
-                                          : 0.0,
-                                      smileSpentPct: allocatedSmile > 0
-                                          ? (spentSmile / allocatedSmile)
-                                              .clamp(0.0, 1.0)
-                                          : 0.0,
-                                      fireSpentPct: settings.fireRedirection !=
-                                              FireRedirectionTarget.fire
-                                          ? 1.0
-                                          : (allocatedFire > 0
-                                              ? (spentFire / allocatedFire)
-                                                  .clamp(0.0, 1.0)
-                                              : 0.0),
-                                      selectedIndex: _selectedBucketIndex,
-                                    ),
+                                    final pct = angle / (2 * math.pi);
+                                    setState(() {
+                                      if (pct < 0.85)
+                                        _selectedBucketIndex = 0;
+                                      else
+                                        _selectedBucketIndex = 1;
+                                    });
+                                  },
+                                  child: Stack(
+                                    alignment: Alignment.center,
+                                    children: [
+                                      // Donut Chart Custom Painter
+                                      SizedBox(
+                                        width: size,
+                                        height: size,
+                                        child: CustomPaint(
+                                          painter: _ConcentricDonutPainter(
+                                            dailyExpensesSpentPct:
+                                                allocatedDailyExpenses > 0
+                                                    ? (spentDailyExpenses /
+                                                            allocatedDailyExpenses)
+                                                        .clamp(0.0, 1.0)
+                                                    : 0.0,
+                                            splurgeSpentPct:
+                                                allocatedSplurge > 0
+                                                    ? (spentSplurge /
+                                                            allocatedSplurge)
+                                                        .clamp(0.0, 1.0)
+                                                    : 0.0,
+                                            selectedIndex: _selectedBucketIndex,
+                                          ),
+                                        ),
+                                      ),
+
+                                      // Empty center to keep the ring hollow
+                                    ],
                                   ),
-                                ),
+                                );
+                              }),
+                            ),
 
-                                // Interactive Center Text
-                                AnimatedSwitcher(
-                                  duration: const Duration(milliseconds: 300),
-                                  child: _selectedBucketIndex == -1
-                                      ? Column(
-                                          key: const ValueKey('total'),
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            const Text(
-                                              'Total Remaining',
-                                              style: TextStyle(
-                                                  color: Colors.white70,
-                                                  fontSize: 14,
-                                                  fontWeight: FontWeight.w600),
-                                            ),
-                                            const SizedBox(height: 4),
-                                            Text(
+                            // Right Side: Interactive Details & Legend
+                            Expanded(
+                              flex: 5,
+                              child: Center(
+                                child: SingleChildScrollView(
+                                  child: AnimatedSwitcher(
+                                    duration: const Duration(milliseconds: 300),
+                                    child: _selectedBucketIndex == -1
+                                        ? Column(
+                                            key: const ValueKey('total'),
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          const Text(
+                                            'Total Remaining',
+                                            style: TextStyle(
+                                                color: Colors.white70,
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.w600),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          FittedBox(
+                                            fit: BoxFit.scaleDown,
+                                            child: Text(
                                               AppFormatters.formatCurrency(
                                                   context, totalRemaining),
                                               style: const TextStyle(
                                                   color: Colors.white,
-                                                  fontSize: 32,
+                                                  fontSize: 28,
                                                   fontWeight: FontWeight.bold),
                                             ),
-                                          ],
-                                        )
-                                      : Builder(
-                                          key: ValueKey(
-                                              'bucket_$_selectedBucketIndex'),
-                                          builder: (context) {
-                                            String name = '';
-                                            IconData icon = Icons.circle;
-                                            double allocated = 0;
-                                            double spent = 0;
+                                          ),
+                                          const SizedBox(height: 16),
+                                          _buildLegendItem(
+                                              color: const Color(0xFF3B82F6),
+                                              label: 'Daily (60%)'),
+                                          const SizedBox(height: 8),
+                                          _buildLegendItem(
+                                              color: const Color(0xFFEAB308),
+                                              label: 'Splurge (10%)'),
+                                        ],
+                                      )
+                                    : Builder(
+                                        key: ValueKey(
+                                            'bucket_$_selectedBucketIndex'),
+                                        builder: (context) {
+                                          String name = '';
+                                          IconData icon = Icons.circle;
+                                          Color color = Colors.white;
+                                          double allocated = 0;
+                                          double spent = 0;
 
-                                            if (_selectedBucketIndex == 0) {
-                                              name = 'Daily Exp.';
-                                              icon = Icons.home_rounded;
-                                              allocated =
-                                                  allocatedDailyExpenses;
-                                              spent = spentDailyExpenses;
-                                            } else if (_selectedBucketIndex ==
-                                                1) {
-                                              name = 'Splurge';
-                                              icon = Icons.card_giftcard;
-                                              allocated = allocatedSplurge;
-                                              spent = spentSplurge;
-                                            } else if (_selectedBucketIndex ==
-                                                2) {
-                                              name = 'Smile';
-                                              icon = Icons.flight_takeoff;
-                                              allocated = allocatedSmile;
-                                              spent = spentSmile;
-                                            } else {
-                                              name = 'Fire';
-                                              icon =
-                                                  Icons.local_fire_department;
-                                              allocated = allocatedFire;
-                                              spent = spentFire;
-                                            }
+                                          if (_selectedBucketIndex == 0) {
+                                            name = 'Daily Exp.';
+                                            icon = Icons.home_rounded;
+                                            color = const Color(0xFF3B82F6);
+                                            allocated = allocatedDailyExpenses;
+                                            spent = spentDailyExpenses;
+                                          } else {
+                                            name = 'Splurge';
+                                            icon = Icons.card_giftcard;
+                                            color = const Color(0xFFEAB308);
+                                            allocated = allocatedSplurge;
+                                            spent = spentSplurge;
+                                          }
 
-                                            final remaining = allocated - spent;
+                                          final remaining = allocated - spent;
 
-                                            return Column(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                Row(
-                                                  mainAxisSize:
-                                                      MainAxisSize.min,
-                                                  children: [
-                                                    Icon(icon,
-                                                        color: Colors.white,
-                                                        size: 16),
-                                                    const SizedBox(width: 6),
-                                                    Text(name,
-                                                        style: const TextStyle(
-                                                            color: Colors.white,
-                                                            fontSize: 16,
-                                                            fontWeight:
-                                                                FontWeight
-                                                                    .bold)),
-                                                  ],
-                                                ),
-                                                const SizedBox(height: 8),
-                                                Text(
-                                                    'Allocated: ${AppFormatters.formatCurrency(context, allocated)}',
-                                                    style: const TextStyle(
-                                                        color: Colors.white54,
-                                                        fontSize: 12)),
-                                                Text(
-                                                    'Spent: -${AppFormatters.formatCurrency(context, spent)}',
-                                                    style: const TextStyle(
-                                                        color: Colors.redAccent,
-                                                        fontSize: 12)),
-                                                const SizedBox(height: 4),
-                                                Text(
+                                          return Column(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Icon(icon,
+                                                      color: color, size: 16),
+                                                  const SizedBox(width: 6),
+                                                  Text(name,
+                                                      style: TextStyle(
+                                                          color: color,
+                                                          fontSize: 16,
+                                                          fontWeight:
+                                                              FontWeight.bold)),
+                                                ],
+                                              ),
+                                              const SizedBox(height: 8),
+                                              Text(
+                                                  'Allocated:\n${AppFormatters.formatCurrency(context, allocated)}',
+                                                  style: const TextStyle(
+                                                      color: Colors.white54,
+                                                      fontSize: 12)),
+                                              const SizedBox(height: 4),
+                                              Text(
+                                                  'Spent:\n-${AppFormatters.formatCurrency(context, spent)}',
+                                                  style: const TextStyle(
+                                                      color: Colors.redAccent,
+                                                      fontSize: 12)),
+                                              const SizedBox(height: 8),
+                                              FittedBox(
+                                                fit: BoxFit.scaleDown,
+                                                child: Text(
                                                     AppFormatters
                                                         .formatCurrency(
                                                             context, remaining),
                                                     style: const TextStyle(
                                                         color: Colors.white,
-                                                        fontSize: 32,
+                                                        fontSize: 28,
                                                         fontWeight:
                                                             FontWeight.bold)),
-                                              ],
-                                            );
+                                              ),
+                                            ],
+                                          );
                                           }),
+                                  ),
                                 ),
-                              ],
+                              ),
                             ),
-                          );
-                        }),
-                      ),
-
-                      const SizedBox(height: 12),
-                      // Legend
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          _buildLegendItem(
-                              color: const Color(0xFF3B82F6),
-                              label: 'Daily (60%)'),
-                          _buildLegendItem(
-                              color: const Color(0xFFEAB308),
-                              label: 'Splurge (10%)'),
-                          _buildLegendItem(
-                              color: const Color(0xFF10B981),
-                              label: 'Smile (10%)'),
-                          _buildLegendItem(
-                              color: const Color(0xFFEF4444),
-                              label: 'Fire (20%)'),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            'Outer Ring: Allocation',
-                            style:
-                                TextStyle(color: Colors.white38, fontSize: 10),
-                          ),
-                          SizedBox(width: 16),
-                          Text(
-                            'Inner Ring: Remaining Balance',
-                            style:
-                                TextStyle(color: Colors.white38, fontSize: 10),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ],
                   ),
@@ -657,149 +675,298 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
           ],
         );
 
-        if (isSmallScreen) {
-          // Replace Expanded with a fixed height container for scrolling
-          return SingleChildScrollView(
-            child: SizedBox(
-              height: 800, // Fixed total height to allow scrolling
-              child: content,
-            ),
-          );
-        }
-
         return content;
       },
     );
   }
 
-  Widget _buildMojoTab(BuildContext context, double mojoBalance) {
-    final double targetGoal = 15000;
-    final double progressPct = (mojoBalance / targetGoal).clamp(0.0, 1.0);
+  Widget _buildSmileTab({
+    required BuildContext context,
+    required double allocatedSmile,
+    required double spentSmile,
+  }) {
+    final settings = context.watch<SettingsCubit>().state;
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
+          child: _buildWideVaultCard(
+            context: context,
+            title: 'Smile Wallet',
+            icon: Icons.flight_takeoff,
+            primaryColor: const Color(0xFF34D399),
+            secondaryColor: const Color(0xFF10B981),
+            balance: allocatedSmile - spentSmile,
+            targetAmount: settings.smileTargetAmount,
+            goalName: settings.smileGoalName,
+            description: 'Things that put a genuine smile on your face.\n• Examples: Weekend getaway trips, new tech gadgets, or special gifts.',
+          ),
+        ),
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0)
+                .copyWith(top: 16.0),
+            child: const Column(
+              children: [
+                // Future content for Smile Tab can go here
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 
-    return CustomScrollView(
-      slivers: [
-        SliverToBoxAdapter(
-          child: Padding(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
+  Widget _buildZeroDebtMessage(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      margin: const EdgeInsets.only(top: 16),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.white.withOpacity(0.1), width: 1.5),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+           _buildPhilosophyPoint(
+             title: 'The Fire Evolves',
+             description: _showSinhalaPhilosophy ? 'ගෙවන්න ණය නැති නිසා, ඔයාගේ 20% Fire මුදල සම්පූර්ණයෙන්ම වෙන් වෙන්නේ ධනය ගොඩනගන්නයි.' : 'With zero debt to pay, your 20% Fire allocation is fully unlocked to build your wealth.',
+           ),
+           const SizedBox(height: 12),
+           _buildPhilosophyPoint(
+             title: 'Maxing Out Mojo',
+             description: _showSinhalaPhilosophy ? 'මාස 3ක හදිසි අරමුදල පිරෙනකම්, අර 20% කෙලින්ම යන්නේ ඔයාගේ Mojo බකට් එකටයි.' : 'That 20% now flows directly into your Mojo bucket until your 3-month emergency safety net is completely full.',
+           ),
+           const SizedBox(height: 12),
+           _buildPhilosophyPoint(
+             title: 'Unlocking the Grow Machine',
+             description: _showSinhalaPhilosophy ? 'Mojo එක පිරුණු ගමන්, ඒ 20% දිගටම Grow බකට් එකට ගිහින් ස්වයංක්‍රීයව ආයෝජනය වෙනවා.' : 'Once Mojo is full, that same 20% redirects into your Grow bucket to build long-term wealth through automated investments.',
+           ),
+           const SizedBox(height: 12),
+           _buildPhilosophyPoint(
+             title: '100% Guilt-Free Spending',
+             description: _showSinhalaPhilosophy ? 'කිසිම මානසික පීඩනයක් නැතුව Daily (60%), Splurge (10%), සහ Smile (10%) සල්ලි වලින් ඔයාට උපරිම සතුටක් ගන්න පුළුවන්.' : 'You can fully enjoy your Daily (60%), Splurge (10%), and Smile (10%) money with zero financial stress.',
+           ),
+           const SizedBox(height: 12),
+           _buildPhilosophyPoint(
+             title: 'No New Debt',
+             description: _showSinhalaPhilosophy ? 'ආපහු හැරී බැලීමක් නැහැ. වාහනයක්, ෆෝන් එකක් වගේ ඕනෑම අලුත් දෙයක් ගන්නේ Smile බකට් එකෙන් සල්ලි එකතු කරලා Cash වලින් විතරයි.' : 'You never look back. Any new purchases (like a car or tech) are saved for via the Smile bucket and bought in cash.',
+           ),
+           const SizedBox(height: 16),
+           Row(
+             mainAxisAlignment: MainAxisAlignment.end,
+             children: [
+               TextButton(
+                 onPressed: () => setState(() => _showSinhalaPhilosophy = !_showSinhalaPhilosophy),
+                 style: TextButton.styleFrom(
+                   foregroundColor: Colors.white54,
+                   padding: const EdgeInsets.all(12),
+                   shape: const CircleBorder(),
+                   backgroundColor: Colors.white.withOpacity(0.1),
+                 ),
+                 child: Text(_showSinhalaPhilosophy ? 'En' : 'Si', style: const TextStyle(fontWeight: FontWeight.bold)),
+               ),
+             ],
+           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPhilosophyPoint({required String title, required String description}) {
+    final text = title.isNotEmpty ? '$title - $description' : description;
+    return Text(
+      text,
+      style: const TextStyle(
+        color: Colors.white70,
+        fontSize: 14,
+        height: 1.5,
+      ),
+    );
+  }
+
+  Widget _buildFireTab({
+    required BuildContext context,
+    required double allocatedFire,
+    required double spentFire,
+  }) {
+    final settings = context.watch<SettingsCubit>().state;
+    final fireBalance = allocatedFire - spentFire;
+
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
+          child: _buildWideVaultCard(
+            context: context,
+            title: 'Fire Wallet',
+            icon: Icons.local_fire_department,
+            primaryColor: const Color(0xFFF87171),
+            secondaryColor: const Color(0xFFEF4444),
+            balance: fireBalance,
+            isRedirected:
+                settings.fireRedirection != FireRedirectionTarget.fire,
+            redirectTarget:
+                settings.fireRedirection == FireRedirectionTarget.mojo
+                    ? 'Mojo'
+                    : 'Grow',
+            description: 'Things that crush your burdens and build your freedom.\n• Examples: Clearing credit card debt and paying off vehicle leases.',
+          ),
+        ),
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0)
+                .copyWith(top: 16.0),
             child: Column(
               children: [
-                _buildMojoCard(balance: mojoBalance, context: context),
-                const SizedBox(height: 24),
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.05),
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(
-                        color: Colors.white.withOpacity(0.1), width: 1.5),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Trophy Road',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    if (!_isAddingDebt)
+                      OutlinedButton.icon(
+                        onPressed: () => setState(() => _isAddingDebt = true),
+                        icon: const Icon(Icons.add, size: 18),
+                        label: const Text('Add Debt'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.white,
+                          side: const BorderSide(color: Colors.white30),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                        ),
+                      ),
+                  ],
+                ),
+                if (_isAddingDebt)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 16.0),
+                    child: InlineDebtEditor(
+                      onCancel: () => setState(() => _isAddingDebt = false),
+                      onSave: () => setState(() => _isAddingDebt = false),
+                    ),
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                const SizedBox(height: 16),
+                BlocBuilder<DebtCubit, DebtState>(
+                  builder: (context, state) {
+                    if (state is DebtLoading) {
+                      return const ShimmerTile();
+                    } else if (state is DebtLoaded) {
+                      final debts = state.debts;
+
+                      if (debts.isEmpty) {
+                        if (_isAddingDebt) {
+                          return const SizedBox.shrink();
+                        }
+                        return _buildZeroDebtMessage(context);
+                      }
+
+
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          const Row(
-                            children: [
-                              Icon(Icons.shield_moon_outlined,
-                                  color: Colors.amberAccent, size: 24),
-                              SizedBox(width: 8),
-                              Text(
-                                'Emergency Safety Net',
-                                style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold),
-                              ),
-                            ],
-                          ),
-                          Text(
-                            '${(progressPct * 100).toInt()}%',
-                            style: const TextStyle(
-                                color: Colors.amberAccent,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w800),
-                          ),
+                          const SizedBox(height: 16),
+                          DebtTimeline(debts: debts, fireBalance: fireBalance),
                         ],
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'Goal: 3 Months of Living Expenses',
-                        style: TextStyle(
-                            color: Colors.white54,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500),
-                      ),
-                      const SizedBox(height: 20),
-                      Stack(
-                        children: [
-                          Container(
-                            height: 12,
-                            decoration: BoxDecoration(
-                              color: Colors.black.withOpacity(0.3),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                          ),
-                          FractionallySizedBox(
-                            widthFactor: progressPct,
-                            child: Container(
-                              height: 12,
-                              decoration: BoxDecoration(
-                                gradient: const LinearGradient(
-                                  colors: [
-                                    Color(0xFFF59E0B),
-                                    Color(0xFFFFD700)
-                                  ],
-                                ),
-                                borderRadius: BorderRadius.circular(6),
-                                boxShadow: [
-                                  BoxShadow(
-                                      color: const Color(0xFFF59E0B)
-                                          .withOpacity(0.5),
-                                      blurRadius: 8,
-                                      offset: const Offset(0, 2)),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            AppFormatters.formatCurrency(context, mojoBalance),
-                            style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold),
-                          ),
-                          Text(
-                            AppFormatters.formatCurrency(context, targetGoal),
-                            style: const TextStyle(
-                                color: Colors.white54,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
+                      );
+                    }
+                    return const Text('Failed to load debts.',
+                        style: TextStyle(color: Colors.red));
+                  },
                 ),
               ],
             ),
           ),
         ),
-        SliverFillRemaining(
-          hasScrollBody: false,
-          child: Padding(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
+      ],
+    );
+  }
+
+  Widget _buildMojoTab(BuildContext context, double mojoBalance,
+      double dailyExpensesAllocation, double fireBalance, double smileBalance) {
+    final double targetGoal = (dailyExpensesAllocation * 3) > 0
+        ? (dailyExpensesAllocation * 3)
+        : 15000;
+    final double progressPct =
+        targetGoal > 0 ? (mojoBalance / targetGoal).clamp(0.0, 1.0) : 0.0;
+
+    final accountState = context.read<AccountCubit>().state;
+    List<Map<String, dynamic>> sourceAccounts = [];
+    if (accountState is AccountLoaded) {
+      for (var acc in accountState.accounts) {
+        if (acc.balance > 0) {
+          sourceAccounts.add({'id': acc.id, 'name': acc.name, 'balance': acc.balance});
+        }
+      }
+    }
+    if (fireBalance > 0) {
+      sourceAccounts.add({'id': 'bucket_fire', 'name': 'Fire Vault', 'balance': fireBalance});
+    }
+    if (smileBalance > 0) {
+      sourceAccounts.add({'id': 'bucket_smile', 'name': 'Smile Vault', 'balance': smileBalance});
+    }
+
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
+          child: _buildWideVaultCard(
+            context: context,
+            title: 'Mojo Vault (Emergency)',
+            icon: Icons.security,
+            primaryColor: const Color(0xFFFFD700),
+            secondaryColor: const Color(0xFFF59E0B),
+            balance: mojoBalance,
+            targetAmount: targetGoal,
+            description: 'Things that keep you safe when life hits hard.\n• Examples: Unexpected medical bills or emergency car repairs.',
+            actionWidget: !_isAddingMojoFunds
+                ? OutlinedButton.icon(
+                    onPressed: () {
+                      setState(() => _isAddingMojoFunds = true);
+                    },
+                    icon: const Icon(Icons.add, size: 14),
+                    label: const Text('Add Funds', style: TextStyle(fontSize: 12)),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.black87,
+                      side: const BorderSide(color: Colors.black54, width: 1),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 0),
+                      minimumSize: const Size(0, 28),
+                    ),
+                  )
+                : null,
+          ),
+        ),
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0)
+                .copyWith(top: 16.0),
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.end,
               children: [
+
+                if (_isAddingMojoFunds) ...[
+                  const SizedBox(height: 16),
+                  InlineFundEditor(
+                    title: 'Add Funds to Mojo',
+                    themeColor: const Color(0xFFF59E0B),
+                    sourceAccounts: sourceAccounts,
+                    onCancel: () => setState(() => _isAddingMojoFunds = false),
+                    onSave: (amount, sourceId) {
+                      _addMojoFunds(amount, sourceId);
+                      setState(() => _isAddingMojoFunds = false);
+                    },
+                  ),
+                ],
+                const SizedBox(height: 48),
                 Text(
                   'Keep sweeping your leftover Daily Expenses here!',
                   style: TextStyle(
@@ -817,87 +984,24 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
   }
 
   Widget _buildGrowTab(BuildContext context, double growBalance) {
-    return CustomScrollView(
-      slivers: [
-        SliverToBoxAdapter(
-          child: Padding(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
-            child: Column(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(24),
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        const Color(0xFF10B981).withOpacity(0.8),
-                        const Color(0xFF047857).withOpacity(0.6),
-                      ],
-                    ),
-                    border: Border.all(
-                        color: Colors.white.withOpacity(0.2), width: 1.5),
-                    boxShadow: [
-                      BoxShadow(
-                          color: const Color(0xFF10B981).withOpacity(0.3),
-                          blurRadius: 15,
-                          offset: const Offset(0, 8)),
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Row(
-                            children: [
-                              Icon(Icons.trending_up,
-                                  color: Colors.white, size: 24),
-                              SizedBox(width: 8),
-                              Text(
-                                'Grow Wealth',
-                                style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            AppFormatters.formatCurrency(context, growBalance),
-                            style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 32,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: -1),
-                          ),
-                          const SizedBox(height: 4),
-                          const Text('Total Investments',
-                              style: TextStyle(
-                                  color: Colors.white70, fontSize: 13)),
-                        ],
-                      ),
-                      const Opacity(
-                        opacity: 0.2,
-                        child: Icon(Icons.show_chart,
-                            size: 80, color: Colors.white),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
+          child: _buildWideVaultCard(
+            context: context,
+            title: 'Grow Wealth',
+            icon: Icons.trending_up,
+            primaryColor: const Color(0xFF34D399),
+            secondaryColor: const Color(0xFF10B981),
+            balance: growBalance,
+            description: 'Things that multiply your wealth for the future.\n• Examples: Stock market investments or real estate property purchases.',
           ),
         ),
-        SliverFillRemaining(
-          hasScrollBody: false,
-          child: Padding(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0)
+                .copyWith(top: 16.0),
             child: Container(
               width: double.infinity,
               padding: const EdgeInsets.all(32),
@@ -957,8 +1061,26 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
     );
   }
 
-  Widget _buildMojoCard(
-      {required double balance, required BuildContext context}) {
+  Widget _buildWideVaultCard({
+    required BuildContext context,
+    required String title,
+    required IconData icon,
+    required Color primaryColor,
+    required Color secondaryColor,
+    required double balance,
+    double? targetAmount,
+    String? goalName,
+    bool isRedirected = false,
+    String? redirectTarget,
+    String? description,
+    Widget? actionWidget,
+  }) {
+    final Color displayPrimary =
+        isRedirected ? Colors.grey.shade700 : primaryColor;
+    final Color displaySecondary =
+        isRedirected ? Colors.grey.shade600 : secondaryColor;
+    final Color textColor = isRedirected ? Colors.black54 : Colors.black;
+
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
@@ -967,15 +1089,14 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            const Color(0xFFFFD700).withOpacity(0.9), // Gold
-            const Color(0xFFF59E0B).withOpacity(0.9), // Amber
+            displayPrimary.withOpacity(0.9),
+            displaySecondary.withOpacity(0.9),
           ],
         ),
-        border:
-            Border.all(color: Colors.yellowAccent.withOpacity(0.5), width: 1.5),
+        border: Border.all(color: Colors.white.withOpacity(0.3), width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFFF59E0B).withOpacity(0.4),
+            color: displaySecondary.withOpacity(0.4),
             blurRadius: 15,
             offset: const Offset(0, 6),
           ),
@@ -985,39 +1106,98 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Row(
-                children: [
-                  Icon(Icons.security, color: Colors.white, size: 20),
-                  SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(icon, color: textColor, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        isRedirected
+                            ? '$title (Redirecting to $redirectTarget)'
+                            : title,
+                        style: TextStyle(
+                          color: textColor,
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.5,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+                if (description != null) ...[
+                  const SizedBox(height: 4),
                   Text(
-                    'Mojo Vault (Emergency)',
+                    description,
                     style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 0.5,
+                      color: textColor.withValues(alpha: 0.7),
+                      fontSize: 12,
+                      height: 1.4,
+                    ),
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+                const SizedBox(height: 8),
+                Text(
+                  AppFormatters.formatCurrency(
+                      context, isRedirected ? 0 : balance),
+                  style: TextStyle(
+                    color: textColor,
+                    fontSize: 28,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+                if (targetAmount != null && targetAmount > 0) ...[
+                  const SizedBox(height: 16),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: LinearProgressIndicator(
+                      value: (balance / targetAmount).clamp(0.0, 1.0),
+                      backgroundColor: Colors.black.withOpacity(0.1),
+                      valueColor:
+                          const AlwaysStoppedAnimation<Color>(Colors.black),
+                      minHeight: 6,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '${AppFormatters.formatCurrency(context, balance)} / ${AppFormatters.formatCurrency(context, targetAmount)}',
+                    style: TextStyle(
+                      color: textColor.withOpacity(0.8),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ],
-              ),
-              const SizedBox(height: 8),
-              Text(
-                AppFormatters.formatCurrency(context, balance),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 28,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: -0.5,
+                const SizedBox(height: 24),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'BAREFOOT',
+                      style: TextStyle(
+                        color: textColor.withOpacity(0.7),
+                        fontSize: 9,
+                        letterSpacing: 1.0,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    if (actionWidget != null) actionWidget,
+                  ],
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-          const Opacity(
-            opacity: 0.3,
-            child: Icon(Icons.shield, size: 60, color: Colors.white),
+          Opacity(
+            opacity: 0.15,
+            child: Icon(icon, size: 60, color: Colors.black),
           ),
         ],
       ),
@@ -1057,6 +1237,7 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
     String? goalName,
     bool isRedirected = false,
     String? redirectTarget,
+    String? description,
   }) {
     final bool hasGoal = targetAmount != null && targetAmount > 0;
     final double progress =
@@ -1064,185 +1245,159 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
 
     // When redirected, the card appears disabled
     final Color displayColor = isRedirected ? Colors.grey.shade700 : color;
-    final Color textColor = isRedirected ? Colors.white54 : Colors.white;
+    final Color textColor = isRedirected ? Colors.black54 : Colors.black;
 
-    return AspectRatio(
-      aspectRatio: 1.8,
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              displayColor.withOpacity(0.9),
-              displayColor.withOpacity(0.5),
-            ],
-          ),
-          border: Border.all(color: Colors.white.withOpacity(0.3), width: 1.2),
-          boxShadow: [
-            BoxShadow(
-              color: displayColor.withOpacity(0.4),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            displayColor.withOpacity(0.9),
+            displayColor.withOpacity(0.5),
           ],
         ),
-        clipBehavior: Clip.hardEdge,
-        child: Stack(
-          children: [
-            // Watermark Icon
-            Positioned(
-              right: -20,
-              bottom: -10,
-              child: Opacity(
-                opacity: 0.15,
-                child: Icon(
-                  icon,
-                  size: 120,
-                  color: Colors.white,
-                ),
+        border: Border.all(color: Colors.white.withOpacity(0.3), width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: displayColor.withOpacity(0.4),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      clipBehavior: Clip.hardEdge,
+      child: Stack(
+        children: [
+          // Watermark Icon
+          Positioned(
+            right: -20,
+            bottom: -10,
+            child: Opacity(
+              opacity: 0.15,
+              child: Icon(
+                icon,
+                size: 120,
+                color: Colors.black,
               ),
             ),
-            // Foreground Content
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  // Top Row
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Row(
-                          children: [
-                            Icon(icon, color: textColor, size: 14),
-                            const SizedBox(width: 4),
-                            Expanded(
-                              child: Text(
-                                isRedirected
-                                    ? '$title (Redirecting to $redirectTarget)'
-                                    : title.replaceAll(' Wallet', ''),
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  color: textColor,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          badgeText,
-                          style: TextStyle(
-                            color: textColor,
-                            fontSize: 9,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  // Center Balance & Optional Goal Tracker
-                  Expanded(
-                    child: Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
+          ),
+          // Foreground Content
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Top Row
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Row(
                         children: [
-                          FittedBox(
-                            fit: BoxFit.scaleDown,
-                            alignment: Alignment.center,
+                          Icon(icon, color: textColor, size: 14),
+                          const SizedBox(width: 4),
+                          Expanded(
                             child: Text(
-                              AppFormatters.formatCurrency(
-                                  context, isRedirected ? 0 : balance),
+                              isRedirected
+                                  ? '$title (Redirecting to $redirectTarget)'
+                                  : title.replaceAll(' Wallet', ''),
+                              overflow: TextOverflow.ellipsis,
                               style: TextStyle(
                                 color: textColor,
-                                fontSize: 22,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: -0.5,
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
                               ),
                             ),
                           ),
-                          if (hasGoal && !isRedirected) ...[
-                            const SizedBox(height: 4),
-                            Text(
-                              goalName ?? 'Goal',
-                              style: const TextStyle(
-                                  color: Colors.white70,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w600),
-                            ),
-                            const SizedBox(height: 4),
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(4),
-                              child: LinearProgressIndicator(
-                                value: progress,
-                                backgroundColor: Colors.black26,
-                                color: Colors.white,
-                                minHeight: 4,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              '${(progress * 100).toInt()}% of ${AppFormatters.formatCurrency(context, targetAmount)}',
-                              style: const TextStyle(
-                                  color: Colors.white70, fontSize: 8),
-                            ),
-                          ],
                         ],
                       ),
                     ),
-                  ),
-
-                  // Bottom Row
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        'BAREFOOT',
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        badgeText,
                         style: TextStyle(
-                          color: textColor.withOpacity(0.7),
+                          color: textColor,
                           fontSize: 9,
-                          letterSpacing: 1.0,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
-                      Row(
-                        children: [
-                          Icon(Icons.contactless,
-                              color: textColor.withOpacity(0.7), size: 12),
-                          const SizedBox(width: 4),
-                          Text(
-                            cardNumberEnding.replaceAll('**** ', '*'),
-                            style: TextStyle(
-                              color: textColor.withOpacity(0.7),
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
-                              letterSpacing: 1.0,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+                    ),
+                  ],
+                ),
+                if (description != null) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    description,
+                    style: TextStyle(
+                      color: textColor.withValues(alpha: 0.8),
+                      fontSize: 10,
+                      height: 1.4,
+                    ),
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
-              ),
+                const SizedBox(height: 8),
+                Text(
+                  AppFormatters.formatCurrency(
+                      context, isRedirected ? 0 : balance),
+                  style: TextStyle(
+                    color: textColor,
+                    fontSize: 28,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+                if (hasGoal && !isRedirected) ...[
+                  const SizedBox(height: 16),
+                  Text(
+                    goalName ?? 'Goal',
+                    style: TextStyle(
+                        color: textColor.withOpacity(0.8),
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 4),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                      value: progress,
+                      backgroundColor: Colors.black12,
+                      color: Colors.black87,
+                      minHeight: 4,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '${(progress * 100).toInt()}% of ${AppFormatters.formatCurrency(context, targetAmount)}',
+                    style: TextStyle(
+                        color: textColor.withOpacity(0.8), fontSize: 8),
+                  ),
+                ],
+                const SizedBox(height: 24),
+                Text(
+                  'BAREFOOT',
+                  style: TextStyle(
+                    color: textColor.withOpacity(0.7),
+                    fontSize: 9,
+                    letterSpacing: 1.0,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -1251,15 +1406,11 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
 class _ConcentricDonutPainter extends CustomPainter {
   final double dailyExpensesSpentPct;
   final double splurgeSpentPct;
-  final double smileSpentPct;
-  final double fireSpentPct;
   final int selectedIndex;
 
   _ConcentricDonutPainter({
     required this.dailyExpensesSpentPct,
     required this.splurgeSpentPct,
-    required this.smileSpentPct,
-    required this.fireSpentPct,
     required this.selectedIndex,
   });
 
@@ -1271,7 +1422,8 @@ class _ConcentricDonutPainter extends CustomPainter {
     final spacing = 4.0;
 
     final double gapSweep = 0.05; // gap in radians
-    final double totalAvailableSweep = (2 * math.pi) - (4 * gapSweep);
+    final double totalAvailableSweep =
+        (2 * math.pi) - (2 * gapSweep); // Only 2 gaps now
 
     void drawBucket(int index, double startAngle, double percentage,
         double spentPct, Color baseColor) {
@@ -1335,25 +1487,19 @@ class _ConcentricDonutPainter extends CustomPainter {
 
     double currentAngle = -math.pi / 2; // Start at top (12 o'clock)
 
+    // Daily Expenses (scaled to 85% instead of 60%)
     drawBucket(
-        0, currentAngle, 0.60, dailyExpensesSpentPct, const Color(0xFF3B82F6));
-    currentAngle += (totalAvailableSweep * 0.60) + gapSweep;
+        0, currentAngle, 0.85, dailyExpensesSpentPct, const Color(0xFF3B82F6));
+    currentAngle += (totalAvailableSweep * 0.85) + gapSweep;
 
-    drawBucket(1, currentAngle, 0.10, splurgeSpentPct, const Color(0xFFEAB308));
-    currentAngle += (totalAvailableSweep * 0.10) + gapSweep;
-
-    drawBucket(2, currentAngle, 0.10, smileSpentPct, const Color(0xFF10B981));
-    currentAngle += (totalAvailableSweep * 0.10) + gapSweep;
-
-    drawBucket(3, currentAngle, 0.20, fireSpentPct, const Color(0xFFEF4444));
+    // Splurge (scaled to 15% instead of 10%)
+    drawBucket(1, currentAngle, 0.15, splurgeSpentPct, const Color(0xFFEAB308));
   }
 
   @override
   bool shouldRepaint(covariant _ConcentricDonutPainter oldDelegate) {
     return oldDelegate.dailyExpensesSpentPct != dailyExpensesSpentPct ||
         oldDelegate.splurgeSpentPct != splurgeSpentPct ||
-        oldDelegate.smileSpentPct != smileSpentPct ||
-        oldDelegate.fireSpentPct != fireSpentPct ||
         oldDelegate.selectedIndex != selectedIndex;
   }
 }

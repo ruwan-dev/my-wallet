@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import '../../../../features/expenses/domain/entities/category.dart';
 
 class BudgetChecklistItem extends Equatable {
   final String id;
@@ -51,6 +52,7 @@ class CustomBudgetEntity extends Equatable {
   final List<BudgetChecklistItem> items;
   final DateTime createdAt;
   final bool isCompleted;
+  final BucketType bucketType;
 
   const CustomBudgetEntity({
     required this.id,
@@ -60,6 +62,7 @@ class CustomBudgetEntity extends Equatable {
     required this.items,
     required this.createdAt,
     this.isCompleted = false,
+    this.bucketType = BucketType.dailyExpenses,
   });
 
   CustomBudgetEntity copyWith({
@@ -70,6 +73,7 @@ class CustomBudgetEntity extends Equatable {
     List<BudgetChecklistItem>? items,
     DateTime? createdAt,
     bool? isCompleted,
+    BucketType? bucketType,
   }) {
     return CustomBudgetEntity(
       id: id ?? this.id,
@@ -79,6 +83,7 @@ class CustomBudgetEntity extends Equatable {
       items: items ?? this.items,
       createdAt: createdAt ?? this.createdAt,
       isCompleted: isCompleted ?? this.isCompleted,
+      bucketType: bucketType ?? this.bucketType,
     );
   }
 
@@ -91,5 +96,5 @@ class CustomBudgetEntity extends Equatable {
   }
 
   @override
-  List<Object?> get props => [id, userId, title, totalBudgetLimit, items, createdAt, isCompleted];
+  List<Object?> get props => [id, userId, title, totalBudgetLimit, items, createdAt, isCompleted, bucketType];
 }

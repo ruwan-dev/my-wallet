@@ -2,10 +2,18 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../bloc/settings_cubit.dart';
+import 'package:expense_tracker/core/widgets/glass_list_tile.dart';
 
-class CurrencySelectionBottomSheet extends StatelessWidget {
+class CurrencySelectionBottomSheet extends StatefulWidget {
   const CurrencySelectionBottomSheet({super.key});
 
+  @override
+  State<CurrencySelectionBottomSheet> createState() =>
+      _CurrencySelectionBottomSheetState();
+}
+
+class _CurrencySelectionBottomSheetState
+    extends State<CurrencySelectionBottomSheet> {
   static const List<Map<String, String>> _currencies = [
     {'code': 'USD', 'symbol': '\$', 'name': 'US Dollar'},
     {'code': 'EUR', 'symbol': '€', 'name': 'Euro'},
@@ -15,10 +23,17 @@ class CurrencySelectionBottomSheet extends StatelessWidget {
     {'code': 'INR', 'symbol': '₹', 'name': 'Indian Rupee'},
   ];
 
+  String? _selectedCode;
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize with current value
+    _selectedCode = context.read<SettingsCubit>().state.currencyCode;
+  }
+
   @override
   Widget build(BuildContext context) {
-    final currentCode = context.watch<SettingsCubit>().state.currencyCode;
-
     return ClipRRect(
       borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       child: BackdropFilter(
@@ -41,16 +56,41 @@ class CurrencySelectionBottomSheet extends StatelessWidget {
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              const SizedBox(height: 24),
-              const Text(
-                'Select Default Currency',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Cancel',
+                          style: TextStyle(color: Colors.white54)),
+                    ),
+                    const Text('Select Currency',
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold)),
+                    TextButton(
+                      onPressed: () {
+                        if (_selectedCode != null) {
+                          final selected = _currencies.firstWhere(
+                              (c) => c['code'] == _selectedCode);
+                          context.read<SettingsCubit>().updateCurrency(
+                                selected['symbol']!,
+                                selected['code']!,
+                              );
+                        }
+                        Navigator.pop(context);
+                      },
+                      child: const Text('Save',
+                          style: TextStyle(
+                              color: Color(0xFF3B82F6),
+                              fontWeight: FontWeight.bold)),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 16),
               Flexible(
                 child: ListView.separated(
                   shrinkWrap: true,
@@ -61,15 +101,13 @@ class CurrencySelectionBottomSheet extends StatelessWidget {
                   ),
                   itemBuilder: (context, index) {
                     final currency = _currencies[index];
-                    final isSelected = currency['code'] == currentCode;
+                    final isSelected = currency['code'] == _selectedCode;
 
-                    return ListTile(
+                    return GlassListTile(
                       onTap: () {
-                        context.read<SettingsCubit>().updateCurrency(
-                              currency['symbol']!,
-                              currency['code']!,
-                            );
-                        Navigator.pop(context);
+                        setState(() {
+                          _selectedCode = currency['code'];
+                        });
                       },
                       leading: Container(
                         width: 40,
@@ -84,7 +122,9 @@ class CurrencySelectionBottomSheet extends StatelessWidget {
                           child: Text(
                             currency['symbol']!.trim(),
                             style: TextStyle(
-                              color: isSelected ? const Color(0xFF8B5CF6) : Colors.white,
+                              color: isSelected
+                                  ? const Color(0xFF8B5CF6)
+                                  : Colors.white,
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
                             ),
@@ -95,11 +135,14 @@ class CurrencySelectionBottomSheet extends StatelessWidget {
                         '${currency['code']} - ${currency['name']}',
                         style: TextStyle(
                           color: isSelected ? Colors.white : Colors.white70,
-                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                          fontWeight: isSelected
+                              ? FontWeight.bold
+                              : FontWeight.normal,
                         ),
                       ),
                       trailing: isSelected
-                          ? const Icon(Icons.check_circle, color: Color(0xFF8B5CF6))
+                          ? const Icon(Icons.check_circle,
+                              color: Color(0xFF8B5CF6))
                           : null,
                     );
                   },

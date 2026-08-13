@@ -192,8 +192,9 @@ class GlassCurvePainter extends CustomPainter {
 class ConnectedNodesPainter extends CustomPainter {
   final Color color;
   final int seed;
+  final int nodeCount;
 
-  ConnectedNodesPainter({required this.color, required this.seed});
+  ConnectedNodesPainter({required this.color, required this.seed, this.nodeCount = 12});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -203,7 +204,7 @@ class ConnectedNodesPainter extends CustomPainter {
       ..style = PaintingStyle.fill;
 
     // Generate nodes
-    final int numNodes = 12;
+    final int numNodes = nodeCount;
     final List<Offset> nodes = [];
     for (int i = 0; i < numNodes; i++) {
       nodes.add(Offset(
@@ -236,6 +237,6 @@ class ConnectedNodesPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant ConnectedNodesPainter oldDelegate) {
-    return oldDelegate.color != color || oldDelegate.seed != seed;
+    return oldDelegate.color != color || oldDelegate.seed != seed || oldDelegate.nodeCount != nodeCount;
   }
 }

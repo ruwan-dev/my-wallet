@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../domain/entities/category.dart';
+import 'category_icon.dart';
 
 class CategoryPickerSheet extends StatelessWidget {
   final Category selectedCategory;
@@ -64,7 +65,11 @@ class CategoryPickerSheet extends StatelessWidget {
                                 : null,
                           ),
                           alignment: Alignment.center,
-                          child: Text(category.icon, style: const TextStyle(fontSize: 28)),
+                          child: CategoryIcon(
+                            iconStr: category.icon,
+                            size: 28,
+                            color: category.color,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 8),

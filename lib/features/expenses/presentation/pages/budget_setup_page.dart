@@ -11,6 +11,7 @@ import '../bloc/category_cubit.dart';
 import '../bloc/category_state.dart';
 import '../../../auth/presentation/bloc/auth_cubit.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
+import 'package:expense_tracker/features/expenses/presentation/widgets/shimmer_tile.dart';
 
 class BudgetSetupPage extends StatefulWidget {
   final int initialMonth;
@@ -42,7 +43,7 @@ class _BudgetSetupPageState extends State<BudgetSetupPage> {
     _selectedYear = widget.initialYear;
 
     final authState = context.read<AuthCubit>().state;
-    final userId = authState is AuthAuthenticated ? authState.userId : '';
+    final userId = authState is AuthAuthenticated ? authState.user.id : '';
     context.read<MonthlyBudgetCubit>().init(userId);
     context.read<MonthlyBudgetCubit>().loadBudget(_selectedMonth, _selectedYear);
   }
@@ -91,7 +92,7 @@ class _BudgetSetupPageState extends State<BudgetSetupPage> {
     }
 
     final authState = context.read<AuthCubit>().state;
-    final userId = authState is AuthAuthenticated ? authState.userId : '';
+    final userId = authState is AuthAuthenticated ? authState.user.id : '';
 
     final budget = MonthlyBudgetEntity(
       id: _currentBudget?.id ?? '',
@@ -185,7 +186,7 @@ class _BudgetSetupPageState extends State<BudgetSetupPage> {
                         },
                       );
                     }
-                    return const CircularProgressIndicator();
+                    return const ShimmerTile();
                   },
                 ),
                 const SizedBox(height: 48),

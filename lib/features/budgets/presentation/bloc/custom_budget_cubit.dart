@@ -20,7 +20,7 @@ class CustomBudgetCubit extends Cubit<CustomBudgetState> {
   }) : super(CustomBudgetInitial()) {
     _authSubscription = authCubit.stream.listen((authState) {
       if (authState is AuthAuthenticated) {
-        _currentUserId = authState.userId;
+        _currentUserId = authState.user.id;
         _startWatchingBudgets();
       } else if (authState is AuthUnauthenticated) {
         _currentUserId = '';
@@ -31,7 +31,7 @@ class CustomBudgetCubit extends Cubit<CustomBudgetState> {
 
     // Check initial auth state
     if (authCubit.state is AuthAuthenticated) {
-      _currentUserId = (authCubit.state as AuthAuthenticated).userId;
+      _currentUserId = (authCubit.state as AuthAuthenticated).user.id;
       _startWatchingBudgets();
     }
   }

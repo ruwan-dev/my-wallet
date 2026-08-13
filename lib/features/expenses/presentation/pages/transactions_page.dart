@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -8,6 +9,8 @@ import '../bloc/transaction_state.dart';
 import '../bloc/account_cubit.dart';
 import '../bloc/account_state.dart';
 import '../widgets/transaction_card.dart';
+import 'package:expense_tracker/features/expenses/presentation/widgets/shimmer_tile.dart';
+import 'package:expense_tracker/core/widgets/glass_list_tile.dart';
 
 class TransactionsPage extends StatefulWidget {
   const TransactionsPage({super.key});
@@ -24,7 +27,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         title: Text('All Transactions', style: theme.textTheme.titleMedium),
         centerTitle: true,
@@ -50,43 +53,70 @@ class _TransactionsPageState extends State<TransactionsPage> {
                 onPressed: () {
                   showModalBottomSheet(
                     context: context,
+                    backgroundColor: Colors.transparent,
+                    isScrollControlled: true,
                     builder: (ctx) {
                       return SafeArea(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.all(16.0),
-                              child: Text('Filter by Category', style: theme.textTheme.titleMedium),
+                        child: Container(
+                          margin: const EdgeInsets.all(16),
+                          constraints: const BoxConstraints(maxWidth: 500, maxHeight: 500),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.surface.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(24),
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.2),
+                              width: 1.5,
                             ),
-                            ListTile(
-                              title: const Text('All Categories'),
-                              trailing: _selectedCategoryFilter == null ? Icon(Icons.check, color: theme.colorScheme.primary) : null,
-                              onTap: () {
-                                setState(() => _selectedCategoryFilter = null);
-                                Navigator.pop(ctx);
-                              },
-                            ),
-                            const Divider(height: 1),
-                            Flexible(
-                              child: ListView.builder(
-                                shrinkWrap: true,
-                                itemCount: uniqueCategories.length,
-                                itemBuilder: (ctx, i) {
-                                  final cat = uniqueCategories[i];
-                                  final isSelected = _selectedCategoryFilter == cat;
-                                  return ListTile(
-                                    title: Text(cat),
-                                    trailing: isSelected ? Icon(Icons.check, color: theme.colorScheme.primary) : null,
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(24),
+                            child: BackdropFilter(
+                              filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(vertical: 20.0, horizontal: 16.0),
+                                    child: Text('Filter by Category', 
+                                      style: theme.textTheme.titleMedium?.copyWith(
+                                        fontWeight: FontWeight.w700,
+                                        color: theme.colorScheme.onSurface,
+                                      ),
+                                    ),
+                                  ),
+                                  Divider(height: 1, color: theme.colorScheme.onSurface.withValues(alpha: 0.1)),
+                                  ListTile(
+                                    title: Text('All Categories', style: TextStyle(color: theme.colorScheme.onSurface, fontWeight: FontWeight.w600)),
+                                    trailing: _selectedCategoryFilter == null ? Icon(Icons.check, color: theme.colorScheme.onSurface) : null,
                                     onTap: () {
-                                      setState(() => _selectedCategoryFilter = cat);
+                                      setState(() => _selectedCategoryFilter = null);
                                       Navigator.pop(ctx);
                                     },
-                                  );
-                                },
+                                  ),
+                                  Divider(height: 1, color: theme.colorScheme.onSurface.withValues(alpha: 0.1)),
+                                  Flexible(
+                                    child: ListView.separated(
+                                      shrinkWrap: true,
+                                      itemCount: uniqueCategories.length,
+                                      separatorBuilder: (_, __) => Divider(height: 1, color: theme.colorScheme.onSurface.withValues(alpha: 0.1)),
+                                      itemBuilder: (ctx, i) {
+                                        final cat = uniqueCategories[i];
+                                        final isSelected = _selectedCategoryFilter == cat;
+                                        return ListTile(
+                                          title: Text(cat, style: TextStyle(color: theme.colorScheme.onSurface, fontWeight: FontWeight.w600)),
+                                          trailing: isSelected ? Icon(Icons.check, color: theme.colorScheme.onSurface) : null,
+                                          onTap: () {
+                                            setState(() => _selectedCategoryFilter = cat);
+                                            Navigator.pop(ctx);
+                                          },
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                          ],
+                          ),
                         ),
                       );
                     },
@@ -100,7 +130,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
       body: BlocBuilder<TransactionCubit, TransactionState>(
         builder: (context, txState) {
           if (txState is TransactionLoading) {
-            return const Center(child: CircularProgressIndicator());
+            return const ShimmerTile();
           }
           if (txState is TransactionLoaded) {
             var transactions = txState.transactions;

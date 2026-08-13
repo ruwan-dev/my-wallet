@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../domain/entities/custom_budget.dart';
+import '../../../../features/expenses/domain/entities/category.dart';
 
 class CustomBudgetModel extends CustomBudgetEntity {
   const CustomBudgetModel({
@@ -10,6 +11,7 @@ class CustomBudgetModel extends CustomBudgetEntity {
     required super.items,
     required super.createdAt,
     super.isCompleted,
+    super.bucketType,
   });
 
   factory CustomBudgetModel.fromEntity(CustomBudgetEntity entity) {
@@ -21,6 +23,7 @@ class CustomBudgetModel extends CustomBudgetEntity {
       items: entity.items,
       createdAt: entity.createdAt,
       isCompleted: entity.isCompleted,
+      bucketType: entity.bucketType,
     );
   }
 
@@ -49,6 +52,10 @@ class CustomBudgetModel extends CustomBudgetEntity {
       items: itemsList,
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       isCompleted: data['isCompleted'] ?? false,
+      bucketType: BucketType.values.firstWhere(
+        (e) => e.toString() == data['bucketType'],
+        orElse: () => BucketType.dailyExpenses,
+      ),
     );
   }
 
@@ -59,6 +66,7 @@ class CustomBudgetModel extends CustomBudgetEntity {
       'totalBudgetLimit': totalBudgetLimit,
       'createdAt': Timestamp.fromDate(createdAt),
       'isCompleted': isCompleted,
+      'bucketType': bucketType.toString(),
       'items': items.map((i) => {
         'id': i.id,
         'title': i.title,

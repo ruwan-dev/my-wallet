@@ -10,12 +10,22 @@ class AppFormatters {
   /// Format [amount] as currency using the global [SettingsCubit] symbol.
   static String formatCurrency(
     BuildContext context,
-    double amount, {
-    String locale = 'en_US',
-  }) {
-    final symbol = context.watch<SettingsCubit>().state.currencySymbol;
+    double amount,
+  ) {
+    final state = context.watch<SettingsCubit>().state;
+    final symbol = state.currencySymbol;
+
+    if (amount.abs() >= 1000000) {
+      final formatter = NumberFormat.compactCurrency(
+        name: state.currencyCode,
+        symbol: symbol,
+        decimalDigits: 2,
+      );
+      return formatter.format(amount);
+    }
+
     final formatter = NumberFormat.currency(
-      locale: locale,
+      name: state.currencyCode,
       symbol: symbol,
       decimalDigits: 2,
     );

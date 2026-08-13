@@ -2,6 +2,9 @@ import 'dart:math';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../../../../core/utils/formatters.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/bloc/settings_cubit.dart';
+import 'mesh_account_card.dart';
 
 class AnimatedDashboardCard extends StatefulWidget {
   final double totalBalance;
@@ -42,6 +45,10 @@ class _AnimatedDashboardCardState extends State<AnimatedDashboardCard>
 
   @override
   Widget build(BuildContext context) {
+    final settings = context.watch<SettingsCubit>().state;
+    int nodeCount = (widget.totalBalance / settings.nodeDivisor).toInt();
+    nodeCount = nodeCount.clamp(0, 150);
+
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
@@ -67,11 +74,22 @@ class _AnimatedDashboardCardState extends State<AnimatedDashboardCard>
         borderRadius: BorderRadius.circular(20),
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: CustomPaint(
+                  painter: ConnectedNodesPainter(
+                    color: Colors.white.withOpacity(0.4),
+                    seed: widget.totalBalance.toInt(),
+                    nodeCount: nodeCount,
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                 const Text(
                   'Total Balance',
                   style: TextStyle(
@@ -111,7 +129,9 @@ class _AnimatedDashboardCardState extends State<AnimatedDashboardCard>
                   ),
                 ),
               ],
-            ),
+                ),
+              ),
+            ],
           ),
         ),
       ),

@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import '../../domain/entities/account.dart';
 
 class AccountModel {
@@ -64,5 +66,47 @@ class AccountModel {
       'userId': userId,
       'colorValue': colorValue,
     };
+  }
+}
+
+class AccountModelAdapter extends TypeAdapter<AccountModel> {
+  @override
+  final int typeId = 3;
+
+  @override
+  AccountModel read(BinaryReader reader) {
+    final numOfFields = reader.readByte();
+    final fields = <int, dynamic>{
+      for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
+    };
+    return AccountModel(
+      id: fields[0] as String,
+      name: fields[1] as String,
+      balance: fields[2] as double,
+      creditLimit: fields[3] as double,
+      typeIndex: fields[4] as int,
+      userId: fields[5] as String,
+      colorValue: fields[6] as int,
+    );
+  }
+
+  @override
+  void write(BinaryWriter writer, AccountModel obj) {
+    writer
+      ..writeByte(7)
+      ..writeByte(0)
+      ..write(obj.id)
+      ..writeByte(1)
+      ..write(obj.name)
+      ..writeByte(2)
+      ..write(obj.balance)
+      ..writeByte(3)
+      ..write(obj.creditLimit)
+      ..writeByte(4)
+      ..write(obj.typeIndex)
+      ..writeByte(5)
+      ..write(obj.userId)
+      ..writeByte(6)
+      ..write(obj.colorValue);
   }
 }

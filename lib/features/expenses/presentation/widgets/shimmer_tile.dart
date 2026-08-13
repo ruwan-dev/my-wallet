@@ -8,17 +8,24 @@ class ShimmerTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    // Derive shimmer colors from the theme — no hardcoded hex values.
-    final baseColor      = theme.colorScheme.surfaceContainerHighest;
-    final highlightColor = theme.colorScheme.surfaceContainerLow;
+    // Derive shimmer colors for the cool purple aesthetic.
+    final baseColor      = const Color(0xFF8B5CF6).withOpacity(0.2);
+    final highlightColor = const Color(0xFFC4B5FD).withOpacity(0.5);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: theme.cardTheme.color,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: theme.colorScheme.outline),
+        color: Colors.white.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withOpacity(0.2), width: 1.5),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0A000000),
+            blurRadius: 20,
+            offset: Offset(0, 8),
+          ),
+        ],
       ),
       child: Shimmer.fromColors(
         baseColor: baseColor,
@@ -40,15 +47,27 @@ class ShimmerTile extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(width: double.infinity, height: 14, color: Colors.white),
+                  Container(
+                    width: double.infinity, 
+                    height: 14, 
+                    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(4)),
+                  ),
                   const SizedBox(height: 8),
-                  Container(width: 80, height: 10, color: Colors.white),
+                  Container(
+                    width: 80, 
+                    height: 10, 
+                    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(4)),
+                  ),
                 ],
               ),
             ),
             const SizedBox(width: 16),
             // Amount placeholder
-            Container(width: 60, height: 18, color: Colors.white),
+            Container(
+              width: 60, 
+              height: 18, 
+              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(4)),
+            ),
           ],
         ),
       ),

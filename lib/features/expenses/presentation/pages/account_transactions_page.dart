@@ -6,6 +6,7 @@ import '../bloc/transaction_state.dart';
 import '../widgets/transaction_card.dart';
 import '../../../../core/theme/app_theme.dart';
 import 'package:go_router/go_router.dart';
+import 'package:expense_tracker/features/expenses/presentation/widgets/shimmer_tile.dart';
 
 class AccountTransactionsPage extends StatelessWidget {
   final AccountEntity account;
@@ -31,7 +32,7 @@ class AccountTransactionsPage extends StatelessWidget {
       body: BlocBuilder<TransactionCubit, TransactionState>(
         builder: (context, state) {
           if (state is TransactionLoading) {
-            return const Center(child: CircularProgressIndicator());
+            return const ShimmerTile();
           }
           if (state is TransactionLoaded) {
             final transactions = state.transactions

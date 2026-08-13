@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -7,6 +8,8 @@ import '../../domain/entities/category_budget.dart';
 import '../bloc/budget_cubit.dart';
 import '../bloc/category_cubit.dart';
 import '../bloc/category_state.dart';
+import 'package:expense_tracker/features/expenses/presentation/widgets/shimmer_tile.dart';
+import 'package:expense_tracker/core/widgets/glass_list_tile.dart';
 
 class SetBudgetBottomSheet extends StatefulWidget {
   final Category? initialCategory;
@@ -18,7 +21,6 @@ class SetBudgetBottomSheet extends StatefulWidget {
 }
 
 class _SetBudgetBottomSheetState extends State<SetBudgetBottomSheet> {
-  final _amountController = TextEditingController();
   Category? _selectedCategory;
 
   @override
@@ -27,17 +29,10 @@ class _SetBudgetBottomSheetState extends State<SetBudgetBottomSheet> {
     _selectedCategory = widget.initialCategory;
   }
 
-  @override
-  void dispose() {
-    _amountController.dispose();
-    super.dispose();
-  }
-
   void _save() {
-    final amount = double.tryParse(_amountController.text.trim()) ?? 0.0;
-    if (amount <= 0 || _selectedCategory == null) {
+    if (_selectedCategory == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select a category and valid amount')),
+        const SnackBar(content: Text('Please select a category')),
       );
       return;
     }
@@ -49,7 +44,7 @@ class _SetBudgetBottomSheetState extends State<SetBudgetBottomSheet> {
       userId: '', // Cubit will inject correct userId via Repository
       categoryId: _selectedCategory!.id,
       categoryName: _selectedCategory!.name,
-      limitAmount: amount,
+      limitAmount: 0.0,
       monthYear: currentMonthYear,
     );
 
@@ -62,27 +57,32 @@ class _SetBudgetBottomSheetState extends State<SetBudgetBottomSheet> {
     final theme = Theme.of(context);
     final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: theme.scaffoldBackgroundColor,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      padding: EdgeInsets.fromLTRB(
-        24, 
-        24, 
-        24, 
-        isKeyboardOpen ? MediaQuery.of(context).viewInsets.bottom + 24 : 40,
-      ),
-      child: Column(
+    return ClipRRect(
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.15),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+            border: Border.all(color: Colors.white.withOpacity(0.2), width: 1.5),
+          ),
+          padding: EdgeInsets.fromLTRB(
+            24, 
+            24, 
+            24, 
+            isKeyboardOpen ? MediaQuery.of(context).viewInsets.bottom + 24 : 40,
+          ),
+          child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Set Monthly Budget', style: theme.textTheme.titleLarge),
+              Text('Set Monthly Budget', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: Colors.white)),
               IconButton(
-                icon: const Icon(Icons.close),
+                icon: const Icon(Icons.close, color: Colors.white),
                 onPressed: () => Navigator.pop(context),
               ),
             ],
@@ -94,54 +94,103 @@ class _SetBudgetBottomSheetState extends State<SetBudgetBottomSheet> {
               builder: (context, state) {
                 if (state is CategoryLoaded) {
                   final expenses = state.categories.where((c) => !c.isIncome).toList();
-                  return DropdownButtonFormField<Category>(
-                    decoration: const InputDecoration(
-                      labelText: 'Category',
-                      border: OutlineInputBorder(),
+                  return Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.white.withOpacity(0.2)),
                     ),
-                    items: expenses.map((c) => DropdownMenuItem(
-                      value: c, 
-                      child: Text('${c.icon} ${c.name}')
-                    )).toList(),
-                    onChanged: (cat) => setState(() => _selectedCategory = cat),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<Category>(
+                        hint: const Text('Select Category', style: TextStyle(color: Colors.white70)),
+                        isExpanded: true,
+                        dropdownColor: const Color(0xFF2E2A4F),
+                        icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Colors.white70),
+                        items: expenses.map((c) {
+                          final codePoint = int.tryParse(c.icon);
+                          return DropdownMenuItem(
+                            value: c, 
+                            child: Row(
+                              children: [
+                                if (codePoint != null)
+                                  Icon(IconData(codePoint, fontFamily: 'MaterialIcons'), size: 20, color: Colors.white)
+                                else
+                                  Text(c.icon, style: const TextStyle(color: Colors.white)),
+                                const SizedBox(width: 12),
+                                Text(c.name, style: const TextStyle(color: Colors.white)),
+                              ],
+                            )
+                          );
+                        }).toList(),
+                        onChanged: (cat) => setState(() => _selectedCategory = cat),
+                      ),
+                    ),
                   );
                 }
-                return const CircularProgressIndicator();
+                return const ShimmerTile();
               }
             )
           else
-            ListTile(
-              leading: Text(_selectedCategory!.icon, style: const TextStyle(fontSize: 24)),
-              title: Text(_selectedCategory!.name, style: theme.textTheme.titleMedium),
+            GlassListTile(
+              leading: Builder(builder: (context) {
+                final codePoint = int.tryParse(_selectedCategory!.icon);
+                if (codePoint != null) {
+                  return Icon(IconData(codePoint, fontFamily: 'MaterialIcons'), size: 24, color: Colors.white);
+                }
+                return Text(_selectedCategory!.icon, style: const TextStyle(fontSize: 24, color: Colors.white));
+              }),
+              title: Text(_selectedCategory!.name, style: theme.textTheme.titleMedium?.copyWith(color: Colors.white)),
               trailing: IconButton(
-                icon: const Icon(Icons.close),
+                icon: const Icon(Icons.close, color: Colors.white),
                 onPressed: () => setState(() => _selectedCategory = null),
               ),
-              tileColor: theme.colorScheme.surfaceContainerHighest,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              tileColor: Colors.white.withOpacity(0.1),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                side: BorderSide(color: Colors.white.withOpacity(0.2)),
+              ),
             ),
             
-          const SizedBox(height: 16),
-          TextField(
-            controller: _amountController,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration: const InputDecoration(
-              labelText: 'Budget Limit',
-              prefixText: 'Rs ', // Should match user settings ideally
-              border: OutlineInputBorder(),
+          const SizedBox(height: 32),
+          Container(
+            width: double.infinity,
+            height: 56,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              gradient: const LinearGradient(
+                colors: [Color(0xFF7C3AED), Color(0xFF3B82F6)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF7C3AED).withOpacity(0.3),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
-          ),
-          
-          const SizedBox(height: 24),
-          FilledButton(
-            onPressed: _save,
-            style: FilledButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 16),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: _save,
+                borderRadius: BorderRadius.circular(16),
+                child: const Center(
+                  child: Text(
+                    'Save Budget',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
             ),
-            child: const Text('Save Budget'),
           ),
         ],
       ),
-    );
+    )));
   }
 }

@@ -25,17 +25,14 @@ class ResponsiveLayout extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        if (constraints.maxWidth >= kTabletMaxWidth) {
-          return desktop;
-        } else if (constraints.maxWidth >= kMobileMaxWidth) {
-          return tablet ?? desktop;
-        } else {
-          return mobile;
-        }
-      },
-    );
+    final width = MediaQuery.of(context).size.width;
+    if (width >= kTabletMaxWidth) {
+      return desktop;
+    } else if (width >= kMobileMaxWidth) {
+      return tablet ?? desktop;
+    } else {
+      return mobile;
+    }
   }
 }
 
@@ -156,8 +153,9 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
           ? BottomAppBar(
               shape: const CircularNotchedRectangle(),
               notchMargin: 8.0,
+              padding: EdgeInsets.zero,
               child: SizedBox(
-                height: 60,
+                height: 72,
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [

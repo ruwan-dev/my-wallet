@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../domain/entities/category.dart';
 import '../bloc/category_cubit.dart';
 import '../../../../core/theme/app_theme.dart';
+import 'package:expense_tracker/core/widgets/glass_list_tile.dart';
 
 class SubcategoryPickerSheet extends StatefulWidget {
   final Category category;
@@ -114,7 +115,7 @@ class _SubcategoryPickerSheetState extends State<SubcategoryPickerSheet> {
                 itemCount: _currentCategory.subcategories.length,
                 itemBuilder: (context, index) {
                   final sub = _currentCategory.subcategories[index];
-                  return ListTile(
+                  return GlassListTile(
                     contentPadding: EdgeInsets.zero,
                     title: Text(sub),
                     onTap: () => Navigator.pop(context, sub),

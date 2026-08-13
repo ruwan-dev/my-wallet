@@ -36,15 +36,8 @@ class RecurringTimelineWidget extends StatelessWidget {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
+        color: Colors.transparent,
         borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(24),
@@ -107,7 +100,7 @@ class RecurringTimelineWidget extends StatelessWidget {
                             ),
                             child: Text(
                               event.statusText,
-                              style: TextStyle(color: event.statusColor, fontWeight: FontWeight.bold, fontSize: 11),
+                              style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 11),
                             ),
                           )
                         ],

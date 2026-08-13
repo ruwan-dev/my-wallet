@@ -8,6 +8,7 @@ import '../bloc/category_state.dart';
 import '../../domain/entities/transaction.dart';
 import '../../domain/entities/category.dart';
 import '../widgets/recurring_timeline_widget.dart';
+import 'package:expense_tracker/features/expenses/presentation/widgets/shimmer_tile.dart';
 
 class RecurringBillsPage extends StatelessWidget {
   const RecurringBillsPage({super.key});
@@ -84,8 +85,9 @@ class RecurringBillsPage extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Colors.white.withOpacity(0.15),
         borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.white.withOpacity(0.2), width: 1.5),
         boxShadow: const [
           BoxShadow(
             color: Color(0x0A000000), 
@@ -98,13 +100,24 @@ class RecurringBillsPage extends StatelessWidget {
         data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
         child: ExpansionTile(
           initiallyExpanded: true,
+          iconColor: Colors.black,
+          collapsedIconColor: Colors.black,
           tilePadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
           leading: CircleAvatar(
-            backgroundColor: cat.color.withValues(alpha: 255 * 0.1),
-            child: Text(cat.icon, style: const TextStyle(fontSize: 20)),
+            backgroundColor: Colors.transparent,
+            child: Builder(builder: (context) {
+              final codePoint = int.tryParse(cat.icon);
+              if (codePoint != null) {
+                return Icon(
+                    IconData(codePoint, fontFamily: 'MaterialIcons'),
+                    size: 24,
+                    color: Colors.black);
+              }
+              return Text(cat.icon, style: const TextStyle(fontSize: 20, color: Colors.black));
+            }),
           ),
           title: Text('$subCat (${cat.name})', style: const TextStyle(fontWeight: FontWeight.bold)),
-          subtitle: Text('${frequency ?? 'One-time'} • ${AppFormatters.formatCurrency(context, expectedAmount)}', style: const TextStyle(color: Colors.grey, fontSize: 13)),
+          subtitle: Text('${frequency ?? 'One-time'} • ${AppFormatters.formatCurrency(context, expectedAmount)}', style: TextStyle(color: const Color(0xFF7C3AED).withOpacity(0.7), fontSize: 13)),
           children: [
             const Divider(height: 1, indent: 20, endIndent: 20, color: Color(0xFFF1F5F9)),
             Padding(
@@ -129,7 +142,7 @@ class RecurringBillsPage extends StatelessWidget {
                   }
                   
                   final statusColor = isPaid
-                      ? (isLate ? Colors.orange : Colors.green)
+                      ? (isLate ? Colors.orange : const Color(0xFF7C3AED))
                       : (expectedDate.isBefore(now) ? Colors.red : Colors.grey);
                       
                   String statusText;
@@ -170,12 +183,12 @@ class RecurringBillsPage extends StatelessWidget {
       backgroundColor: Colors.transparent,
       body: BlocBuilder<CategoryCubit, CategoryState>(
         builder: (context, catState) {
-          if (catState is! CategoryLoaded) return const Center(child: CircularProgressIndicator());
+          if (catState is! CategoryLoaded) return const ShimmerTile();
           final categories = catState.categories;
 
           return BlocBuilder<TransactionCubit, TransactionState>(
             builder: (context, txState) {
-              if (txState is! TransactionLoaded) return const Center(child: CircularProgressIndicator());
+              if (txState is! TransactionLoaded) return const ShimmerTile();
               final transactions = txState.transactions;
               
               return SingleChildScrollView(

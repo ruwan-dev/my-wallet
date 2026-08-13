@@ -9,6 +9,7 @@ class SettingsState extends Equatable {
   final double smileTargetAmount;
   final String smileGoalName;
   final FireRedirectionTarget fireRedirection;
+  final double nodeDivisor;
 
   const SettingsState({
     required this.currencySymbol,
@@ -17,6 +18,7 @@ class SettingsState extends Equatable {
     required this.smileTargetAmount,
     required this.smileGoalName,
     required this.fireRedirection,
+    required this.nodeDivisor,
   });
 
   factory SettingsState.initial() {
@@ -27,6 +29,7 @@ class SettingsState extends Equatable {
       smileTargetAmount: 0.0,
       smileGoalName: 'Smile Goal',
       fireRedirection: FireRedirectionTarget.fire,
+      nodeDivisor: 5000.0,
     );
   }
 
@@ -37,6 +40,7 @@ class SettingsState extends Equatable {
     double? smileTargetAmount,
     String? smileGoalName,
     FireRedirectionTarget? fireRedirection,
+    double? nodeDivisor,
   }) {
     return SettingsState(
       currencySymbol: currencySymbol ?? this.currencySymbol,
@@ -45,6 +49,7 @@ class SettingsState extends Equatable {
       smileTargetAmount: smileTargetAmount ?? this.smileTargetAmount,
       smileGoalName: smileGoalName ?? this.smileGoalName,
       fireRedirection: fireRedirection ?? this.fireRedirection,
+      nodeDivisor: nodeDivisor ?? this.nodeDivisor,
     );
   }
 
@@ -56,5 +61,6 @@ class SettingsState extends Equatable {
         smileTargetAmount,
         smileGoalName,
         fireRedirection,
+        nodeDivisor,
       ];
 }

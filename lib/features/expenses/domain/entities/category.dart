@@ -75,18 +75,18 @@ extension BucketTypeExtension on BucketType {
 
 /// Pre-defined default categories shipped with the app.
 class DefaultCategories {
-  static const List<Map<String, dynamic>> raw = [
-    {'id': 'food',          'name': 'Food & Dining',     'icon': '🍔', 'color': 0xFFFF6584, 'isIncome': false, 'subcategories': ['Breakfast', 'Lunch', 'Dinner', 'Snacks', 'Groceries', 'Dining Out']},
-    {'id': 'transport',     'name': 'Transport',          'icon': '🚗', 'color': 0xFF42A5F5, 'isIncome': false, 'subcategories': ['Bus', 'Train', 'Taxi', 'Fuel', 'Maintenance', 'Flight']},
-    {'id': 'shopping',      'name': 'Shopping',           'icon': '🛍️', 'color': 0xFF6C63FF, 'isIncome': false, 'subcategories': ['Clothing', 'Electronics', 'Groceries', 'Gifts']},
-    {'id': 'entertainment', 'name': 'Entertainment',      'icon': '🎬', 'color': 0xFFFFBE0B, 'isIncome': false, 'subcategories': ['Movies', 'Games', 'Subscriptions', 'Events']},
-    {'id': 'health',        'name': 'Health',             'icon': '💊', 'color': 0xFF4CAF50, 'isIncome': false, 'subcategories': ['Doctor', 'Pharmacy', 'Fitness']},
-    {'id': 'bills',         'name': 'Bills & Utilities',  'icon': '💡', 'color': 0xFFFF9800, 'isIncome': false, 'subcategories': ['Electricity', 'Water', 'Internet', 'Phone', 'Rent']},
-    {'id': 'education',     'name': 'Education',          'icon': '📚', 'color': 0xFF9C27B0, 'isIncome': false, 'subcategories': ['Tuition', 'Books', 'Courses']},
-    {'id': 'salary',        'name': 'Salary',             'icon': '💰', 'color': 0xFF4CAF50, 'isIncome': true,  'subcategories': ['Base Pay', 'Bonus']},
-    {'id': 'freelance',     'name': 'Freelance',          'icon': '💻', 'color': 0xFF03DAC6, 'isIncome': true,  'subcategories': ['Projects', 'Consulting']},
-    {'id': 'other_exp',     'name': 'Other Expense',      'icon': '📦', 'color': 0xFF8888AA, 'isIncome': false, 'subcategories': []},
-    {'id': 'other_inc',     'name': 'Other Income',       'icon': '💸', 'color': 0xFF8888AA, 'isIncome': true,  'subcategories': []},
+  static List<Map<String, dynamic>> get raw => [
+    {'id': 'food',          'name': 'Food & Dining',     'icon': Icons.fastfood.codePoint.toString(), 'color': 0xFFFF6584, 'isIncome': false, 'subcategories': ['Breakfast', 'Lunch', 'Dinner', 'Snacks', 'Groceries', 'Dining Out']},
+    {'id': 'transport',     'name': 'Transport',          'icon': Icons.directions_car.codePoint.toString(), 'color': 0xFF42A5F5, 'isIncome': false, 'subcategories': ['Bus', 'Train', 'Taxi', 'Fuel', 'Maintenance', 'Flight']},
+    {'id': 'shopping',      'name': 'Shopping',           'icon': Icons.shopping_bag.codePoint.toString(), 'color': 0xFF6C63FF, 'isIncome': false, 'subcategories': ['Clothing', 'Electronics', 'Groceries', 'Gifts']},
+    {'id': 'entertainment', 'name': 'Entertainment',      'icon': Icons.movie.codePoint.toString(), 'color': 0xFFFFBE0B, 'isIncome': false, 'subcategories': ['Movies', 'Games', 'Subscriptions', 'Events']},
+    {'id': 'health',        'name': 'Health',             'icon': Icons.medical_services.codePoint.toString(), 'color': 0xFF4CAF50, 'isIncome': false, 'subcategories': ['Doctor', 'Pharmacy', 'Fitness']},
+    {'id': 'bills',         'name': 'Bills & Utilities',  'icon': Icons.receipt_long.codePoint.toString(), 'color': 0xFFFF9800, 'isIncome': false, 'subcategories': ['Electricity', 'Water', 'Internet', 'Phone', 'Rent']},
+    {'id': 'education',     'name': 'Education',          'icon': Icons.school.codePoint.toString(), 'color': 0xFF9C27B0, 'isIncome': false, 'subcategories': ['Tuition', 'Books', 'Courses']},
+    {'id': 'salary',        'name': 'Salary',             'icon': Icons.payments.codePoint.toString(), 'color': 0xFF4CAF50, 'isIncome': true,  'subcategories': ['Base Pay', 'Bonus']},
+    {'id': 'freelance',     'name': 'Freelance',          'icon': Icons.computer.codePoint.toString(), 'color': 0xFF03DAC6, 'isIncome': true,  'subcategories': ['Projects', 'Consulting']},
+    {'id': 'other_exp',     'name': 'Other Expense',      'icon': Icons.category.codePoint.toString(), 'color': 0xFF8888AA, 'isIncome': false, 'subcategories': []},
+    {'id': 'other_inc',     'name': 'Other Income',       'icon': Icons.attach_money.codePoint.toString(), 'color': 0xFF8888AA, 'isIncome': true,  'subcategories': []},
   ];
 
   static List<Category> get all => raw

@@ -9,6 +9,7 @@ import '../../features/expenses/presentation/pages/dashboard_page.dart';
 import '../../features/expenses/presentation/pages/add_transaction_page.dart';
 
 import '../../features/auth/presentation/pages/login_page.dart';
+import '../../features/admin/presentation/pages/admin_console_page.dart';
 import '../../features/auth/presentation/pages/register_page.dart';
 import '../../features/auth/presentation/bloc/auth_cubit.dart';
 import '../../features/auth/presentation/bloc/auth_state.dart';
@@ -17,8 +18,12 @@ import '../widgets/premium_aurora_vector_background.dart';
 import '../di/injection.dart';
 import '../../features/analytics/presentation/pages/analytics_page.dart';
 import '../../features/accounts/presentation/pages/accounts_page.dart';
+import '../../features/accounts/presentation/pages/add_account_page.dart';
 import '../../features/expenses/presentation/pages/manage_categories_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
+import '../../features/profile/presentation/pages/legal_page.dart';
+import '../../features/profile/presentation/pages/change_password_page.dart';
+import '../../features/profile/presentation/pages/currency_selection_page.dart';
 import '../../features/expenses/presentation/pages/budgets_page.dart';
 import '../../features/expenses/presentation/pages/transactions_page.dart';
 import '../../features/expenses/presentation/pages/account_transactions_page.dart';
@@ -56,18 +61,22 @@ final appRouter = GoRouter(
     if (authState is AuthUnauthenticated) {
       if (!isGoingToAuth) return '/login';
     } else if (authState is AuthAuthenticated) {
-      if (isGoingToAuth) return '/';
+      if (authState.user.isAdmin) {
+        if (state.matchedLocation != '/admin') return '/admin';
+      } else {
+        if (isGoingToAuth) return '/';
+      }
     }
     return null;
   },
   routes: [
     GoRoute(
       path: '/login',
-      builder: (context, state) => const LoginPage(),
+      builder: (context, state) => const PremiumAuroraVectorBackground(child: LoginPage()),
     ),
     GoRoute(
       path: '/register',
-      builder: (context, state) => const RegisterPage(),
+      builder: (context, state) => const PremiumAuroraVectorBackground(child: RegisterPage()),
     ),
     GoRoute(
       path: '/add-transaction',
@@ -87,6 +96,54 @@ final appRouter = GoRouter(
               parent: animation,
               curve: Curves.easeOutCubic,
             )),
+            child: child,
+          );
+        },
+      ),
+    ),
+    GoRoute(
+      path: '/legal',
+      pageBuilder: (context, state) => CustomTransitionPage(
+        key: state.pageKey,
+        child: LegalPage(title: state.extra as String? ?? 'Legal Info'),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(1, 0),
+              end: Offset.zero,
+            ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOutCubic)),
+            child: child,
+          );
+        },
+      ),
+    ),
+    GoRoute(
+      path: '/change-password',
+      pageBuilder: (context, state) => CustomTransitionPage(
+        key: state.pageKey,
+        child: ChangePasswordPage(email: state.extra as String),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(1, 0),
+              end: Offset.zero,
+            ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOutCubic)),
+            child: child,
+          );
+        },
+      ),
+    ),
+    GoRoute(
+      path: '/currency-selection',
+      pageBuilder: (context, state) => CustomTransitionPage(
+        key: state.pageKey,
+        child: const CurrencySelectionPage(),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(1, 0),
+              end: Offset.zero,
+            ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOutCubic)),
             child: child,
           );
         },
@@ -116,35 +173,23 @@ final appRouter = GoRouter(
               routes: [
                 GoRoute(
                   path: 'budgets-main',
-                  pageBuilder: (context, state) {
-                    final isDesktop = MediaQuery.of(context).size.width >= kTabletMaxWidth;
-                    if (isDesktop) return const NoTransitionPage(child: BudgetsMainPage());
-                    return const MaterialPage(child: BudgetsMainPage());
-                  },
+                  pageBuilder: (context, state) => const NoTransitionPage(child: BudgetsMainPage()),
                 ),
                 GoRoute(
                   path: 'buckets-planner',
-                  pageBuilder: (context, state) {
-                    final isDesktop = MediaQuery.of(context).size.width >= kTabletMaxWidth;
-                    if (isDesktop) return const NoTransitionPage(child: BucketPlannerPage());
-                    return const MaterialPage(child: BucketPlannerPage());
-                  },
+                  pageBuilder: (context, state) => const NoTransitionPage(child: BucketPlannerPage()),
                 ),
                 GoRoute(
                   path: 'analytics',
-                  pageBuilder: (context, state) {
-                    final isDesktop = MediaQuery.of(context).size.width >= kTabletMaxWidth;
-                    if (isDesktop) return const NoTransitionPage(child: AnalyticsPage());
-                    return const MaterialPage(child: AnalyticsPage());
-                  },
+                  pageBuilder: (context, state) => const NoTransitionPage(child: AnalyticsPage()),
                 ),
                 GoRoute(
                   path: 'recurring-bills',
-                  pageBuilder: (context, state) {
-                    final isDesktop = MediaQuery.of(context).size.width >= kTabletMaxWidth;
-                    if (isDesktop) return const NoTransitionPage(child: RecurringBillsPage());
-                    return const MaterialPage(child: RecurringBillsPage());
-                  },
+                  pageBuilder: (context, state) => const NoTransitionPage(child: RecurringBillsPage()),
+                ),
+                GoRoute(
+                  path: 'all-transactions',
+                  pageBuilder: (context, state) => const NoTransitionPage(child: TransactionsPage()),
                 ),
               ],
             ),
@@ -163,6 +208,29 @@ final appRouter = GoRouter(
             GoRoute(
               path: '/accounts',
               builder: (context, state) => const AccountsPage(),
+              routes: [
+                GoRoute(
+                  path: 'add-account',
+                  pageBuilder: (context, state) => CustomTransitionPage(
+                    key: state.pageKey,
+                    child: AddAccountPage(
+                      account: state.extra as AccountEntity?,
+                    ),
+                    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                      return SlideTransition(
+                        position: Tween<Offset>(
+                          begin: const Offset(0, 1),
+                          end: Offset.zero,
+                        ).animate(CurvedAnimation(
+                          parent: animation,
+                          curve: Curves.easeOutCubic,
+                        )),
+                        child: child,
+                      );
+                    },
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -193,8 +261,8 @@ final appRouter = GoRouter(
       },
     ),
     GoRoute(
-      path: '/all-transactions',
-      builder: (context, state) => const TransactionsPage(),
+      path: '/admin',
+      builder: (context, state) => const AdminConsolePage(),
     ),
   ],
 );

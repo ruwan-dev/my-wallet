@@ -11,6 +11,8 @@ import '../bloc/custom_budget_state.dart';
 import '../../../expenses/domain/entities/category.dart';
 import '../../../expenses/presentation/bloc/category_cubit.dart';
 import '../../../expenses/presentation/bloc/category_state.dart';
+import 'package:expense_tracker/features/expenses/presentation/widgets/shimmer_tile.dart';
+import 'package:expense_tracker/core/widgets/glass_list_tile.dart';
 
 class CreateCustomBudgetPage extends StatefulWidget {
   final CustomBudgetEntity? existingBudget;
@@ -23,10 +25,10 @@ class CreateCustomBudgetPage extends StatefulWidget {
 
 class _CreateCustomBudgetPageState extends State<CreateCustomBudgetPage> {
   final _titleController = TextEditingController();
-  final _limitController = TextEditingController();
-  
+
   final List<_ChecklistItemInput> _items = [];
   bool _isLoading = false;
+  BucketType _selectedBucket = BucketType.dailyExpenses;
 
   @override
   void initState() {
@@ -34,26 +36,26 @@ class _CreateCustomBudgetPageState extends State<CreateCustomBudgetPage> {
     if (widget.existingBudget != null) {
       final budget = widget.existingBudget!;
       _titleController.text = budget.title;
-      _limitController.text = budget.totalBudgetLimit > 0 ? budget.totalBudgetLimit.toString() : '';
-      
+      _selectedBucket = budget.bucketType;
+
       for (var item in budget.items) {
         final input = _ChecklistItemInput();
         input.titleController.text = item.title;
-        input.amountController.text = item.allocatedAmount > 0 ? item.allocatedAmount.toString() : '';
+        input.amountController.text =
+            item.allocatedAmount > 0 ? item.allocatedAmount.toString() : '';
         if (item.categoryId != null) {
           input.selectedCategory = Category(
-            id: item.categoryId!, 
-            name: '', 
-            icon: item.categoryIcon ?? '?', 
-            color: Colors.grey, 
-            subcategories: []
-          );
+              id: item.categoryId!,
+              name: '',
+              icon: item.categoryIcon ?? '?',
+              color: Colors.grey,
+              subcategories: []);
         }
         input.selectedSubcategory = item.subcategory;
         input.amountController.addListener(_onAmountChanged);
         _items.add(input);
       }
-      
+
       if (_items.isEmpty) {
         final input = _ChecklistItemInput();
         input.amountController.addListener(_onAmountChanged);
@@ -73,7 +75,6 @@ class _CreateCustomBudgetPageState extends State<CreateCustomBudgetPage> {
   @override
   void dispose() {
     _titleController.dispose();
-    _limitController.dispose();
     for (var item in _items) {
       item.amountController.removeListener(_onAmountChanged);
       item.titleController.dispose();
@@ -102,74 +103,157 @@ class _CreateCustomBudgetPageState extends State<CreateCustomBudgetPage> {
   void _pickCategory(int index) async {
     final categoryState = context.read<CategoryCubit>().state;
     if (categoryState is! CategoryLoaded) return;
-    
-    final selected = await showModalBottomSheet<Category>(
+
+    final result = await showModalBottomSheet<Map<String, dynamic>>(
       context: context,
       backgroundColor: Colors.transparent,
+      isScrollControlled: true,
       builder: (ctx) {
         final theme = Theme.of(ctx);
-        return Container(
-          decoration: BoxDecoration(
-            color: theme.scaffoldBackgroundColor,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          child: ListView.builder(
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            itemCount: categoryState.categories.length,
-            itemBuilder: (context, i) {
-              final cat = categoryState.categories[i];
-              return ListTile(
-                leading: CircleAvatar(
-                  backgroundColor: cat.color.withOpacity(0.2),
-                  child: Text(cat.icon, style: const TextStyle(fontSize: 20)),
-                ),
-                title: Text(cat.name),
-                onTap: () => Navigator.pop(ctx, cat),
-              );
-            },
-          ),
-        );
-      },
-    );
+        Category? selectedCategory;
 
-    if (selected != null) {
-      String? selectedSubcategory;
-      if (selected.subcategories.isNotEmpty) {
-        selectedSubcategory = await showModalBottomSheet<String>(
-          context: context,
-          backgroundColor: Colors.transparent,
-          builder: (ctx) {
-            return Container(
-              decoration: BoxDecoration(
-                color: Theme.of(ctx).scaffoldBackgroundColor,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-              ),
-              child: ListView.builder(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                itemCount: selected.subcategories.length,
-                itemBuilder: (context, i) {
-                  final sub = selected.subcategories[i];
-                  return ListTile(
-                    title: Text(sub),
-                    onTap: () => Navigator.pop(ctx, sub),
-                  );
-                },
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            final bool showingSubcategories = selectedCategory != null && selectedCategory!.subcategories.isNotEmpty;
+
+            return SafeArea(
+              child: Container(
+                margin: const EdgeInsets.all(16),
+                constraints: const BoxConstraints(maxWidth: 500, maxHeight: 600),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surface.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.2),
+                    width: 1.5,
+                  ),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(24),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 16.0),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              if (showingSubcategories) ...[
+                                IconButton(
+                                  icon: Icon(Icons.arrow_back, color: theme.colorScheme.onSurface),
+                                  onPressed: () => setState(() => selectedCategory = null),
+                                ),
+                                Expanded(
+                                  child: Text('Subcategories for ${selectedCategory!.name}', 
+                                    textAlign: TextAlign.center,
+                                    style: theme.textTheme.titleMedium?.copyWith(
+                                      fontWeight: FontWeight.w700,
+                                      color: theme.colorScheme.onSurface,
+                                    ),
+                                  ),
+                                ),
+                                IconButton(
+                                  icon: Icon(Icons.check, color: theme.colorScheme.onSurface),
+                                  onPressed: () => Navigator.pop(ctx, {'category': selectedCategory, 'subcategory': null}),
+                                ),
+                              ] else ...[
+                                Text('Select Category', 
+                                  style: theme.textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                    color: theme.colorScheme.onSurface,
+                                  ),
+                                ),
+                                IconButton(
+                                  icon: Icon(Icons.close, color: theme.colorScheme.onSurface),
+                                  onPressed: () => Navigator.pop(ctx),
+                                ),
+                              ]
+                            ],
+                          ),
+                        ),
+                        Divider(height: 1, color: theme.colorScheme.onSurface.withValues(alpha: 0.1)),
+                        if (showingSubcategories) ...[
+                          ListTile(
+                            title: Text('None', style: TextStyle(color: theme.colorScheme.onSurface, fontWeight: FontWeight.w600)),
+                            onTap: () => Navigator.pop(ctx, {'category': selectedCategory, 'subcategory': null}),
+                          ),
+                          Divider(height: 1, color: theme.colorScheme.onSurface.withValues(alpha: 0.1)),
+                          Flexible(
+                            child: ListView.separated(
+                              shrinkWrap: true,
+                              itemCount: selectedCategory!.subcategories.length,
+                              separatorBuilder: (_, __) => Divider(height: 1, color: theme.colorScheme.onSurface.withValues(alpha: 0.1)),
+                              itemBuilder: (context, i) {
+                                final sub = selectedCategory!.subcategories[i];
+                                return ListTile(
+                                  title: Text(sub, style: TextStyle(color: theme.colorScheme.onSurface, fontWeight: FontWeight.w600)),
+                                  onTap: () => Navigator.pop(ctx, {'category': selectedCategory, 'subcategory': sub}),
+                                );
+                              },
+                            ),
+                          ),
+                        ] else ...[
+                          Flexible(
+                            child: ListView.separated(
+                              shrinkWrap: true,
+                              itemCount: categoryState.categories.length,
+                              separatorBuilder: (_, __) => Divider(height: 1, color: theme.colorScheme.onSurface.withValues(alpha: 0.1)),
+                              itemBuilder: (context, i) {
+                                final cat = categoryState.categories[i];
+                                return ListTile(
+                                  leading: SizedBox(
+                                    width: 40,
+                                    height: 40,
+                                    child: Center(
+                                      child: Builder(builder: (context) {
+                                        final codePoint = int.tryParse(cat.icon);
+                                        if (codePoint != null) {
+                                          return Icon(
+                                              IconData(codePoint, fontFamily: 'MaterialIcons'),
+                                              size: 20,
+                                              color: Colors.black);
+                                        }
+                                        return Text(cat.icon, style: const TextStyle(fontSize: 20));
+                                      }),
+                                    ),
+                                  ),
+                                  title: Text(cat.name, style: TextStyle(color: theme.colorScheme.onSurface, fontWeight: FontWeight.w600)),
+                                  onTap: () {
+                                    if (cat.subcategories.isEmpty) {
+                                      Navigator.pop(ctx, {'category': cat, 'subcategory': null});
+                                    } else {
+                                      setState(() => selectedCategory = cat);
+                                    }
+                                  },
+                                );
+                              },
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
               ),
             );
           },
         );
-      }
+      },
+    );
 
+    if (result != null) {
       setState(() {
-        _items[index].selectedCategory = selected;
-        _items[index].selectedSubcategory = selectedSubcategory;
+        _items[index].selectedCategory = result['category'] as Category?;
+        _items[index].selectedSubcategory = result['subcategory'] as String?;
       });
     }
   }
 
   Future<void> _saveBudget() async {
     final title = _titleController.text.trim();
-    final limit = double.tryParse(_limitController.text.trim()) ?? 0.0;
+    const limit = 0.0;
 
     if (title.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -180,12 +264,13 @@ class _CreateCustomBudgetPageState extends State<CreateCustomBudgetPage> {
 
     final budgetState = context.read<CustomBudgetCubit>().state;
     if (budgetState is CustomBudgetLoaded) {
-      final isDuplicate = budgetState.budgets.any((b) => 
-        b.title.toLowerCase() == title.toLowerCase() && b.id != widget.existingBudget?.id
-      );
+      final isDuplicate = budgetState.budgets.any((b) =>
+          b.title.toLowerCase() == title.toLowerCase() &&
+          b.id != widget.existingBudget?.id);
       if (isDuplicate) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('A budget with this name already exists')),
+          const SnackBar(
+              content: Text('A budget with this name already exists')),
         );
         return;
       }
@@ -196,8 +281,9 @@ class _CreateCustomBudgetPageState extends State<CreateCustomBudgetPage> {
 
     for (var input in _items) {
       final itemTitle = input.titleController.text.trim();
-      final itemAmount = double.tryParse(input.amountController.text.trim()) ?? 0.0;
-      
+      final itemAmount =
+          double.tryParse(input.amountController.text.trim()) ?? 0.0;
+
       if (itemTitle.isNotEmpty) {
         checklist.add(BudgetChecklistItem(
           id: uuid.v4(),
@@ -220,12 +306,12 @@ class _CreateCustomBudgetPageState extends State<CreateCustomBudgetPage> {
       items: checklist,
       createdAt: widget.existingBudget?.createdAt ?? DateTime.now(),
       isCompleted: widget.existingBudget?.isCompleted ?? false,
+      bucketType: _selectedBucket,
     );
 
     await context.read<CustomBudgetCubit>().saveBudget(budget);
 
     if (mounted) {
-      setState(() => _isLoading = false);
       Navigator.pop(context);
     }
   }
@@ -237,14 +323,17 @@ class _CreateCustomBudgetPageState extends State<CreateCustomBudgetPage> {
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
-        title: Text(widget.existingBudget == null ? 'Create Budget' : 'Edit Budget'),
+        title: Text(
+            widget.existingBudget == null ? 'Create Budget' : 'Edit Budget'),
         backgroundColor: Colors.transparent,
         elevation: 0,
         actions: [
           if (_isLoading)
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 16.0),
-              child: Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))),
+              child: Center(
+                  child: SizedBox(
+                      width: 20, height: 20, child: const ShimmerTile())),
             )
           else
             IconButton(
@@ -258,7 +347,11 @@ class _CreateCustomBudgetPageState extends State<CreateCustomBudgetPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Details', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+            _buildSegmentedControl(context),
+            const SizedBox(height: 24),
+            Text('Details',
+                style: theme.textTheme.titleMedium
+                    ?.copyWith(fontWeight: FontWeight.w600)),
             const SizedBox(height: 12),
             _buildGlassInput(
               controller: _titleController,
@@ -266,31 +359,23 @@ class _CreateCustomBudgetPageState extends State<CreateCustomBudgetPage> {
               icon: Icons.title_rounded,
               theme: theme,
             ),
-            const SizedBox(height: 12),
-            _buildGlassInput(
-              controller: _limitController,
-              hint: 'Total Limit (Optional)',
-              icon: Icons.account_balance_wallet_rounded,
-              theme: theme,
-              isNumber: true,
-            ),
-            
             const SizedBox(height: 32),
-            _buildAllocationChart(theme),
-
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Checklist Items', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+                Text('Checklist Items',
+                    style: theme.textTheme.titleMedium
+                        ?.copyWith(fontWeight: FontWeight.w600)),
                 TextButton.icon(
                   onPressed: _addItem,
-                  icon: const Icon(Icons.add, size: 18),
-                  label: const Text('Add Item'),
+                  icon: const Icon(Icons.add, size: 18, color: Colors.black),
+                  label: const Text('Add Item',
+                      style: TextStyle(
+                          color: Colors.black, fontWeight: FontWeight.bold)),
                 ),
               ],
             ),
             const SizedBox(height: 12),
-            
             ..._items.asMap().entries.map((entry) {
               final index = entry.key;
               final item = entry.value;
@@ -304,15 +389,30 @@ class _CreateCustomBudgetPageState extends State<CreateCustomBudgetPage> {
                         width: 56,
                         height: 56,
                         decoration: BoxDecoration(
-                          color: item.selectedCategory?.color.withOpacity(0.2) ?? theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+                          color: Colors.transparent,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                              color: theme.colorScheme.outlineVariant
+                                  .withOpacity(0.5)),
                         ),
                         child: Center(
-                          child: Text(
-                            item.selectedCategory?.icon ?? '?',
-                            style: const TextStyle(fontSize: 24),
-                          ),
+                          child: Builder(builder: (context) {
+                            if (item.selectedCategory == null) {
+                              return const Icon(Icons.category_rounded,
+                                  size: 24, color: Colors.black);
+                            }
+                            final iconStr = item.selectedCategory!.icon;
+                            final codePoint = int.tryParse(iconStr);
+                            if (codePoint != null) {
+                              return Icon(
+                                  IconData(codePoint,
+                                      fontFamily: 'MaterialIcons'),
+                                  size: 24,
+                                  color: Colors.black);
+                            }
+                            return Text(iconStr,
+                                style: const TextStyle(fontSize: 24));
+                          }),
                         ),
                       ),
                     ),
@@ -322,7 +422,6 @@ class _CreateCustomBudgetPageState extends State<CreateCustomBudgetPage> {
                       child: _buildGlassInput(
                         controller: item.titleController,
                         hint: 'Item',
-                        icon: Icons.flight_rounded,
                         theme: theme,
                       ),
                     ),
@@ -332,20 +431,19 @@ class _CreateCustomBudgetPageState extends State<CreateCustomBudgetPage> {
                       child: _buildGlassInput(
                         controller: item.amountController,
                         hint: 'Amount',
-                        icon: Icons.attach_money_rounded,
                         theme: theme,
                         isNumber: true,
                       ),
                     ),
                     IconButton(
-                      icon: Icon(Icons.remove_circle_outline, color: theme.colorScheme.error),
+                      icon: const Icon(Icons.remove_circle_outline,
+                          color: Colors.black),
                       onPressed: () => _removeItem(index),
                     ),
                   ],
                 ),
               );
             }),
-            
             const SizedBox(height: 32),
           ],
         ),
@@ -353,102 +451,19 @@ class _CreateCustomBudgetPageState extends State<CreateCustomBudgetPage> {
     );
   }
 
-  Widget _buildAllocationChart(ThemeData theme) {
-    double totalAllocated = 0.0;
-    final Map<String, double> categoryAmounts = {};
-    final Map<String, Color> categoryColors = {};
-
-    for (var item in _items) {
-      final amount = double.tryParse(item.amountController.text.trim()) ?? 0.0;
-      if (amount > 0) {
-        totalAllocated += amount;
-        final catName = item.selectedCategory?.name ?? 'Uncategorized';
-        final catColor = item.selectedCategory?.color ?? Colors.grey;
-        
-        categoryAmounts[catName] = (categoryAmounts[catName] ?? 0.0) + amount;
-        categoryColors[catName] = catColor;
-      }
-    }
-
-    if (totalAllocated == 0) return const SizedBox.shrink();
-
-    final sections = categoryAmounts.entries.map((entry) {
-      return PieChartSectionData(
-        color: categoryColors[entry.key],
-        value: entry.value,
-        title: '',
-        radius: 24,
-      );
-    }).toList();
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 32),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
-      ),
-      child: Row(
-        children: [
-          SizedBox(
-            height: 110,
-            width: 110,
-            child: PieChart(
-              PieChartData(
-                sectionsSpace: 4,
-                centerSpaceRadius: 32,
-                sections: sections,
-              ),
-            ),
-          ),
-          const SizedBox(width: 24),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Total Allocated', style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-                const SizedBox(height: 4),
-                Text(
-                  AppFormatters.formatCurrency(context, totalAllocated),
-                  style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: theme.colorScheme.primary),
-                ),
-                const SizedBox(height: 16),
-                Wrap(
-                  spacing: 12,
-                  runSpacing: 8,
-                  children: categoryAmounts.entries.map((e) => Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(width: 10, height: 10, decoration: BoxDecoration(shape: BoxShape.circle, color: categoryColors[e.key])),
-                      const SizedBox(width: 6),
-                      Text(
-                        e.key.isEmpty ? 'Uncategorized' : e.key, 
-                        style: const TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.w600)
-                      ),
-                    ],
-                  )).toList(),
-                )
-              ],
-            ),
-          )
-        ],
-      ),
-    );
-  }
 
   Widget _buildGlassInput({
     required TextEditingController controller,
     required String hint,
-    required IconData icon,
+    IconData? icon,
     required ThemeData theme,
     bool isNumber = false,
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
+        color: Colors.white.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(16),
@@ -456,15 +471,83 @@ class _CreateCustomBudgetPageState extends State<CreateCustomBudgetPage> {
           filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
           child: TextField(
             controller: controller,
+            cursorColor: Colors.black,
             keyboardType: isNumber ? TextInputType.number : TextInputType.text,
             style: theme.textTheme.bodyMedium,
             decoration: InputDecoration(
               hintText: hint,
-              hintStyle: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant.withOpacity(0.5)),
-              prefixIcon: Icon(icon, color: theme.colorScheme.primary, size: 20),
+              filled: true,
+              fillColor: Colors.transparent,
+              hintStyle: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant.withOpacity(0.5)),
+              prefixIcon:
+                  icon != null ? Icon(icon, color: Colors.black, size: 20) : null,
               border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              enabledBorder: InputBorder.none,
+              focusedBorder: InputBorder.none,
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSegmentedControl(BuildContext context) {
+    return Container(
+      height: 50,
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(25),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.2), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          _buildSegmentTab(BucketType.dailyExpenses, 'Blow', Icons.work_outline),
+          _buildSegmentTab(BucketType.smile, 'Smile', Icons.flight_takeoff),
+          _buildSegmentTab(BucketType.fire, 'Fire', Icons.local_fire_department),
+          _buildSegmentTab(BucketType.mojo, 'Mojo', Icons.security),
+          _buildSegmentTab(BucketType.grow, 'Grow', Icons.eco),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSegmentTab(BucketType type, String title, IconData icon) {
+    final isSelected = _selectedBucket == type;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => _selectedBucket = type),
+        behavior: HitTestBehavior.opaque,
+        child: Container(
+          margin: const EdgeInsets.all(4),
+          color: Colors.transparent,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon,
+                  size: 16, color: isSelected ? Colors.white : Colors.white70),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  title,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: isSelected ? Colors.white : Colors.white70,
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),

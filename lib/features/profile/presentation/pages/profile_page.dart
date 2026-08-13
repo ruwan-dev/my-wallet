@@ -2,13 +2,30 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import '../../../auth/presentation/bloc/auth_cubit.dart';
+import '../../../auth/presentation/bloc/auth_state.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../../../core/bloc/settings_cubit.dart';
 import '../../../../core/utils/sweep_util.dart';
-import '../../../../core/widgets/currency_selection_bottom_sheet.dart';
+import 'package:expense_tracker/core/widgets/glass_list_tile.dart';
 
-class ProfilePage extends StatelessWidget {
+class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
+
+  @override
+  State<ProfilePage> createState() => _ProfilePageState();
+}
+
+class _ProfilePageState extends State<ProfilePage> {
+  String? _editingField;
+  final _inlineEditController = TextEditingController();
+
+  @override
+  void dispose() {
+    _inlineEditController.dispose();
+    super.dispose();
+  }
 
   String _getDaySuffix(int day) {
     if (day >= 11 && day <= 13) return 'th';
@@ -45,195 +62,141 @@ class ProfilePage extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
           physics: const BouncingScrollPhysics(),
           children: [
-            _buildProfileHeader(context),
-            const SizedBox(height: 32),
+            BlocBuilder<AuthCubit, AuthState>(
+              builder: (context, authState) {
+                String email = 'Loading...';
+                if (authState is AuthAuthenticated) {
+                  email = authState.user.email;
+                }
+                return _buildSettingsSection(
+                  title: 'Account',
+                  children: [
+                    _buildSettingsTile(
+                      icon: Icons.person_outline,
+                      title: 'Username',
+                      subtitle: email != 'Loading...' ? email.split('@')[0] : email,
+                      onTap: null,
+                    ),
+                    _buildSettingsTile(
+                      icon: Icons.lock_reset,
+                      title: 'Change Password',
+                      onTap: () {
+                        if (email != 'Loading...') {
+                          context.push('/change-password', extra: email);
+                        }
+                      },
+                    ),
+                  ],
+                );
+              },
+            ),
+            const SizedBox(height: 24),
             _buildSettingsSection(
               title: 'Financial Preferences',
               children: [
-                _buildSettingsTile(
-                  icon: Icons.calendar_today,
-                  title: 'Payday Cycle',
-                  subtitle:
-                      'Every month on the ${context.watch<SettingsCubit>().state.paydayDate}${_getDaySuffix(context.watch<SettingsCubit>().state.paydayDate)}',
-                  trailing: IconButton(
-                    icon: const Icon(Icons.flash_on, color: Color(0xFFEAB308)),
-                    tooltip: 'Test Sweep Now',
-                    onPressed: () {
-                      SweepUtil.checkAndTriggerAutoSweep(context, force: true);
-                    },
-                  ),
-                  onTap: () {
-                    final cubit = context.read<SettingsCubit>();
-                    int selectedDay = cubit.state.paydayDate;
-
-                    showModalBottomSheet(
-                      context: context,
-                      backgroundColor: Colors.transparent,
-                      builder: (context) {
-                        return Container(
-                          height: 300,
-                          decoration: const BoxDecoration(
-                            color: Color(0xFF1E1E2C),
-                            borderRadius:
-                                BorderRadius.vertical(top: Radius.circular(32)),
-                          ),
-                          child: Column(
-                            children: [
-                              Padding(
-                                padding: const EdgeInsets.all(16.0),
-                                child: Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    TextButton(
-                                      onPressed: () => Navigator.pop(context),
-                                      child: const Text('Cancel',
-                                          style:
-                                              TextStyle(color: Colors.white54)),
-                                    ),
-                                    const Text('Select Payday',
-                                        style: TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.bold)),
-                                    TextButton(
-                                      onPressed: () {
-                                        cubit.updateBarefootSettings(
-                                          paydayDate: selectedDay,
-                                          smileTargetAmount:
-                                              cubit.state.smileTargetAmount,
-                                          smileGoalName:
-                                              cubit.state.smileGoalName,
-                                          fireRedirection:
-                                              cubit.state.fireRedirection,
-                                        );
-                                        Navigator.pop(context);
-                                      },
-                                      child: const Text('Save',
-                                          style: TextStyle(
-                                              color: Color(0xFF3B82F6),
-                                              fontWeight: FontWeight.bold)),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              Expanded(
-                                child: StatefulBuilder(
-                                  builder: (context, setState) {
-                                    return ListWheelScrollView.useDelegate(
-                                      itemExtent: 60,
-                                      perspective: 0.005,
-                                      diameterRatio: 1.2,
-                                      physics: const FixedExtentScrollPhysics(),
-                                      controller: FixedExtentScrollController(initialItem: selectedDay - 1),
-                                      onSelectedItemChanged: (index) {
-                                        setState(() {
-                                          selectedDay = index + 1;
-                                        });
-                                      },
-                                      childDelegate: ListWheelChildBuilderDelegate(
-                                        childCount: 31,
-                                        builder: (context, index) {
-                                          final day = index + 1;
-                                          final isSelected = day == selectedDay;
-                                          return Center(
-                                            child: AnimatedDefaultTextStyle(
-                                              duration: const Duration(milliseconds: 200),
-                                              style: TextStyle(
-                                                color: isSelected ? const Color(0xFF3B82F6) : Colors.white54,
-                                                fontSize: isSelected ? 32 : 20,
-                                                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                                              ),
-                                              child: Text('$day${_getDaySuffix(day)}'),
-                                            ),
-                                          );
-                                        },
-                                      ),
-                                    );
-                                  }
-                                ),
-                              ),
-                            ],
-                          ),
+                if (_editingField == 'payday')
+                  _buildInlineEditForm(
+                    icon: Icons.calendar_today,
+                    initialValue: context.read<SettingsCubit>().state.paydayDate.toString(),
+                    label: 'Day of month (1-31)',
+                    keyboardType: TextInputType.number,
+                    onSave: (val) {
+                      final day = int.tryParse(val);
+                      if (day != null && day >= 1 && day <= 31) {
+                        final cubit = context.read<SettingsCubit>();
+                        cubit.updateBarefootSettings(
+                          paydayDate: day,
+                          smileTargetAmount: cubit.state.smileTargetAmount,
+                          smileGoalName: cubit.state.smileGoalName,
+                          fireRedirection: cubit.state.fireRedirection,
                         );
+                      }
+                      setState(() => _editingField = null);
+                    },
+                    onCancel: () => setState(() => _editingField = null),
+                  )
+                else
+                  _buildSettingsTile(
+                    icon: Icons.calendar_today,
+                    title: 'Payday Cycle',
+                    subtitle: 'Every month on the ${context.watch<SettingsCubit>().state.paydayDate}${_getDaySuffix(context.watch<SettingsCubit>().state.paydayDate)}',
+                    trailing: IconButton(
+                      icon: const Icon(Icons.flash_on, color: Color(0xFF4C1D95)),
+                      tooltip: 'Test Sweep Now',
+                      onPressed: () {
+                        SweepUtil.checkAndTriggerAutoSweep(context, force: true);
                       },
-                    );
-                  },
-                ),
+                    ),
+                    onTap: () => setState(() {
+                      _editingField = 'payday';
+                      _inlineEditController.text = context.read<SettingsCubit>().state.paydayDate.toString();
+                    }),
+                  ),
                 _buildSettingsTile(
                   icon: Icons.attach_money,
                   title: 'Default Currency',
                   subtitle: '$currencyCode (${currencySymbol.trim()})',
-                  onTap: () {
-                    showModalBottomSheet(
-                      context: context,
-                      backgroundColor: Colors.transparent,
-                      isScrollControlled: true,
-                      builder: (context) =>
-                          const CurrencySelectionBottomSheet(),
-                    );
-                  },
+                  onTap: () => context.push('/currency-selection'),
                 ),
-                _buildSettingsTile(
-                  icon: Icons.account_balance,
-                  title: 'Linked Bank Accounts',
-                  subtitle: '2 Connected',
-                  onTap: () {},
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-            _buildSettingsSection(
-              title: 'Security',
-              children: [
-                _buildSettingsTile(
-                  icon: Icons.lock_outline,
-                  title: 'App Lock',
-                  subtitle: 'PIN / Biometric',
-                  trailing: Switch(
-                    value: true,
-                    onChanged: (val) {},
-                    activeColor: const Color(0xFF8B5CF6),
+
+                if (_editingField == 'density')
+                  _buildInlineEditForm(
+                    icon: Icons.bubble_chart_rounded,
+                    initialValue: context.read<SettingsCubit>().state.nodeDivisor.toInt().toString(),
+                    label: 'Divisor Amount',
+                    keyboardType: TextInputType.number,
+                    onSave: (val) {
+                      final parsed = double.tryParse(val);
+                      if (parsed != null && parsed > 0) {
+                        context.read<SettingsCubit>().updateNodeDivisor(parsed);
+                      }
+                      setState(() => _editingField = null);
+                    },
+                    onCancel: () => setState(() => _editingField = null),
+                  )
+                else
+                  _buildSettingsTile(
+                    icon: Icons.bubble_chart_rounded,
+                    title: 'Dashboard Art Density',
+                    subtitle: '1 node per Rs ${context.watch<SettingsCubit>().state.nodeDivisor.toInt()}',
+                    onTap: () => setState(() {
+                      _editingField = 'density';
+                      _inlineEditController.text = context.read<SettingsCubit>().state.nodeDivisor.toInt().toString();
+                    }),
                   ),
-                  onTap: null,
-                ),
               ],
             ),
             const SizedBox(height: 24),
             _buildSettingsSection(
-              title: 'Data & Export',
+              title: 'About',
               children: [
                 _buildSettingsTile(
-                  icon: Icons.download_rounded,
-                  title: 'Export to CSV/PDF',
-                  onTap: () {},
+                  icon: Icons.privacy_tip_outlined,
+                  title: 'Privacy Policy',
+                  onTap: () => context.push('/legal', extra: 'Privacy Policy'),
                 ),
                 _buildSettingsTile(
-                  icon: Icons.cloud_upload_outlined,
-                  title: 'Backup & Restore',
-                  onTap: () {},
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-            _buildSettingsSection(
-              title: 'App Settings',
-              children: [
-                _buildSettingsTile(
-                  icon: Icons.dark_mode_outlined,
-                  title: 'Dark / Light Theme',
-                  trailing: Switch(
-                    value: true,
-                    onChanged: (val) {},
-                    activeColor: const Color(0xFF8B5CF6),
-                  ),
-                  onTap: null,
+                  icon: Icons.description_outlined,
+                  title: 'Terms of Service',
+                  onTap: () => context.push('/legal', extra: 'Terms of Service'),
                 ),
               ],
             ),
             const SizedBox(height: 40),
             _buildLogoutButton(context),
-            const SizedBox(height: 80),
+            const SizedBox(height: 48),
+            Center(
+              child: Text(
+                'Version 1.0.0\n© 2026 OrbitView Innovations',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.4),
+                  fontSize: 12,
+                  height: 1.5,
+                ),
+              ),
+            ),
+            const SizedBox(height: 40),
           ],
         ),
       ),
@@ -287,8 +250,72 @@ class ProfilePage extends StatelessWidget {
     );
   }
 
+  Widget _buildInlineEditForm({
+    required IconData icon,
+    required String initialValue,
+    required String label,
+    required Function(String) onSave,
+    required VoidCallback onCancel,
+    TextInputType keyboardType = TextInputType.text,
+  }) {
+    return GlassListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      leading: Icon(icon, color: const Color(0xFF4C1D95), size: 28),
+      title: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              controller: _inlineEditController,
+              keyboardType: keyboardType,
+              autofocus: true,
+              cursorColor: const Color(0xFF4C1D95),
+              style: const TextStyle(
+                color: Color(0xFF4C1D95),
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+              ),
+              decoration: InputDecoration(
+                filled: false,
+                hintText: label,
+                hintStyle: TextStyle(color: const Color(0xFF4C1D95).withOpacity(0.5)),
+                border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                isDense: true,
+                contentPadding: EdgeInsets.zero,
+              ),
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.check, color: Color(0xFF8B5CF6)),
+            onPressed: () => onSave(_inlineEditController.text),
+            splashRadius: 20,
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+          ),
+          const SizedBox(width: 16),
+          IconButton(
+            icon: const Icon(Icons.close, color: Color(0xFF8B5CF6)),
+            onPressed: onCancel,
+            splashRadius: 20,
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildSettingsSection(
       {required String title, required List<Widget> children}) {
+    final spacedChildren = <Widget>[];
+    for (int i = 0; i < children.length; i++) {
+      spacedChildren.add(children[i]);
+      if (i < children.length - 1) {
+        spacedChildren.add(const SizedBox(height: 12));
+      }
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -304,22 +331,7 @@ class ProfilePage extends StatelessWidget {
             ),
           ),
         ),
-        Container(
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.03),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.white.withOpacity(0.1), width: 1),
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(20),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-              child: Column(
-                children: children,
-              ),
-            ),
-          ),
-        ),
+        ...spacedChildren,
       ],
     );
   }
@@ -331,23 +343,16 @@ class ProfilePage extends StatelessWidget {
     Widget? trailing,
     VoidCallback? onTap,
   }) {
-    return ListTile(
+    return GlassListTile(
       onTap: onTap,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      leading: Container(
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Icon(icon, color: Colors.white, size: 22),
-      ),
+      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: subtitle != null ? 8 : 14),
+      leading: Icon(icon, color: const Color(0xFF4C1D95), size: 28),
       title: Text(
         title,
         style: const TextStyle(
-          color: Colors.white,
+          color: Color(0xFF4C1D95),
           fontSize: 15,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w700,
         ),
       ),
       subtitle: subtitle != null
@@ -355,17 +360,15 @@ class ProfilePage extends StatelessWidget {
               padding: const EdgeInsets.only(top: 4.0),
               child: Text(
                 subtitle,
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.5),
-                  fontSize: 12,
+                style: const TextStyle(
+                  color: Color(0xFF5B21B6),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             )
           : null,
-      trailing: trailing ??
-          (onTap != null
-              ? const Icon(Icons.chevron_right, color: Colors.white54)
-              : null),
+      trailing: trailing,
     );
   }
 
@@ -378,16 +381,21 @@ class ProfilePage extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.symmetric(vertical: 16),
         decoration: BoxDecoration(
-          color: Colors.redAccent.withOpacity(0.1),
+          color: const Color(0xFFE11D48),
           borderRadius: BorderRadius.circular(16),
-          border:
-              Border.all(color: Colors.redAccent.withOpacity(0.3), width: 1),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFFE11D48).withOpacity(0.3),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: const Center(
           child: Text(
             'Log Out',
             style: TextStyle(
-              color: Colors.redAccent,
+              color: Colors.white,
               fontSize: 16,
               fontWeight: FontWeight.bold,
             ),

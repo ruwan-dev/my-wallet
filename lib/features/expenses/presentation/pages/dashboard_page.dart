@@ -126,7 +126,7 @@ class _DashboardPageState extends State<DashboardPage> {
                 if (state is AccountLoading) {
                   return const SizedBox(
                     height: 120,
-                    child: Center(child: CircularProgressIndicator()),
+                    child: const ShimmerTile(),
                   );
                 }
                 if (state is AccountLoaded) {

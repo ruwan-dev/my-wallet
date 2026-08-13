@@ -9,6 +9,7 @@ import '../bloc/transaction_state.dart';
 import '../bloc/category_cubit.dart';
 import '../bloc/category_state.dart';
 import '../../domain/entities/monthly_budget.dart';
+import 'package:expense_tracker/features/expenses/presentation/widgets/shimmer_tile.dart';
 
 class MonthlyBudgetProgressCard extends StatelessWidget {
   final int month;
@@ -44,7 +45,7 @@ class MonthlyBudgetProgressCard extends StatelessWidget {
             },
           );
         } else if (budgetState is MonthlyBudgetLoading) {
-          return const Center(child: CircularProgressIndicator());
+          return const ShimmerTile();
         }
         return const SizedBox.shrink(); // No budget set yet
       },

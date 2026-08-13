@@ -12,16 +12,17 @@ class SettingsCubit extends Cubit<SettingsState> {
   static const String _smileTargetAmountKey = 'smile_target_amount';
   static const String _smileGoalNameKey = 'smile_goal_name';
   static const String _fireRedirectionKey = 'fire_redirection';
+  static const String _nodeDivisorKey = 'node_divisor';
 
   SettingsCubit(this._box) : super(SettingsState.initial()) {
     _loadSettings();
   }
 
   void _loadSettings() {
-    final symbol = _box.get(_currencySymbolKey, defaultValue: '\$');
-    final code = _box.get(_currencyCodeKey, defaultValue: 'USD');
-    final paydayDate = _box.get(_paydayDateKey, defaultValue: 1);
-    final smileTargetAmount = _box.get(_smileTargetAmountKey, defaultValue: 0.0);
+    final symbol = _box.get(_currencySymbolKey, defaultValue: 'Rs ');
+    final code = _box.get(_currencyCodeKey, defaultValue: 'LKR');
+    final paydayDate = _box.get(_paydayDateKey, defaultValue: 1) as int;
+    final smileTargetAmount = (_box.get(_smileTargetAmountKey, defaultValue: 0.0) as num).toDouble();
     final smileGoalName = _box.get(_smileGoalNameKey, defaultValue: 'Smile Goal');
     
     final fireRedirectionStr = _box.get(_fireRedirectionKey, defaultValue: 'fire');
@@ -30,6 +31,8 @@ class SettingsCubit extends Cubit<SettingsState> {
       orElse: () => FireRedirectionTarget.fire,
     );
     
+    final nodeDivisor = (_box.get(_nodeDivisorKey, defaultValue: 5000.0) as num).toDouble();
+    
     emit(state.copyWith(
       currencySymbol: symbol,
       currencyCode: code,
@@ -37,6 +40,7 @@ class SettingsCubit extends Cubit<SettingsState> {
       smileTargetAmount: smileTargetAmount,
       smileGoalName: smileGoalName,
       fireRedirection: fireRedirection,
+      nodeDivisor: nodeDivisor,
     ));
   }
 
@@ -67,5 +71,10 @@ class SettingsCubit extends Cubit<SettingsState> {
       smileGoalName: smileGoalName,
       fireRedirection: fireRedirection,
     ));
+  }
+
+  Future<void> updateNodeDivisor(double nodeDivisor) async {
+    await _box.put(_nodeDivisorKey, nodeDivisor);
+    emit(state.copyWith(nodeDivisor: nodeDivisor));
   }
 }

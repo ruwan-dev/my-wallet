@@ -9,6 +9,8 @@ import '../../../expenses/presentation/bloc/category_state.dart';
 import '../../../expenses/domain/entities/transaction.dart';
 import '../../../expenses/domain/entities/category.dart';
 import '../../../expenses/presentation/widgets/transaction_card.dart';
+import 'package:expense_tracker/features/expenses/presentation/widgets/shimmer_tile.dart';
+import 'package:expense_tracker/core/widgets/glass_list_tile.dart';
 
 class MonthlySummary {
   final DateTime date;
@@ -53,13 +55,13 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
       body: SafeArea(
         child: BlocBuilder<CategoryCubit, CategoryState>(
         builder: (context, catState) {
-          if (catState is! CategoryLoaded) return const Center(child: CircularProgressIndicator());
+          if (catState is! CategoryLoaded) return const ShimmerTile();
           final categories = catState.categories;
 
           return BlocBuilder<TransactionCubit, TransactionState>(
             builder: (context, state) {
               if (state is TransactionLoading) {
-                return const Center(child: CircularProgressIndicator());
+                return const ShimmerTile();
               }
               if (state is TransactionError) {
                 return Center(child: Text(state.message));
@@ -221,10 +223,16 @@ class MonthlyCategoryView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final monthName = [
+    final monthNames = [
       '', 'January', 'February', 'March', 'April', 'May', 'June',
       'July', 'August', 'September', 'October', 'November', 'December'
-    ][selectedDate.month];
+    ];
+    final monthName = monthNames[selectedDate.month];
+    final prevDate = DateTime(selectedDate.year, selectedDate.month - 1);
+    final nextDate = DateTime(selectedDate.year, selectedDate.month + 1);
+    final prevText = '${monthNames[prevDate.month].substring(0, 3)} ${prevDate.year}';
+    final nextText = '${monthNames[nextDate.month].substring(0, 3)} ${nextDate.year}';
+    final currentText = '$monthName ${selectedDate.year}';
 
     final filteredTotals = Map.fromEntries(
       categoryTotals.entries.where((e) => !hiddenCategoryIds.contains(e.key))
@@ -258,9 +266,9 @@ class MonthlyCategoryView extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.75),
+        color: Colors.white.withOpacity(0.15),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white, width: 1.5),
+        border: Border.all(color: Colors.white.withOpacity(0.2), width: 1.5),
         boxShadow: const [
           BoxShadow(
             color: Color(0x0A000000),
@@ -273,25 +281,47 @@ class MonthlyCategoryView extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Month Selector
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              IconButton(
-                icon: Icon(Icons.chevron_left_rounded, color: theme.colorScheme.onSurfaceVariant),
-                onPressed: () => onChangeMonth(-1),
+          GestureDetector(
+            onHorizontalDragEnd: (details) {
+              if (details.primaryVelocity! > 0) {
+                onChangeMonth(-1);
+              } else if (details.primaryVelocity! < 0) {
+                onChangeMonth(1);
+              }
+            },
+            child: Container(
+              color: Colors.transparent, // Ensure gesture detector takes up full width space
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  GestureDetector(
+                    onTap: () => onChangeMonth(-1),
+                    child: Text(
+                      prevText,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant.withOpacity(0.5),
+                      ),
+                    ),
+                  ),
+                  Text(
+                    currentText,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.onSurface,
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () => onChangeMonth(1),
+                    child: Text(
+                      nextText,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant.withOpacity(0.5),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              Text(
-                '$monthName ${selectedDate.year}',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: theme.colorScheme.onSurface,
-                ),
-              ),
-              IconButton(
-                icon: Icon(Icons.chevron_right_rounded, color: theme.colorScheme.onSurfaceVariant),
-                onPressed: () => onChangeMonth(1),
-              ),
-            ],
+            ),
           ),
           const SizedBox(height: 24),
           
@@ -299,7 +329,7 @@ class MonthlyCategoryView extends StatelessWidget {
             Container(
               height: 220,
               alignment: Alignment.center,
-              child: const Text('No expenses this month.', style: TextStyle(color: Color(0xFF94A3B8))),
+              child: const Text('No expenses this month.', style: TextStyle(color: Color(0xFF4C1D95))),
             )
           else ...[
             if (filteredTotals.isNotEmpty)
@@ -333,7 +363,7 @@ class MonthlyCategoryView extends StatelessWidget {
             else
               const SizedBox(
                 height: 220,
-                child: Center(child: Text('All categories hidden', style: TextStyle(color: Color(0xFF94A3B8)))),
+                child: Center(child: Text('All categories hidden', style: TextStyle(color: Color(0xFF4C1D95)))),
               ),
             const SizedBox(height: 32),
             // Interactive Legend
@@ -361,7 +391,7 @@ class MonthlyCategoryView extends StatelessWidget {
                         Icon(
                           isHidden ? Icons.visibility_off_rounded : Icons.visibility_rounded,
                           size: 16,
-                          color: isHidden ? Colors.grey : color,
+                          color: isHidden ? Colors.grey : Colors.black,
                         ),
                         const SizedBox(width: 8),
                         Text(
@@ -422,9 +452,9 @@ class CashFlowMacroCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.75),
+        color: Colors.white.withOpacity(0.15),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white, width: 1.5),
+        border: Border.all(color: Colors.white.withOpacity(0.2), width: 1.5),
         boxShadow: const [
           BoxShadow(
             color: Color(0x0A000000),
@@ -589,18 +619,18 @@ class SmartInsightCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (previousMonthExpense == 0) {
-       return _buildCard(context, 'Not enough data for insights yet 📊', Colors.grey.shade100, Colors.grey.shade600, Icons.insights);
+       return _buildCard(context, 'Not enough data for insights yet.', Colors.grey.shade100, Colors.grey.shade600, Icons.insights);
     }
     
     final diff = currentMonthExpense - previousMonthExpense;
     final percent = (diff / previousMonthExpense) * 100;
     
     if (diff < 0) {
-       return _buildCard(context, '💡 You spent ${percent.abs().toStringAsFixed(0)}% less this month compared to last month!', Colors.deepPurple.withOpacity(0.15), Colors.deepPurple.shade900, Icons.lightbulb_outline);
+       return _buildCard(context, 'You spent ${percent.abs().toStringAsFixed(0)}% less this month compared to last month!', Colors.deepPurple.withOpacity(0.15), Colors.deepPurple.shade900, Icons.lightbulb_outline);
     } else if (diff > 0) {
-       return _buildCard(context, '⚠️ Your expenses are ${percent.toStringAsFixed(0)}% higher than last month.', Colors.deepPurple.withOpacity(0.15), Colors.deepPurple.shade900, Icons.warning_amber_rounded);
+       return _buildCard(context, 'Your expenses are ${percent.toStringAsFixed(0)}% higher than last month.', Colors.deepPurple.withOpacity(0.15), Colors.deepPurple.shade900, Icons.warning_amber_rounded);
     } else {
-       return _buildCard(context, '👍 Your expenses are exactly the same as last month.', Colors.deepPurple.withOpacity(0.15), Colors.deepPurple.shade900, Icons.thumb_up_alt_outlined);
+       return _buildCard(context, 'Your expenses are exactly the same as last month.', Colors.deepPurple.withOpacity(0.15), Colors.deepPurple.shade900, Icons.thumb_up_alt_outlined);
     }
   }
   
@@ -651,37 +681,30 @@ class TopExpensesView extends StatelessWidget {
           separatorBuilder: (context, index) => const SizedBox(height: 12),
           itemBuilder: (context, index) {
             final tx = transactions[index];
-            return Container(
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.75),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.white, width: 1.5),
+            return GlassListTile(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              leading: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.05),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.receipt_long_rounded, color: Colors.black, size: 20),
               ),
-              child: ListTile(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                leading: Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF43F5E).withOpacity(0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.receipt_long_rounded, color: Color(0xFFF43F5E), size: 20),
-                ),
-                title: Text(
-                  tx.categoryName,
-                  style: const TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF1E293B)),
-                ),
-                subtitle: Text(
-                  AppFormatters.formatDate(tx.date),
-                  style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
-                ),
-                trailing: Text(
-                  AppFormatters.formatCurrency(context, tx.amount),
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 15,
-                    color: Color(0xFFF43F5E),
-                  ),
+              title: Text(
+                tx.categoryName,
+                style: const TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF1E293B)),
+              ),
+              subtitle: Text(
+                AppFormatters.formatDate(tx.date),
+                style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+              ),
+              trailing: Text(
+                AppFormatters.formatCurrency(context, tx.amount),
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 15,
+                  color: Color(0xFFF43F5E),
                 ),
               ),
             );
@@ -720,8 +743,9 @@ class SpendingHeatmapCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.9),
+        color: Colors.white.withOpacity(0.15),
         borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.white.withOpacity(0.2), width: 1.5),
         boxShadow: const [
           BoxShadow(
             color: Color(0x0A000000),
@@ -748,7 +772,7 @@ class SpendingHeatmapCard extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: weekDays.map((d) => SizedBox(
                       width: 28, 
-                      child: Center(child: Text(d, style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 12, fontWeight: FontWeight.bold)))
+                      child: Center(child: Text(d, style: const TextStyle(color: Color(0xFF4C1D95), fontSize: 12, fontWeight: FontWeight.bold)))
                     )).toList(),
                   ),
                   const SizedBox(height: 12),
@@ -807,7 +831,7 @@ class SpendingHeatmapCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              const Text('Less', style: TextStyle(fontSize: 11, color: Color(0xFF94A3B8))),
+              const Text('Less', style: TextStyle(fontSize: 11, color: Color(0xFF4C1D95))),
               const SizedBox(width: 8),
               _buildLegendBox(Colors.white.withOpacity(0.5), true),
               const SizedBox(width: 4),
@@ -819,7 +843,7 @@ class SpendingHeatmapCard extends StatelessWidget {
               const SizedBox(width: 4),
               _buildLegendBox(Colors.deepPurple.shade900, false),
               const SizedBox(width: 8),
-              const Text('More', style: TextStyle(fontSize: 11, color: Color(0xFF94A3B8))),
+              const Text('More', style: TextStyle(fontSize: 11, color: Color(0xFF4C1D95))),
             ],
           )
         ],

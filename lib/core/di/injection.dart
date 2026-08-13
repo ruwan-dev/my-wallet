@@ -1,10 +1,13 @@
 import 'package:get_it/get_it.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import '../../features/expenses/data/services/data_migration_service.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../constants/app_constants.dart';
 import '../../features/expenses/data/datasources/account_remote_datasource.dart';
+import '../../features/expenses/data/datasources/account_local_datasource.dart';
 import '../../features/expenses/data/datasources/transaction_remote_datasource.dart';
+import '../../features/expenses/data/datasources/transaction_local_datasource.dart';
 import '../../features/expenses/data/models/account_model.dart';
 import '../../features/expenses/data/models/transaction_model.dart';
 import '../../features/expenses/data/repositories/account_repository_impl.dart';
@@ -20,6 +23,13 @@ import '../../features/expenses/presentation/bloc/category_cubit.dart';
 import '../../features/auth/domain/repositories/auth_repository.dart';
 import '../../features/auth/data/repositories/firebase_auth_repository_impl.dart';
 import '../../features/auth/presentation/bloc/auth_cubit.dart';
+
+import '../../features/debts/data/datasources/debt_local_datasource.dart';
+import '../../features/debts/data/datasources/debt_remote_datasource.dart';
+import '../../features/debts/data/models/debt_model.dart';
+import '../../features/debts/data/repositories/debt_repository_impl.dart';
+import '../../features/debts/domain/repositories/debt_repository.dart';
+import '../../features/debts/presentation/bloc/debt_cubit.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../features/expenses/domain/usecases/add_account.dart';
 import '../../features/expenses/domain/usecases/update_account.dart';
@@ -46,6 +56,7 @@ import '../../features/budgets/data/repositories/custom_budget_repository_impl.d
 import '../../features/budgets/presentation/bloc/custom_budget_cubit.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import '../../core/bloc/settings_cubit.dart';
 
 final sl = GetIt.instance;
@@ -54,41 +65,80 @@ Future<void> configureDependencies() async {
   // --- External / Hive / Prefs ---
   sl.registerLazySingleton(() => FirebaseAuth.instance);
   sl.registerLazySingleton(() => FirebaseFirestore.instance);
+  sl.registerLazySingleton<Connectivity>(() => Connectivity());
   
   final sharedPreferences = await SharedPreferences.getInstance();
   sl.registerLazySingleton(() => sharedPreferences);
 
-  final categoriesBox   = Hive.box<CategoryModel>(AppConstants.categoriesBox);
+  final categoriesBox = Hive.box<CategoryModel>(AppConstants.categoriesBox);
+  final accountsBox = Hive.box<AccountModel>(AppConstants.accountsBox);
+  final transactionsBox = Hive.box<TransactionModel>(AppConstants.transactionsBox);
 
   // --- Datasources ---
+  sl.registerLazySingleton<AccountLocalDatasource>(
+    () => HiveAccountLocalDatasource(accountsBox),
+  );
   sl.registerLazySingleton<AccountRemoteDataSource>(
     () => FirestoreAccountRemoteDataSource(sl()),
+  );
+  
+  sl.registerLazySingleton<TransactionLocalDatasource>(
+    () => HiveTransactionLocalDatasource(transactionsBox),
   );
   sl.registerLazySingleton<TransactionRemoteDataSource>(
     () => FirestoreTransactionRemoteDataSource(sl()),
   );
+
   sl.registerLazySingleton<CategoryLocalDatasource>(
     () => HiveCategoryLocalDatasource(categoriesBox),
   );
   sl.registerLazySingleton<CategoryRemoteDatasource>(
     () => FirestoreCategoryRemoteDatasource(sl()),
   );
+  
   sl.registerLazySingleton<BudgetRemoteDataSource>(
     () => BudgetRemoteDataSourceImpl(sl()),
   );
 
   // --- Repositories ---
   sl.registerLazySingleton<AccountRepository>(
-    () => AccountRepositoryImpl(sl()),
+    () => AccountRepositoryImpl(
+      remoteDataSource: sl(),
+      localDataSource: sl(),
+      authRepository: sl(),
+    ),
   );
   sl.registerLazySingleton<TransactionRepository>(
-    () => TransactionRepositoryImpl(sl()),
+    () => TransactionRepositoryImpl(
+      remoteDataSource: sl(),
+      localDataSource: sl(),
+      authRepository: sl(),
+    ),
   );
   sl.registerLazySingleton<CategoryRepository>(
-    () => CategoryRepositoryImpl(sl(), sl()),
+    () => CategoryRepositoryImpl(
+      remoteDatasource: sl(),
+      localDatasource: sl(),
+      authRepository: sl(),
+    ),
   );
+
+  sl.registerLazySingleton<DebtLocalDataSource>(
+    () => DebtLocalDataSourceImpl(box: Hive.box<DebtModel>(AppConstants.debtsBox)),
+  );
+  sl.registerLazySingleton<DebtRemoteDataSource>(
+    () => DebtRemoteDataSourceImpl(firestore: sl()),
+  );
+  sl.registerLazySingleton<DebtRepository>(
+    () => DebtRepositoryImpl(
+      localDataSource: sl(),
+      remoteDataSource: sl(),
+      connectivity: sl(),
+    ),
+  );
+
   sl.registerLazySingleton<AuthRepository>(
-    () => FirebaseAuthRepositoryImpl(sl()),
+    () => FirebaseAuthRepositoryImpl(sl(), sl()),
   );
   sl.registerLazySingleton<BudgetRepository>(
     () => BudgetRepositoryImpl(sl()),
@@ -100,7 +150,19 @@ Future<void> configureDependencies() async {
     () => CustomBudgetRepositoryImpl(sl()),
   );
 
-  // --- UseCases ---
+  // --- UseCases & Services ---
+  sl.registerLazySingleton(
+    () => DataMigrationService(
+      accountLocal: sl(),
+      transactionLocal: sl(),
+      categoryLocal: sl(),
+      accountRemote: sl(),
+      transactionRemote: sl(),
+      categoryRemote: sl(),
+      prefs: sl(),
+    ),
+  );
+
   sl.registerLazySingleton(() => AddAccountUseCase(sl()));
   sl.registerLazySingleton(() => UpdateAccountUseCase(sl()));
   sl.registerLazySingleton(() => DeleteAccountUseCase(sl()));
@@ -135,6 +197,13 @@ Future<void> configureDependencies() async {
 
   sl.registerLazySingleton(
     () => CategoryCubit(repository: sl(), authRepository: sl()),
+  );
+
+  sl.registerLazySingleton(
+    () => DebtCubit(
+      debtRepository: sl(),
+      transactionRepository: sl(),
+    ),
   );
 
   sl.registerLazySingleton(

@@ -4,6 +4,10 @@ import '../../../../core/utils/formatters.dart';
 import '../bloc/custom_budget_cubit.dart';
 import '../bloc/custom_budget_state.dart';
 import 'create_custom_budget_page.dart';
+import 'create_custom_budget_page.dart';
+import 'package:expense_tracker/features/expenses/presentation/widgets/shimmer_tile.dart';
+import '../../../../features/expenses/domain/entities/category.dart';
+import 'package:expense_tracker/features/expenses/presentation/widgets/category_icon.dart';
 
 class BudgetDetailsPage extends StatelessWidget {
   final String budgetId;
@@ -27,9 +31,7 @@ class BudgetDetailsPage extends StatelessWidget {
           }
 
           final budget = state.budgets[budgetIndex];
-          final progress = budget.totalBudgetLimit > 0 
-              ? (budget.totalAllocated / budget.totalBudgetLimit).clamp(0.0, 1.0) 
-              : 0.0;
+
           final spentProgress = budget.totalAllocated > 0 
               ? (budget.totalSpent / budget.totalAllocated).clamp(0.0, 1.0) 
               : 0.0;
@@ -56,7 +58,7 @@ class BudgetDetailsPage extends StatelessWidget {
                   )
                 else ...[
                   IconButton(
-                    icon: const Icon(Icons.edit_outlined),
+                    icon: const Icon(Icons.edit_outlined, color: Colors.black87),
                     tooltip: 'Edit Budget',
                     onPressed: () {
                       Navigator.push(
@@ -68,7 +70,7 @@ class BudgetDetailsPage extends StatelessWidget {
                     },
                   ),
                   IconButton(
-                    icon: const Icon(Icons.check_circle_outline, color: Colors.green),
+                    icon: const Icon(Icons.check_circle_outline, color: Colors.black87),
                     tooltip: 'Mark as Completed',
                     onPressed: () async {
                       final confirm = await showDialog<bool>(
@@ -96,7 +98,7 @@ class BudgetDetailsPage extends StatelessWidget {
                   ),
                 ],
                 IconButton(
-                  icon: const Icon(Icons.delete_outline, color: Colors.red),
+                  icon: const Icon(Icons.delete_outline, color: Colors.black87),
                   tooltip: 'Delete Budget',
                   onPressed: () async {
                     final confirm = await showDialog<bool>(
@@ -126,6 +128,47 @@ class BudgetDetailsPage extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Bucket Tag
+                  Builder(
+                    builder: (context) {
+                      IconData icon = Icons.circle;
+                      Color color = Colors.white;
+                      String bucketName = 'Blow';
+                      switch (budget.bucketType) {
+                        case BucketType.dailyExpenses: bucketName = 'Blow'; icon = Icons.work_outline; color = Colors.white; break;
+                        case BucketType.smile: bucketName = 'Smile'; icon = Icons.flight_takeoff; color = const Color(0xFF34D399); break;
+                        case BucketType.fire: bucketName = 'Fire'; icon = Icons.local_fire_department; color = const Color(0xFFF87171); break;
+                        case BucketType.mojo: bucketName = 'Mojo'; icon = Icons.security; color = const Color(0xFFEAB308); break;
+                        case BucketType.grow: bucketName = 'Grow'; icon = Icons.eco; color = const Color(0xFF60A5FA); break;
+                        default: break;
+                      }
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 16),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: color.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: color.withValues(alpha: 0.3)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(icon, color: color, size: 16),
+                            const SizedBox(width: 6),
+                            Text(
+                              bucketName,
+                              style: TextStyle(
+                                color: color,
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+                  ),
+                  
                   // Overview Card
                   Container(
                     padding: const EdgeInsets.all(20),
@@ -136,30 +179,7 @@ class BudgetDetailsPage extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Budget Allocation', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
-                        const SizedBox(height: 8),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'Allocated: ${AppFormatters.formatCurrency(context, budget.totalAllocated)}',
-                              style: theme.textTheme.bodyMedium,
-                            ),
-                            Text(
-                              'Limit: ${AppFormatters.formatCurrency(context, budget.totalBudgetLimit)}',
-                              style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        LinearProgressIndicator(
-                          value: progress,
-                          backgroundColor: theme.colorScheme.surfaceContainerHighest,
-                          minHeight: 8,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        
-                        const SizedBox(height: 24),
+
                         Text('Checklist Completion', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
                         const SizedBox(height: 8),
                         Row(
@@ -212,7 +232,7 @@ class BudgetDetailsPage extends StatelessWidget {
                               if (item.categoryIcon != null)
                                 Padding(
                                   padding: const EdgeInsets.only(right: 8.0),
-                                  child: Text(item.categoryIcon!, style: const TextStyle(fontSize: 18)),
+                                  child: CategoryIcon(iconStr: item.categoryIcon!, size: 18, color: Colors.black),
                                 ),
                               Expanded(
                                 child: Text(
@@ -248,7 +268,7 @@ class BudgetDetailsPage extends StatelessWidget {
         return Scaffold(
           backgroundColor: Colors.transparent,
           appBar: AppBar(title: const Text('Error')),
-          body: const Center(child: CircularProgressIndicator()),
+          body: const ShimmerTile(),
         );
       },
     );
