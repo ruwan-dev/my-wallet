@@ -39,7 +39,25 @@ class CategoryCubit extends Cubit<CategoryState> {
             merged[c.id] = c;
           }
           for (final c in customCategories) {
-            merged[c.id] = c;
+            var finalCategory = c;
+            
+            // Automatic migration: If it's a default category and uses a legacy emoji icon, 
+            // upgrade it to the new Material Icon defined in the source code.
+            if (c.isDefault) {
+              final defaultCat = DefaultCategories.all.cast<Category?>().firstWhere(
+                (d) => d?.id == c.id, 
+                orElse: () => null,
+              );
+              
+              if (defaultCat != null && int.tryParse(c.icon) == null) {
+                finalCategory = c.copyWith(icon: defaultCat.icon);
+                
+                // Optionally fire off an update to the repository here so the DB is corrected
+                repository.updateCategory(finalCategory); 
+              }
+            }
+            
+            merged[c.id] = finalCategory;
           }
           final allCategories = merged.values.toList();
           emit(CategoryLoaded(allCategories));
