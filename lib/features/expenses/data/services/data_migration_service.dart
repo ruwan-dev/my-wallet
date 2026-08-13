@@ -37,7 +37,7 @@ class DataMigrationService {
 
     try {
       // 1. Migrate Categories
-      final localCategories = await categoryLocal.getAllCategories();
+      final localCategories = await categoryLocal.getAllCategories(userId);
       for (final cat in localCategories) {
         await categoryRemote.saveCategory(userId, cat);
       }

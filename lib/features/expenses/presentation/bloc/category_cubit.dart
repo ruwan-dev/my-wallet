@@ -53,7 +53,7 @@ class CategoryCubit extends Cubit<CategoryState> {
                 finalCategory = c.copyWith(icon: defaultCat.icon);
                 
                 // Optionally fire off an update to the repository here so the DB is corrected
-                repository.updateCategory(finalCategory); 
+                repository.saveCategory(_currentUserId, finalCategory); 
               }
             }
             
