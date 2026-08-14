@@ -11,26 +11,12 @@ class QuotesCarousel extends StatefulWidget {
 
 class _QuotesCarouselState extends State<QuotesCarousel> {
   final List<Map<String, String>> _quotes = [
-    {
-      'quote': 'Rule No. 1: Never lose money.\nRule No. 2: Never forget rule No. 1.',
-      'author': 'Warren Buffett'
-    },
-    {
-      'quote': 'Invest in what you know.',
-      'author': 'Peter Lynch'
-    },
-    {
-      'quote': 'The essence of investment management is the management of risks, not the management of returns.',
-      'author': 'Benjamin Graham'
-    },
-    {
-      'quote': 'Don\'t look for the needle in the haystack. Just buy the haystack.',
-      'author': 'John Bogle'
-    },
-    {
-      'quote': 'It\'s not whether you\'re right or wrong that\'s important, but how much money you make when you\'re right and how much you lose when you\'re wrong.',
-      'author': 'George Soros'
-    },
+    {'quote': 'Time is money.', 'author': 'Benjamin Franklin'},
+    {'quote': 'Invest in what you know.', 'author': 'Peter Lynch'},
+    {'quote': 'Every day is a bank account.', 'author': 'Christopher Morley'},
+    {'quote': 'Before you spend, earn.', 'author': 'William Arthur Ward'},
+    {'quote': 'Never depend on a single income.', 'author': 'Warren Buffett'},
+    {'quote': 'Take decisions based on data, not emotions.', 'author': 'Dhammika Perera'},
   ];
 
   late PageController _pageController;
@@ -49,24 +35,16 @@ class _QuotesCarouselState extends State<QuotesCarousel> {
     _timer = Timer.periodic(const Duration(seconds: 20), (timer) {
       if (_pageController.hasClients) {
         final nextIndex = (_currentIndex + 1) % _quotes.length;
-        _pageController.animateToPage(
-          nextIndex,
-          duration: const Duration(milliseconds: 500),
-          curve: Curves.easeInOut,
-        );
+        _pageController.animateToPage(nextIndex, duration: const Duration(milliseconds: 500), curve: Curves.easeInOut);
       }
     });
   }
 
   void _nextQuote() {
-    _startTimer(); // Reset timer on manual interaction
+    _startTimer();
     if (_pageController.hasClients) {
       final nextIndex = (_currentIndex + 1) % _quotes.length;
-      _pageController.animateToPage(
-        nextIndex,
-        duration: const Duration(milliseconds: 500),
-        curve: Curves.easeInOut,
-      );
+      _pageController.animateToPage(nextIndex, duration: const Duration(milliseconds: 500), curve: Curves.easeInOut);
     }
   }
 
@@ -80,110 +58,85 @@ class _QuotesCarouselState extends State<QuotesCarousel> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
     return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      mainAxisSize: MainAxisSize.min,
+      mainAxisSize: MainAxisSize.max,
       children: [
-        SizedBox(
-          height: 230,
+        Expanded(
           child: PageView.builder(
-              controller: _pageController,
-              onPageChanged: (index) {
-                setState(() {
-                  _currentIndex = index;
-                });
-              },
-              itemCount: _quotes.length,
-              itemBuilder: (context, index) {
-                final quote = _quotes[index];
-                return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: Center(
-                    child: SingleChildScrollView(
-                      physics: const NeverScrollableScrollPhysics(),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(
-                            Icons.format_quote_rounded,
-                            size: 40,
-                            color: Color(0xFF7C3AED),
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            quote['quote']!,
-                            textAlign: TextAlign.center,
-                            style: GoogleFonts.playfairDisplay(
-                              textStyle: theme.textTheme.titleLarge?.copyWith(
-                                color: Colors.white,
-                                height: 1.3,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          Container(
-                            width: 48,
-                            height: 2,
-                            color: const Color(0xFF7C3AED),
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            quote['author']!.toUpperCase(),
-                            textAlign: TextAlign.center,
-                            style: theme.textTheme.labelMedium?.copyWith(
-                              color: Colors.white70,
-                              letterSpacing: 2.0,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
+            controller: _pageController,
+            onPageChanged: (index) => setState(() => _currentIndex = index),
+            itemCount: _quotes.length,
+            itemBuilder: (context, index) {
+              final quote = _quotes[index];
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.format_quote_rounded, size: 28, color: Color(0xFF50C8C8)),
+                      const SizedBox(height: 8),
+                      Text(
+                        quote['quote']!,
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.playfairDisplay(
+                          textStyle: theme.textTheme.bodyMedium?.copyWith(color: Colors.black87, height: 1.4, fontSize: 15),
+                        ),
                       ),
-                    ),
+                      const SizedBox(height: 12),
+                      Container(width: 36, height: 2, color: const Color(0xFF50C8C8)),
+                      const SizedBox(height: 10),
+                      Text(
+                        quote['author']!.toUpperCase(),
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.labelSmall?.copyWith(color: Colors.black54, letterSpacing: 1.5, fontWeight: FontWeight.bold),
+                      ),
+                    ],
                   ),
-                );
-              },
-            ),
+                ),
+              );
+            },
           ),
-          Padding(
-            padding: const EdgeInsets.only(bottom: 24.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: List.generate(
-                    _quotes.length,
-                    (index) => AnimatedContainer(
-                      duration: const Duration(milliseconds: 300),
-                      margin: const EdgeInsets.symmetric(horizontal: 4),
-                      height: 8,
-                      width: _currentIndex == index ? 24 : 8,
-                      decoration: BoxDecoration(
-                        color: _currentIndex == index 
-                            ? const Color(0xFF7C3AED) 
-                            : Colors.white.withOpacity(0.3),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: List.generate(
+                  _quotes.length,
+                  (index) => AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
+                    margin: const EdgeInsets.symmetric(horizontal: 3),
+                    height: 6,
+                    width: _currentIndex == index ? 20 : 6,
+                    decoration: BoxDecoration(
+                      color: _currentIndex == index ? const Color(0xFF50C8C8) : Colors.black26,
+                      borderRadius: BorderRadius.circular(3),
                     ),
                   ),
                 ),
-                const SizedBox(width: 16),
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: IconButton(
-                    icon: const Icon(Icons.play_arrow_rounded, color: Color(0xFF7C3AED)),
-                    onPressed: _nextQuote,
-                    tooltip: 'Next Quote',
-                  ),
+              ),
+              const SizedBox(width: 12),
+              Container(
+                padding: const EdgeInsets.all(4),
+                decoration: const BoxDecoration(color: Colors.black12, shape: BoxShape.circle),
+                child: IconButton(
+                  iconSize: 14,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+                  icon: const Icon(Icons.arrow_forward_ios_rounded, color: Color(0xFF50C8C8), size: 14),
+                  onPressed: _nextQuote,
+                  tooltip: 'Next Quote',
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
-      );
+        ),
+      ],
+    );
   }
 }

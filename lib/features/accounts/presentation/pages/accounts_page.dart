@@ -25,14 +25,13 @@ class AccountsPage extends StatelessWidget {
         title: const Text('My Accounts'),
         backgroundColor: Colors.transparent,
         elevation: 0,
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showAddEditAccountDialog(context),
-        backgroundColor: const Color(0xFF7C3AED),
-        foregroundColor: Colors.white,
-        elevation: 4,
-        icon: const Icon(Icons.add),
-        label: const Text('Add Account'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.add_rounded, size: 28),
+            onPressed: () => _showAddEditAccountDialog(context),
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
       body: BlocBuilder<AccountCubit, AccountState>(
         builder: (context, state) {
@@ -56,6 +55,17 @@ class AccountsPage extends StatelessWidget {
                     Text('No accounts found.', style: theme.textTheme.titleMedium),
                     const SizedBox(height: 8),
                     Text('Create your first account to start tracking.', style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+                    const SizedBox(height: 24),
+                    FilledButton.icon(
+                      onPressed: () => _showAddEditAccountDialog(context),
+                      icon: const Icon(Icons.add_rounded),
+                      label: const Text('Add Account'),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: const Color(0xFF50C8C8),
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      ),
+                    ),
                   ],
                 ),
               );

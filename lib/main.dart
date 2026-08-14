@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -24,6 +25,7 @@ import 'core/bloc/settings_cubit.dart';
 import 'features/expenses/data/services/data_migration_service.dart';
 import 'features/debts/data/models/debt_model.dart';
 import 'features/debts/presentation/bloc/debt_cubit.dart';
+import 'package:device_preview/device_preview.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -57,7 +59,12 @@ Future<void> main() async {
   // Initialise Dependency Injection
   await configureDependencies();
 
-  runApp(const ExpenseTrackerApp());
+  runApp(
+    DevicePreview(
+      enabled: !kReleaseMode,
+      builder: (context) => const ExpenseTrackerApp(),
+    ),
+  );
 }
 
 class ExpenseTrackerApp extends StatelessWidget {
@@ -125,6 +132,8 @@ class ExpenseTrackerApp extends StatelessWidget {
           debugShowCheckedModeBanner: false,
           theme: AppTheme.getTheme(),
           routerConfig: appRouter,
+          builder: DevicePreview.appBuilder,
+          locale: DevicePreview.locale(context),
         ),
       ),
     );

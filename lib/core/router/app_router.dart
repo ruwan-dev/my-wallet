@@ -151,17 +151,15 @@ final appRouter = GoRouter(
     ),
     StatefulShellRoute.indexedStack(
       builder: (context, state, navigationShell) {
-        return PremiumAuroraVectorBackground(
-          child: ResponsiveScaffold(
-            body: navigationShell,
-            currentIndex: navigationShell.currentIndex,
-            onNavigation: (index) {
-              navigationShell.goBranch(
-                index,
-                initialLocation: index == navigationShell.currentIndex,
-              );
-            },
-          ),
+        return ResponsiveScaffold(
+          body: navigationShell,
+          currentIndex: navigationShell.currentIndex,
+          onNavigation: (index) {
+            navigationShell.goBranch(
+              index,
+              initialLocation: index == navigationShell.currentIndex,
+            );
+          },
         );
       },
       branches: [

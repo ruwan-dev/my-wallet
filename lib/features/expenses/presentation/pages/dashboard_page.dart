@@ -70,8 +70,12 @@ class _DashboardPageState extends State<DashboardPage> {
             }
           }
         },
-        child: Column(
-            children: [
+        child: Container(
+          color: const Color(0xFFF2F8F7),
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            child: Column(
+              children: [
               // ── Balance Card ───────────────────────────────────────────────
             Padding(
                 padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
@@ -132,7 +136,7 @@ class _DashboardPageState extends State<DashboardPage> {
                 if (state is AccountLoaded) {
                   if (state.accounts.isEmpty) {
                     return SizedBox(
-                      height: 95,
+                      height: 115,
                       child: ListView(
                         padding: const EdgeInsets.symmetric(horizontal: 20),
                         scrollDirection: Axis.horizontal,
@@ -141,7 +145,7 @@ class _DashboardPageState extends State<DashboardPage> {
                           _ToolCard(
                             title: 'Add Account',
                             icon: Icons.add,
-                            color: Colors.white,
+                            color: const Color(0xFF50C8C8),
                             onTap: () => context.push('/accounts/add-account'),
                           ),
                         ],
@@ -150,7 +154,7 @@ class _DashboardPageState extends State<DashboardPage> {
                   }
 
                   return SizedBox(
-                    height: 100, // Decreased height
+                    height: 120,
                     child: ScrollConfiguration(
                       behavior: ScrollConfiguration.of(context).copyWith(
                         dragDevices: {
@@ -175,7 +179,7 @@ class _DashboardPageState extends State<DashboardPage> {
                 return const SizedBox.shrink();
               },
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 8),
 
             // ── Planning & Tools ───────────────────────────────────────────
             Padding(
@@ -186,9 +190,9 @@ class _DashboardPageState extends State<DashboardPage> {
                 onAction: null,
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 6),
             SizedBox(
-              height: 95,
+              height: 115,
               child: ListView(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 scrollDirection: Axis.horizontal,
@@ -204,31 +208,31 @@ class _DashboardPageState extends State<DashboardPage> {
                   _ToolCard(
                     title: 'Analytics',
                     icon: Icons.bar_chart_outlined,
-                    color: Colors.orangeAccent,
+                    color: const Color(0xFFFF8C42),
                     onTap: () => context.push('/analytics'),
                   ),
                   const SizedBox(width: 12),
                   _ToolCard(
                     title: 'Buckets',
-                    icon: Icons.water_drop_outlined, // or another appropriate icon like an umbrella or wallet
-                    color: Colors.tealAccent,
+                    icon: Icons.water_drop_outlined,
+                    color: const Color(0xFF50C8C8),
                     onTap: () => context.push('/buckets-planner'),
                   ),
                   const SizedBox(width: 12),
                   _ToolCard(
                     title: 'Recurring',
                     icon: Icons.repeat_rounded,
-                    color: Colors.purpleAccent,
+                    color: const Color(0xFF9B8FD4),
                     onTap: () => context.push('/recurring-bills'),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 8),
 
             // ── Recent Transactions Header ─────────────────────────────────
             Container(
-              color: Theme.of(context).scaffoldBackgroundColor,
+              color: const Color(0xFFF2F8F7),
               padding: const EdgeInsets.only(left: 20, right: 20, bottom: 8, top: 4),
               child: _SectionHeader(
                 title: 'Recent Transactions',
@@ -238,20 +242,19 @@ class _DashboardPageState extends State<DashboardPage> {
             ),
 
             // ── Transaction List ───────────────────────────────────────────
-            Expanded(
-              child: ClipRect(
-                child: BlocBuilder<TransactionCubit, TransactionState>(
-                  builder: (context, txState) {
-                  if (txState is TransactionLoading) {
-                    return ListView.builder(
-                      physics: const BouncingScrollPhysics(),
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      itemCount: 6,
-                        itemBuilder: (_, __) => const Padding(
-                          padding: EdgeInsets.only(bottom: 12),
-                          child: ShimmerTile(),
-                        ),
-                      );
+            BlocBuilder<TransactionCubit, TransactionState>(
+              builder: (context, txState) {
+              if (txState is TransactionLoading) {
+                return ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                    itemCount: 6,
+                      itemBuilder: (_, __) => const Padding(
+                        padding: EdgeInsets.only(bottom: 12),
+                        child: ShimmerTile(),
+                      ),
+                    );
                     }
                   if (txState is TransactionLoaded) {
                     if (txState.transactions.isEmpty) {
@@ -264,25 +267,26 @@ class _DashboardPageState extends State<DashboardPage> {
                             : <AccountEntity>[];
                         // Show a reasonable number of recent transactions since it now scrolls independently
                         final recentTransactions = txState.transactions.take(10).toList();
-                        return ListView(
-                          physics: const BouncingScrollPhysics(),
-                          padding: const EdgeInsets.only(left: 20, right: 20, bottom: 100, top: 8), 
-                          children: _buildGroupedItems(
-                            recentTransactions, accounts, context),
-                        );
+                      return ListView(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        padding: const EdgeInsets.only(left: 20, right: 20, bottom: 100, top: 8), 
+                        children: _buildGroupedItems(
+                          recentTransactions, accounts, context),
+                      );
                       },
                     );
                   }
                   return const SizedBox.shrink();
                 },
-              ),
             ),
-            ),
-          ],
-        ),
-      ),
-      ),
-    );
+        ],
+      ), // End Column
+      ), // End SingleChildScrollView
+      ), // End Container
+      ), // End BlocListener
+      ), // End SafeArea
+    ); // End Scaffold
   }
 
   List<Widget> _buildGroupedItems(
@@ -363,57 +367,48 @@ class _ToolCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 105,
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.15),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0A000000), // Very soft shadow instead of glow
-            blurRadius: 10,
-            offset: Offset(0, 4),
-          ),
-        ],
-        border: Border.all(color: Colors.white.withOpacity(0.4), width: 1.0),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: onTap,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 6.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2), // Subtle white circle behind icon
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(icon, color: Colors.white, size: 24),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w300,
-                        fontSize: 12,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 76,
+        color: Colors.transparent, // Expand tap area
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(18),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.08),
+                    blurRadius: 24,
+                    spreadRadius: 4,
+                    offset: const Offset(0, 12),
+                  ),
+                ],
+              ),
+              child: Center(
+                child: Icon(icon, color: const Color(0xFF50C8C8), size: 24),
               ),
             ),
-          ),
+            const SizedBox(height: 8),
+            Text(
+              title,
+              style: const TextStyle(
+                color: Color(0xFF6E6E82),
+                fontWeight: FontWeight.w600,
+                fontSize: 11,
+                letterSpacing: 0.3,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+            ),
+          ],
         ),
       ),
     );
@@ -437,31 +432,33 @@ class _SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
-          title, 
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w300,
+          title.toUpperCase(),
+          style: const TextStyle(
+            color: Color(0xFFA0AAB2),
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 1.5,
           ),
         ),
         if (onAction != null && actionLabel.isNotEmpty)
-          InkWell(
+          GestureDetector(
             onTap: onAction,
-            borderRadius: BorderRadius.circular(20),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.15),
+                color: const Color(0xFF50C8C8).withOpacity(0.12),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
                 actionLabel,
-                style: theme.textTheme.labelMedium?.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w300,
+                style: const TextStyle(
+                  color: Color(0xFF50C8C8),
+                  fontWeight: FontWeight.w600,
+                  fontSize: 12,
                 ),
               ),
             ),

@@ -1,5 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:google_sign_in/google_sign_in.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../../domain/entities/user.dart';
 
@@ -65,6 +67,55 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
       throw Exception(_mapAuthErrorCode(e.code));
     } catch (e) {
       throw Exception('An unexpected error occurred during registration.');
+    }
+  }
+
+  @override
+  Future<UserEntity> loginWithGoogle() async {
+    try {
+      UserCredential userCredential;
+
+      if (kIsWeb) {
+        // Web: use Firebase's built-in OAuth popup — no google_sign_in needed
+        final googleProvider = GoogleAuthProvider();
+        userCredential = await _firebaseAuth.signInWithPopup(googleProvider);
+      } else {
+        // Native (iOS/Android): use google_sign_in v7 API
+        final account = await GoogleSignIn.instance.authenticate();
+        final auth = await account.authentication;
+        final credential = GoogleAuthProvider.credential(
+          idToken: auth.idToken,
+        );
+        userCredential = await _firebaseAuth.signInWithCredential(credential);
+      }
+
+      final uid = userCredential.user!.uid;
+      final email = userCredential.user!.email ?? '';
+
+      final doc = await _firestore.collection('users').doc(uid).get();
+      if (!doc.exists) {
+        // First-time Google Sign-In: create Firestore profile
+        await _firestore.collection('users').doc(uid).set({
+          'email': email,
+          'isPremium': false,
+          'isAdmin': false,
+          'forceSync': false,
+        });
+      }
+
+      final userData = (await _firestore.collection('users').doc(uid).get()).data()!;
+      return UserEntity(
+        id: uid,
+        email: email,
+        isPremium: userData['isPremium'] ?? false,
+        isAdmin: userData['isAdmin'] ?? false,
+        forceSync: userData['forceSync'] ?? false,
+      );
+    } on FirebaseAuthException catch (e) {
+      throw Exception(_mapAuthErrorCode(e.code));
+    } catch (e) {
+      if (e.toString().contains('cancelled')) rethrow;
+      throw Exception('Google Sign-In failed. Please try again.');
     }
   }
 

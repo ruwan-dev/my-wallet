@@ -95,43 +95,18 @@ class _AddAccountPageState extends State<AddAccountPage> {
     context.pop();
   }
 
-  Widget _buildGlassContainer({required Widget child}) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.2), width: 1.5),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: child,
-    );
-  }
-
   Widget _buildSegmentedControl() {
     return Container(
-      height: 50,
+      height: 48,
+      padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(25),
-        border: Border.all(color: Colors.white.withOpacity(0.2), width: 1.5),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        color: Colors.grey.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
         children: [
-          _buildSegmentTab(AccountType.asset, 'Asset (Cash, Bank)', Icons.account_balance_wallet_rounded),
-          _buildSegmentTab(AccountType.liability, 'Liability (Credit)', Icons.credit_card_rounded),
+          _buildSegmentTab(AccountType.asset, 'Asset', Icons.account_balance_wallet_rounded),
+          _buildSegmentTab(AccountType.liability, 'Liability', Icons.credit_card_rounded),
         ],
       ),
     );
@@ -143,22 +118,25 @@ class _AddAccountPageState extends State<AddAccountPage> {
       child: GestureDetector(
         onTap: () => setState(() => _selectedType = type),
         behavior: HitTestBehavior.opaque,
-        child: Container(
-          margin: const EdgeInsets.all(4),
-          color: Colors.transparent,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          decoration: BoxDecoration(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+          ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(icon,
-                  size: 16, color: isSelected ? Colors.white : Colors.white70),
+                  size: 16, color: isSelected ? const Color(0xFF50C8C8) : Colors.grey.shade500),
               const SizedBox(width: 6),
               Flexible(
                 child: Text(
                   title,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: isSelected ? Colors.white : Colors.white70,
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                    color: isSelected ? const Color(0xFF50C8C8) : Colors.grey.shade500,
+                    fontWeight: FontWeight.w500,
                     fontSize: 14,
                   ),
                 ),
@@ -170,21 +148,68 @@ class _AddAccountPageState extends State<AddAccountPage> {
     );
   }
 
+  Widget _buildInputField({
+    required TextEditingController controller,
+    required String label,
+    required String hint,
+    required IconData icon,
+    TextInputType? keyboardType,
+    TextCapitalization textCapitalization = TextCapitalization.none,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: TextFormField(
+        controller: controller,
+        style: const TextStyle(color: Color(0xFF1A1A2E), fontWeight: FontWeight.w500),
+        keyboardType: keyboardType,
+        textCapitalization: textCapitalization,
+        decoration: InputDecoration(
+          labelText: label,
+          hintText: hint,
+          labelStyle: TextStyle(color: Colors.grey.shade600, fontSize: 14),
+          hintStyle: TextStyle(color: Colors.grey.shade400),
+          floatingLabelStyle: const TextStyle(color: Color(0xFF50C8C8), fontWeight: FontWeight.w600),
+          prefixIcon: Icon(icon, color: Colors.grey.shade400, size: 22),
+          filled: true,
+          fillColor: Colors.transparent,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide(color: Colors.grey.shade300),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide(color: Colors.grey.shade300),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: const BorderSide(color: Color(0xFF50C8C8), width: 1.5),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: const Color(0xFFF2F8F7),
       appBar: AppBar(
-        title: Text(widget.account != null ? 'Edit Account' : 'Add Account'),
+        title: Text(
+          widget.account != null ? 'Edit Account' : 'Add Account',
+          style: const TextStyle(color: Color(0xFF1A1A2E), fontWeight: FontWeight.w700),
+        ),
         backgroundColor: Colors.transparent,
         elevation: 0,
+        iconTheme: const IconThemeData(color: Color(0xFF1A1A2E)),
         actions: [
           IconButton(
-            icon: const Icon(Icons.check_rounded),
+            icon: const Icon(Icons.check_rounded, color: Color(0xFF1A1A2E), size: 28),
             onPressed: _submit,
           ),
+          const SizedBox(width: 8),
         ],
       ),
       body: SingleChildScrollView(
@@ -192,113 +217,69 @@ class _AddAccountPageState extends State<AddAccountPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Account Type',
-                style: theme.textTheme.titleMedium
-                    ?.copyWith(fontWeight: FontWeight.w600)),
+            Text('Account Type', style: theme.textTheme.titleMedium?.copyWith(color: const Color(0xFF1A1A2E), fontWeight: FontWeight.w600)),
             const SizedBox(height: 12),
             _buildSegmentedControl(),
-            const SizedBox(height: 24),
-            Text('Details',
-                style: theme.textTheme.titleMedium
-                    ?.copyWith(fontWeight: FontWeight.w600)),
-            const SizedBox(height: 12),
-            _buildGlassContainer(
-              child: TextField(
-                controller: _nameController,
-                style: const TextStyle(color: Colors.white),
-                textCapitalization: TextCapitalization.words,
-                decoration: InputDecoration(
-                  hintText: 'Account Name (e.g. BOC)',
-                  hintStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
-                  prefixIcon: const Icon(Icons.account_balance, color: Colors.white70),
-                  border: InputBorder.none,
-                  enabledBorder: InputBorder.none,
-                  focusedBorder: InputBorder.none,
-                  filled: false,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                ),
-              ),
+            const SizedBox(height: 32),
+            Text('Details', style: theme.textTheme.titleMedium?.copyWith(color: const Color(0xFF1A1A2E), fontWeight: FontWeight.w600)),
+            const SizedBox(height: 16),
+            _buildInputField(
+              controller: _nameController,
+              label: 'Account Name',
+              hint: 'e.g. Bank of Ceylon',
+              icon: Icons.account_balance_rounded,
+              textCapitalization: TextCapitalization.words,
             ),
-            const SizedBox(height: 12),
-            _buildGlassContainer(
-              child: TextField(
-                controller: _balanceController,
-                style: const TextStyle(color: Colors.white),
+            _buildInputField(
+              controller: _balanceController,
+              label: 'Initial Balance',
+              hint: '0.00',
+              icon: Icons.attach_money_rounded,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            ),
+            if (_selectedType == AccountType.liability)
+              _buildInputField(
+                controller: _limitController,
+                label: 'Credit Limit (Optional)',
+                hint: '0.00',
+                icon: Icons.credit_score_rounded,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(
-                  hintText: 'Initial Balance',
-                  hintStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
-                  prefixIcon: const Icon(Icons.attach_money, color: Colors.white70),
-                  border: InputBorder.none,
-                  enabledBorder: InputBorder.none,
-                  focusedBorder: InputBorder.none,
-                  filled: false,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                ),
               ),
-            ),
-            if (_selectedType == AccountType.liability) ...[
-              const SizedBox(height: 12),
-              _buildGlassContainer(
-                child: TextField(
-                  controller: _limitController,
-                  style: const TextStyle(color: Colors.white),
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  decoration: InputDecoration(
-                    hintText: 'Credit Limit (Optional)',
-                    hintStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
-                    prefixIcon: const Icon(Icons.credit_score, color: Colors.white70),
-                    border: InputBorder.none,
-                    enabledBorder: InputBorder.none,
-                    focusedBorder: InputBorder.none,
-                    filled: false,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                  ),
-                ),
-              ),
-            ],
-            const SizedBox(height: 24),
-            Text('Card Color',
-                style: theme.textTheme.titleMedium
-                    ?.copyWith(fontWeight: FontWeight.w600)),
-            const SizedBox(height: 12),
-            _buildGlassContainer(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Wrap(
-                  spacing: 12,
-                  runSpacing: 12,
-                  children: List.generate(_availableColors.length, (index) {
-                    final color = _availableColors[index];
-                    final isSelected = _selectedColorIndex == index;
-                    return GestureDetector(
-                      onTap: () => setState(() => _selectedColorIndex = index),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        width: 50,
-                        height: 50,
-                        decoration: BoxDecoration(
-                          color: color,
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: isSelected ? Colors.white : Colors.transparent,
-                            width: 3,
-                          ),
-                          boxShadow: [
-                            if (isSelected)
-                              BoxShadow(
-                                color: color.withOpacity(0.5),
-                                blurRadius: 8,
-                                spreadRadius: 2,
-                              )
-                          ],
-                        ),
-                        child: isSelected ? const Icon(Icons.check, color: Colors.white, size: 24) : null,
+            const SizedBox(height: 16),
+            Text('Card Color', style: theme.textTheme.titleMedium?.copyWith(color: const Color(0xFF1A1A2E), fontWeight: FontWeight.w600)),
+            const SizedBox(height: 16),
+            Wrap(
+              spacing: 16,
+              runSpacing: 16,
+              children: List.generate(_availableColors.length, (index) {
+                final color = _availableColors[index];
+                final isSelected = _selectedColorIndex == index;
+                return GestureDetector(
+                  onTap: () => setState(() => _selectedColorIndex = index),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: color,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Colors.transparent,
+                        width: 3,
                       ),
-                    );
-                  }),
-                ),
-              ),
+                      boxShadow: [
+                        if (isSelected)
+                          BoxShadow(
+                            color: color.withOpacity(0.4),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          )
+                      ],
+                    ),
+                    child: isSelected ? const Icon(Icons.check, color: Colors.white, size: 24) : null,
+                  ),
+                );
+              }),
             ),
             const SizedBox(height: 48),
           ],

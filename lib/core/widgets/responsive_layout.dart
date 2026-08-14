@@ -83,41 +83,16 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
     ),
   ];
 
-  Widget _buildNavItem(int index, IconData icon, IconData activeIcon, String label) {
+  Widget _buildNavItem(int index, IconData icon, IconData activeIcon) {
     final isSelected = widget.currentIndex == index;
-    final activeColor = const Color(0xFF6D28D9); // Deep Purple
-    final inactiveColor = Colors.grey.shade500;
-    final color = isSelected ? activeColor : inactiveColor;
+    final color = isSelected ? Colors.white : Colors.white.withOpacity(0.5);
     
     return InkWell(
       onTap: () => widget.onNavigation?.call(index),
       borderRadius: BorderRadius.circular(20),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 250),
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: isSelected ? activeColor.withOpacity(0.15) : Colors.transparent,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(isSelected ? activeIcon : icon, color: color, size: 24),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              style: TextStyle(
-                color: color,
-                fontSize: 10,
-                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Icon(isSelected ? activeIcon : icon, color: color, size: 26),
       ),
     );
   }
@@ -125,7 +100,8 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      extendBody: true, // Fixes black hole behind BottomAppBar notch
+      backgroundColor: const Color(0xFFF2F8F7), // Match the dashboard light background
       body: ResponsiveLayout(
         // ── Mobile Layout ─────────────────────────────────────────────
         mobile: widget.body,
@@ -150,53 +126,65 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
 
       // Only show bottom navigation on mobile
       bottomNavigationBar: MediaQuery.of(context).size.width < kMobileMaxWidth
-          ? BottomAppBar(
-              shape: const CircularNotchedRectangle(),
-              notchMargin: 8.0,
-              padding: EdgeInsets.zero,
-              child: SizedBox(
-                height: 72,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    _buildNavItem(0, Icons.home_outlined, Icons.home_rounded, 'Home'),
-                    _buildNavItem(1, Icons.category_outlined, Icons.category_rounded, 'Categories'),
-                    const SizedBox(width: 48), // Space for FAB
-                    _buildNavItem(2, Icons.account_balance_wallet_outlined, Icons.account_balance_wallet_rounded, 'Accounts'),
-                    _buildNavItem(3, Icons.person_outline_rounded, Icons.person_rounded, 'Profile'),
+          ? Container(
+              margin: EdgeInsets.zero,
+              padding: EdgeInsets.only(bottom: MediaQuery.of(context).padding.bottom),
+              height: 72 + MediaQuery.of(context).padding.bottom,
+              decoration: BoxDecoration(
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(36)),
+                  gradient: const LinearGradient(
+                    colors: [
+                      Color(0xFF5AD8D8),
+                      Color(0xFF40C4B5),
+                    ],
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF40C4B5).withOpacity(0.4),
+                      blurRadius: 15,
+                      offset: const Offset(0, 8),
+                    ),
                   ],
                 ),
-              ),
-            )
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _buildNavItem(0, Icons.home_outlined, Icons.home_rounded),
+                    _buildNavItem(1, Icons.category_outlined, Icons.category_rounded),
+                    // Central FAB inside the bar
+                    GestureDetector(
+                      onTap: () => context.push('/add-transaction'),
+                      child: Container(
+                        width: 56,
+                        height: 56,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: const Color(0xFF6DE0E0),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 8,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(Icons.add_rounded, color: Colors.white, size: 28),
+                      ),
+                    ),
+                    _buildNavItem(2, Icons.account_balance_wallet_outlined, Icons.account_balance_wallet_rounded),
+                    _buildNavItem(3, Icons.person_outline_rounded, Icons.person_rounded),
+                  ],
+                ),
+              )
           : null,
 
       floatingActionButton: MediaQuery.of(context).size.width < kMobileMaxWidth
-          ? Container(
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF8B5CF6), Color(0xFF6D28D9)], // Deep Purple gradient
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF8B5CF6).withOpacity(0.4),
-                    blurRadius: 12,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
-              ),
-              child: FloatingActionButton(
-                onPressed: () => context.push('/add-transaction'),
-                backgroundColor: Colors.transparent,
-                elevation: 0,
-                child: const Icon(Icons.add_rounded, color: Colors.white, size: 28),
-              ),
-            )
+          ? null // Removed since it's embedded in the new pill bar
           : widget.floatingActionButton,
       floatingActionButtonLocation: MediaQuery.of(context).size.width < kMobileMaxWidth
-          ? FloatingActionButtonLocation.centerDocked
+          ? null
           : widget.floatingActionButtonLocation,
     );
   }
@@ -242,13 +230,13 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     gradient: const LinearGradient(
-                      colors: [Color(0xFF8B5CF6), Color(0xFF6D28D9)], // Deep Purple gradient
+                      colors: [Color(0xFF70D2C6), Color(0xFF50C8C8)], // Teal gradient
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFF8B5CF6).withOpacity(0.4),
+                        color: const Color(0xFF50C8C8).withOpacity(0.4),
                         blurRadius: 12,
                         offset: const Offset(0, 6),
                       ),
@@ -274,7 +262,7 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
 
   Widget _buildDesktopNavItem(int index, IconData icon, IconData activeIcon, String label) {
     final isSelected = widget.currentIndex == index;
-    final activeColor = const Color(0xFF6D28D9); // Deep Purple
+    final activeColor = const Color(0xFF50C8C8); // Teal
     final inactiveColor = Colors.grey.shade500;
     final color = isSelected ? activeColor : inactiveColor;
     

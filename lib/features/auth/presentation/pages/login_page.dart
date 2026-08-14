@@ -72,84 +72,69 @@ class _LoginPageState extends State<LoginPage> {
     return TextField(
       controller: controller,
       obscureText: isPassword,
-      style: const TextStyle(color: Colors.white),
+      style: const TextStyle(color: Colors.black87),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: const TextStyle(color: Colors.white70),
-        prefixIcon: Icon(icon, color: Colors.white70),
+        labelStyle: const TextStyle(color: Colors.black54),
+        prefixIcon: Icon(icon, color: Colors.black54),
         filled: true,
-        fillColor: Colors.white.withOpacity(0.1),
+        fillColor: Colors.transparent,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
+          borderSide: const BorderSide(color: Color(0xFF50C8C8)),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
+          borderSide: const BorderSide(color: Color(0xFF50C8C8)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: Colors.white, width: 1.5),
+          borderSide: const BorderSide(color: Color(0xFF50C8C8), width: 1.5),
         ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       ),
     );
   }
 
-  Widget _buildHeader(ThemeData theme) {
+  Widget _buildHeader(ThemeData theme, BuildContext context) {
+    final isSmallScreen = MediaQuery.of(context).size.height < 700;
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: const [
-          QuotesCarousel(),
-        ],
-      ),
+      padding: EdgeInsets.symmetric(horizontal: 32, vertical: isSmallScreen ? 12 : 24),
+      child: const QuotesCarousel(),
     );
   }
 
   Widget _buildForm(ThemeData theme, AuthState state, bool isWide) {
     return Container(
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.15),
-        borderRadius: isWide ? BorderRadius.circular(40) : const BorderRadius.vertical(top: Radius.circular(40)),
-        border: Border.all(color: Colors.white.withOpacity(0.2), width: 1.5),
-        boxShadow: const [
-          BoxShadow(
-            color: Colors.black12,
-            blurRadius: 20,
-            offset: Offset(0, -5),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: isWide ? BorderRadius.circular(40) : const BorderRadius.vertical(top: Radius.circular(40)),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-          child: SafeArea(
-            top: !isWide,
-            bottom: isWide,
-            child: Center(
-              child: SingleChildScrollView(
-                physics: const NeverScrollableScrollPhysics(),
-                padding: EdgeInsets.symmetric(
-                  horizontal: isWide ? 48 : 32, 
-                  vertical: 32,
-                ),
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(maxWidth: isWide ? 400 : double.infinity),
-                  child: _isForgotPassword ? _buildForgotPasswordForm(theme, state) : _buildLoginForm(theme, state),
+      color: Colors.transparent,
+      child: SafeArea(
+        top: !isWide,
+        bottom: isWide,
+        child: Builder(
+          builder: (context) {
+            final isSmallScreen = MediaQuery.of(context).size.height < 700;
+            return Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: isWide ? 48 : 24, 
+                vertical: isSmallScreen ? 12 : 32,
+              ),
+              child: Center(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(maxWidth: isWide ? 400 : 340),
+                    child: _isForgotPassword ? _buildForgotPasswordForm(theme, state, isSmallScreen) : _buildLoginForm(theme, state, context, isSmallScreen),
+                  ),
                 ),
               ),
-            ),
-          ),
+            );
+          }
         ),
       ),
     );
   }
 
-  Widget _buildForgotPasswordForm(ThemeData theme, AuthState state) {
+  Widget _buildForgotPasswordForm(ThemeData theme, AuthState state, bool isSmallScreen) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -166,46 +151,46 @@ class _LoginPageState extends State<LoginPage> {
           'Reset Password',
           style: theme.textTheme.headlineSmall?.copyWith(
             fontWeight: FontWeight.bold,
-            color: Colors.white,
+            color: Colors.black87,
           ),
           textAlign: TextAlign.center,
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: isSmallScreen ? 8 : 12),
         Text(
           'Enter your email address and we will send you a password reset link.',
           style: theme.textTheme.bodyMedium?.copyWith(
-            color: Colors.white70,
+            color: Colors.black54,
           ),
           textAlign: TextAlign.center,
         ),
-        const SizedBox(height: 32),
+        SizedBox(height: isSmallScreen ? 20 : 32),
         _buildTextField(
           controller: _emailController,
           label: 'Email Address',
           icon: Icons.mail_outline,
         ),
-        const SizedBox(height: 32),
+        SizedBox(height: isSmallScreen ? 20 : 32),
         FilledButton(
           onPressed: state is AuthLoading ? null : _resetPassword,
           style: FilledButton.styleFrom(
-            backgroundColor: const Color(0xFF7C3AED),
+            backgroundColor: const Color(0xFF50C8C8),
             padding: const EdgeInsets.symmetric(vertical: 16),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           ),
           child: state is AuthLoading
               ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-              : const Text('Send Reset Link', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              : const Text('Send Reset Link', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
         ),
-        const SizedBox(height: 32),
+        SizedBox(height: isSmallScreen ? 16 : 32),
         const Center(
           child: Text.rich(
             TextSpan(
-              style: TextStyle(color: Colors.white60, fontSize: 12),
+              style: TextStyle(color: Colors.black54, fontSize: 12),
               children: [
                 TextSpan(text: '© 2026 Barefoot.   |   Proudly made by '),
                 TextSpan(
                   text: 'OrbitView Innovations',
-                  style: TextStyle(color: Colors.white70, fontWeight: FontWeight.bold),
+                  style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold),
                 ),
               ],
             ),
@@ -215,7 +200,7 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  Widget _buildLoginForm(ThemeData theme, AuthState state) {
+  Widget _buildLoginForm(ThemeData theme, AuthState state, BuildContext context, bool isSmallScreen) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -224,60 +209,87 @@ class _LoginPageState extends State<LoginPage> {
           label: 'Enter your username',
           icon: Icons.person_outline,
         ),
-        const SizedBox(height: 16),
+        SizedBox(height: isSmallScreen ? 12 : 16),
         _buildTextField(
           controller: _passwordController,
           label: 'Enter your Password',
           icon: Icons.lock_outline,
           isPassword: true,
         ),
-        const SizedBox(height: 16),
+        SizedBox(height: isSmallScreen ? 8 : 16),
         Align(
           alignment: Alignment.centerRight,
           child: TextButton(
             onPressed: () => setState(() => _isForgotPassword = true),
-            child: const Text('Forgot password?', style: TextStyle(color: Color(0xFF4C1D95), fontWeight: FontWeight.bold)),
+            child: const Text('Forgot password?', style: TextStyle(color: Color(0xFF50C8C8), fontWeight: FontWeight.bold)),
           ),
         ),
-        const SizedBox(height: 32),
+        SizedBox(height: isSmallScreen ? 16 : 32),
         FilledButton(
           onPressed: state is AuthLoading ? null : _login,
           style: FilledButton.styleFrom(
-            backgroundColor: const Color(0xFF7C3AED),
+            backgroundColor: const Color(0xFF50C8C8),
             padding: const EdgeInsets.symmetric(vertical: 16),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           ),
           child: state is AuthLoading
               ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-              : const Text('Sign in', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              : const Text('LOGIN', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 1.5)),
         ),
-        const SizedBox(height: 24),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Text('Don\'t have an account?', style: TextStyle(color: Colors.white70)),
-                          TextButton(
-                            onPressed: () => context.push('/register'),
-                            child: const Text('Sign up', style: TextStyle(color: Color(0xFF4C1D95), fontWeight: FontWeight.bold)),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 32),
-                      const Center(
-                        child: Text.rich(
-                          TextSpan(
-                            style: TextStyle(color: Colors.white60, fontSize: 12),
-                            children: [
-                              TextSpan(text: '© 2026 Barefoot.   |   Proudly made by '),
-                              TextSpan(
-                                text: 'OrbitView Innovations',
-                                style: TextStyle(color: Colors.white70, fontWeight: FontWeight.bold),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
+        SizedBox(height: isSmallScreen ? 16 : 24),
+        Row(
+          children: [
+            Expanded(child: Divider(color: Colors.black26)),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Text('OR', style: TextStyle(color: Colors.black54, fontWeight: FontWeight.bold)),
+            ),
+            Expanded(child: Divider(color: Colors.black26)),
+          ],
+        ),
+        SizedBox(height: isSmallScreen ? 12 : 16),
+        OutlinedButton(
+          onPressed: state is AuthLoading
+              ? null
+              : () => context.read<AuthCubit>().loginWithGoogle(),
+          style: OutlinedButton.styleFrom(
+            side: const BorderSide(color: Color(0xFF50C8C8)),
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            backgroundColor: Colors.white,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Image.network(
+                'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/120px-Google_%22G%22_logo.svg.png',
+                height: 20,
+                width: 20,
+                errorBuilder: (_, __, ___) => const Icon(Icons.g_mobiledata, size: 24),
+              ),
+              const SizedBox(width: 12),
+              const Text(
+                'Continue with Google',
+                style: TextStyle(
+                  color: Colors.black87,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Text('Don\'t have an account?', style: TextStyle(color: Colors.black54, fontSize: 13)),
+            TextButton(
+              onPressed: () => context.go('/register'),
+              child: const Text('Sign up', style: TextStyle(color: Color(0xFF50C8C8), fontWeight: FontWeight.bold, fontSize: 13)),
+            ),
+          ],
+        ),
+      ],
     );
   }
 
@@ -286,7 +298,7 @@ class _LoginPageState extends State<LoginPage> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: const Color(0xFFEEF5F5),
       body: BlocConsumer<AuthCubit, AuthState>(
         listener: (context, state) {
           if (state is AuthError) {
@@ -310,7 +322,7 @@ class _LoginPageState extends State<LoginPage> {
                         alignment: Alignment.center,
                         child: SizedBox(
                           width: 500,
-                          child: _buildHeader(theme),
+                          child: _buildHeader(theme, context),
                         ),
                       ),
                     ),
@@ -329,11 +341,15 @@ class _LoginPageState extends State<LoginPage> {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  SafeArea(
-                    bottom: false,
-                    child: _buildHeader(theme),
+                  Expanded(
+                    flex: 4,
+                    child: SafeArea(
+                      bottom: false,
+                      child: _buildHeader(theme, context),
+                    ),
                   ),
                   Expanded(
+                    flex: 6,
                     child: _buildForm(theme, state, isWide),
                   ),
                 ],

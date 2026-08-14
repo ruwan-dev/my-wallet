@@ -46,18 +46,27 @@ class TransactionCard extends StatelessWidget {
       borderRadius: BorderRadius.circular(20),
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(16),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-            child: Container(
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surface.withOpacity(0.3),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.white.withOpacity(0.2), width: 1.5),
+        child: Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFFF2F8F7), // Match background for neumorphism
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.08),
+                blurRadius: 10,
+                spreadRadius: 1,
+                offset: const Offset(4, 4),
               ),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              const BoxShadow(
+                color: Colors.white,
+                blurRadius: 10,
+                spreadRadius: 1,
+                offset: Offset(-4, -4),
+              ),
+            ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
               child: Row(
                   children: [
                     // ── Leading: circular icon bubble ──────────────────────────────
@@ -151,13 +160,11 @@ class TransactionCard extends StatelessWidget {
                       ),
                     ),
                   ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
+                ), // End Row
+              ), // End Padding
+          ), // End inner Container
+        ), // End outer Container
+      ); // End InkWell
     if (onDelete == null) {
       return cardContent;
     }

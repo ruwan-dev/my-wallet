@@ -3,9 +3,9 @@
 Whenever you are asked to introduce a new page, component, or UI element in this app, you MUST strictly adhere to the following design system rules. **Failure to follow these rules breaks the premium aesthetic of the application.**
 
 ### 1. The Core Aesthetic (Glassmorphism & Gradients)
-- **Colors:** The primary theme colors are **Lavender and Blue**. The background is a vibrant animated gradient of these colors.
-- **Do not use solid flat colors** for cards, panels, list items, or dialogs. 
-- **Glassmorphism:** Combine `Container` with highly translucent colors (e.g., `Colors.white.withOpacity(0.15)` or `0xFF7C3AED.withOpacity(0.15)`).
+- **Colors:** The primary theme colors are **Teal and Cyan** (`#60C5B8`). The main app background is a vibrant animated gradient. The **Auth screens (Login/Register) use a flat light cyan background (`Color(0xFFEEF5F5)`) — this is intentional and should NOT be changed back to a dark gradient.**
+- **Do not use solid flat colors** for cards, panels, list items, or dialogs in the main app. 
+- **Glassmorphism:** Combine `Container` with highly translucent colors (e.g., `Colors.white.withOpacity(0.15)` or `Color(0xFF60C5B8).withOpacity(0.15)`).
 - **Blur Effects:** Modals and back panels must use `BackdropFilter` with `ImageFilter.blur(sigmaX: 15, sigmaY: 15)`.
 - **Borders:** Containers must have subtle, semi-transparent borders (e.g., `Border.all(color: Colors.white.withOpacity(0.2), width: 1.5)`).
 
