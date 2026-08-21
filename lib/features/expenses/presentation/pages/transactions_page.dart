@@ -29,12 +29,12 @@ class _TransactionsPageState extends State<TransactionsPage> {
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
-        title: Text('All Transactions', style: theme.textTheme.titleMedium),
+        title: Text('All Transactions', style: theme.textTheme.titleMedium?.copyWith(color: Colors.white)),
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20, color: Colors.white),
           onPressed: () => context.pop(),
         ),
         actions: [
@@ -48,7 +48,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
               return IconButton(
                 icon: Icon(
                   _selectedCategoryFilter != null ? Icons.filter_alt : Icons.filter_alt_outlined, 
-                  color: _selectedCategoryFilter != null ? theme.colorScheme.primary : null,
+                  color: _selectedCategoryFilter != null ? Colors.white : Colors.white70,
                 ),
                 onPressed: () {
                   showModalBottomSheet(
@@ -61,7 +61,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                           margin: const EdgeInsets.all(16),
                           constraints: const BoxConstraints(maxWidth: 500, maxHeight: 500),
                           decoration: BoxDecoration(
-                            color: theme.colorScheme.surface.withValues(alpha: 0.15),
+                            color: const Color(0xFF3AAFA9).withOpacity(0.25),
                             borderRadius: BorderRadius.circular(24),
                             border: Border.all(
                               color: Colors.white.withValues(alpha: 0.2),
@@ -80,31 +80,31 @@ class _TransactionsPageState extends State<TransactionsPage> {
                                     child: Text('Filter by Category', 
                                       style: theme.textTheme.titleMedium?.copyWith(
                                         fontWeight: FontWeight.w700,
-                                        color: theme.colorScheme.onSurface,
+                                        color: Colors.white,
                                       ),
                                     ),
                                   ),
-                                  Divider(height: 1, color: theme.colorScheme.onSurface.withValues(alpha: 0.1)),
+                                  Divider(height: 1, color: Colors.white.withValues(alpha: 0.2)),
                                   ListTile(
-                                    title: Text('All Categories', style: TextStyle(color: theme.colorScheme.onSurface, fontWeight: FontWeight.w600)),
-                                    trailing: _selectedCategoryFilter == null ? Icon(Icons.check, color: theme.colorScheme.onSurface) : null,
+                                    title: Text('All Categories', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                                    trailing: _selectedCategoryFilter == null ? const Icon(Icons.check, color: Colors.white) : null,
                                     onTap: () {
                                       setState(() => _selectedCategoryFilter = null);
                                       Navigator.pop(ctx);
                                     },
                                   ),
-                                  Divider(height: 1, color: theme.colorScheme.onSurface.withValues(alpha: 0.1)),
+                                  Divider(height: 1, color: Colors.white.withValues(alpha: 0.2)),
                                   Flexible(
                                     child: ListView.separated(
                                       shrinkWrap: true,
                                       itemCount: uniqueCategories.length,
-                                      separatorBuilder: (_, __) => Divider(height: 1, color: theme.colorScheme.onSurface.withValues(alpha: 0.1)),
+                                      separatorBuilder: (_, __) => Divider(height: 1, color: Colors.white.withValues(alpha: 0.2)),
                                       itemBuilder: (ctx, i) {
                                         final cat = uniqueCategories[i];
                                         final isSelected = _selectedCategoryFilter == cat;
                                         return ListTile(
-                                          title: Text(cat, style: TextStyle(color: theme.colorScheme.onSurface, fontWeight: FontWeight.w600)),
-                                          trailing: isSelected ? Icon(Icons.check, color: theme.colorScheme.onSurface) : null,
+                                          title: Text(cat, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                                          trailing: isSelected ? const Icon(Icons.check, color: Colors.white) : null,
                                           onTap: () {
                                             setState(() => _selectedCategoryFilter = cat);
                                             Navigator.pop(ctx);
@@ -127,72 +127,86 @@ class _TransactionsPageState extends State<TransactionsPage> {
           ),
         ],
       ),
-      body: BlocBuilder<TransactionCubit, TransactionState>(
-        builder: (context, txState) {
-          if (txState is TransactionLoading) {
-            return const ShimmerTile();
-          }
-          if (txState is TransactionLoaded) {
-            var transactions = txState.transactions;
-            if (_selectedCategoryFilter != null) {
-              transactions = transactions.where((t) => t.categoryName == _selectedCategoryFilter).toList();
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0xFF3AAFA9), // deep teal at top
+              Color(0xFF60C5B8), // mid teal
+              Color(0xFFF2F8F7), // soft teal-white at bottom
+            ],
+            stops: [0.0, 0.35, 1.0],
+          ),
+        ),
+        child: BlocBuilder<TransactionCubit, TransactionState>(
+          builder: (context, txState) {
+            if (txState is TransactionLoading) {
+              return const ShimmerTile();
             }
+            if (txState is TransactionLoaded) {
+              var transactions = txState.transactions;
+              if (_selectedCategoryFilter != null) {
+                transactions = transactions.where((t) => t.categoryName == _selectedCategoryFilter).toList();
+              }
 
-            if (transactions.isEmpty) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      'No transactions found.',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
+              if (transactions.isEmpty) {
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        'No transactions found.',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: Colors.white70,
+                        ),
                       ),
-                    ),
-                    if (_selectedCategoryFilter != null)
-                      TextButton(
-                        onPressed: () => setState(() => _selectedCategoryFilter = null),
-                        child: const Text('Clear Filter'),
-                      ),
-                  ],
-                ),
-              );
-            }
-
-            return BlocBuilder<AccountCubit, AccountState>(
-              builder: (context, accState) {
-                final accounts = accState is AccountLoaded ? accState.accounts : <AccountEntity>[];
-                
-                return ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                  itemCount: transactions.length,
-                  itemBuilder: (context, index) {
-                    final tx = transactions[index];
-                    final accountName = tx.accountId == 'planned'
-                        ? 'Planned'
-                        : accounts
-                            .where((a) => a.id == tx.accountId)
-                            .firstOrNull
-                            ?.name ??
-                        'Unknown Account';
-
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 8.0),
-                      child: TransactionCard(
-                        transaction: tx,
-                        accountName: accountName,
-                        onDelete: () {
-                          context.read<TransactionCubit>().deleteTransaction(tx);
-                        },
-                      ),
-                    );
-                  },
+                      if (_selectedCategoryFilter != null)
+                        TextButton(
+                          onPressed: () => setState(() => _selectedCategoryFilter = null),
+                          child: const Text('Clear Filter', style: TextStyle(color: Colors.white)),
+                        ),
+                    ],
+                  ),
                 );
               }
-            );
-          }
-          return const SizedBox.shrink();
-        },
+
+              return BlocBuilder<AccountCubit, AccountState>(
+                builder: (context, accState) {
+                  final accounts = accState is AccountLoaded ? accState.accounts : <AccountEntity>[];
+                  
+                  return ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                    itemCount: transactions.length,
+                    itemBuilder: (context, index) {
+                      final tx = transactions[index];
+                      final accountName = tx.accountId == 'planned'
+                          ? 'Planned'
+                          : accounts
+                              .where((a) => a.id == tx.accountId)
+                              .firstOrNull
+                              ?.name ??
+                          'Unknown Account';
+
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 8.0),
+                        child: TransactionCard(
+                          transaction: tx,
+                          accountName: accountName,
+                          onDelete: () {
+                            context.read<TransactionCubit>().deleteTransaction(tx);
+                          },
+                        ),
+                      );
+                    },
+                  );
+                }
+              );
+            }
+            return const SizedBox.shrink();
+          },
+        ),
       ),
     );
   }

@@ -10,6 +10,8 @@ class SettingsState extends Equatable {
   final String smileGoalName;
   final FireRedirectionTarget fireRedirection;
   final double nodeDivisor;
+  /// Maps BucketType.name → accountId for synced buckets.
+  final Map<String, String> bucketAccountLinks;
 
   const SettingsState({
     required this.currencySymbol,
@@ -19,6 +21,7 @@ class SettingsState extends Equatable {
     required this.smileGoalName,
     required this.fireRedirection,
     required this.nodeDivisor,
+    this.bucketAccountLinks = const {},
   });
 
   factory SettingsState.initial() {
@@ -30,6 +33,7 @@ class SettingsState extends Equatable {
       smileGoalName: 'Smile Goal',
       fireRedirection: FireRedirectionTarget.fire,
       nodeDivisor: 5000.0,
+      bucketAccountLinks: const {},
     );
   }
 
@@ -41,6 +45,7 @@ class SettingsState extends Equatable {
     String? smileGoalName,
     FireRedirectionTarget? fireRedirection,
     double? nodeDivisor,
+    Map<String, String>? bucketAccountLinks,
   }) {
     return SettingsState(
       currencySymbol: currencySymbol ?? this.currencySymbol,
@@ -50,6 +55,7 @@ class SettingsState extends Equatable {
       smileGoalName: smileGoalName ?? this.smileGoalName,
       fireRedirection: fireRedirection ?? this.fireRedirection,
       nodeDivisor: nodeDivisor ?? this.nodeDivisor,
+      bucketAccountLinks: bucketAccountLinks ?? this.bucketAccountLinks,
     );
   }
 
@@ -62,5 +68,6 @@ class SettingsState extends Equatable {
         smileGoalName,
         fireRedirection,
         nodeDivisor,
+        bucketAccountLinks,
       ];
 }

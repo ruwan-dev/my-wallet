@@ -1,16 +1,16 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../core/theme/app_theme.dart';
-import '../../../../core/utils/formatters.dart';
 import '../../../auth/presentation/bloc/auth_cubit.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
 import '../../../expenses/domain/entities/account.dart';
 import '../../../expenses/presentation/bloc/account_cubit.dart';
 import '../../../expenses/presentation/bloc/account_state.dart';
 import 'package:expense_tracker/features/expenses/presentation/widgets/shimmer_tile.dart';
+import '../../../expenses/presentation/widgets/credit_card_tile.dart';
+import '../../../../core/bloc/settings_cubit.dart';
+import '../../../../core/bloc/settings_state.dart';
 
 class AccountsPage extends StatelessWidget {
   const AccountsPage({super.key});
@@ -71,13 +71,91 @@ class AccountsPage extends StatelessWidget {
               );
             }
 
-            return ListView.separated(
-              padding: const EdgeInsets.all(24),
-              itemCount: accounts.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 16),
-              itemBuilder: (context, index) {
-                final account = accounts[index];
-                return _AccountListTile(account: account);
+            // Reverse the bucketAccountLinks map: accountId → bucketDisplayName
+            return BlocBuilder<SettingsCubit, SettingsState>(
+              builder: (context, settings) {
+                // Build a reverse lookup: accountId → bucket display name
+                final Map<String, String> accountToBucket = {};
+                settings.bucketAccountLinks.forEach((bucketKey, accountId) {
+                  // Capitalise the bucket key nicely
+                  accountToBucket[accountId] =
+                      bucketKey[0].toUpperCase() + bucketKey.substring(1);
+                });
+
+                return ListView.separated(
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
+                  itemCount: accounts.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 20),
+                  itemBuilder: (context, index) {
+                    final account = accounts[index];
+                    return Dismissible(
+                      key: ValueKey(account.id),
+                      direction: DismissDirection.endToStart,
+                      background: Container(
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.error.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(24),
+                        ),
+                        alignment: Alignment.centerRight,
+                        padding: const EdgeInsets.only(right: 28),
+                        child: Icon(Icons.delete_outline_rounded,
+                            color: theme.colorScheme.error, size: 28),
+                      ),
+                      confirmDismiss: (_) async {
+                        return await showDialog<bool>(
+                          context: context,
+                          barrierColor: Colors.black.withOpacity(0.4),
+                          builder: (ctx) => BackdropFilter(
+                            filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+                            child: AlertDialog(
+                              backgroundColor:
+                                  const Color(0xFF1E3A3A).withOpacity(0.85),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20),
+                                side: BorderSide(
+                                    color: Colors.white.withOpacity(0.15),
+                                    width: 1.5),
+                              ),
+                              title: const Text('Delete Account',
+                                  style: TextStyle(color: Colors.white)),
+                              content: const Text(
+                                  'Are you sure you want to delete this account?',
+                                  style: TextStyle(color: Colors.white70)),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(ctx, false),
+                                  child: const Text('Cancel',
+                                      style: TextStyle(color: Colors.white60)),
+                                ),
+                                TextButton(
+                                  onPressed: () => Navigator.pop(ctx, true),
+                                  child: Text('Delete',
+                                      style: TextStyle(
+                                          color: theme.colorScheme.error,
+                                          fontWeight: FontWeight.bold)),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ) ??
+                            false;
+                      },
+                      onDismissed: (_) {
+                        context
+                            .read<AccountCubit>()
+                            .deleteAccount(account.id);
+                      },
+                      child: CreditCardTile(
+                        account: account,
+                        linkedBucketName: accountToBucket[account.id],
+                        onTap: () => context
+                            .push('/account-transactions', extra: account),
+                        onEdit: () => context
+                            .push('/accounts/add-account', extra: account),
+                      ),
+                    );
+                  },
+                );
               },
             );
           }
@@ -92,151 +170,5 @@ class AccountsPage extends StatelessWidget {
   }
 }
 
-class _AccountListTile extends StatelessWidget {
-  final AccountEntity account;
 
-  const _AccountListTile({required this.account});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final icon = account.type == AccountType.asset
-        ? Icons.account_balance_wallet_rounded
-        : Icons.credit_card_rounded;
-
-    return Dismissible(
-      key: ValueKey(account.id),
-      direction: DismissDirection.endToStart,
-      background: Container(
-        decoration: BoxDecoration(
-          color: theme.colorScheme.error.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(20),
-        ),
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 24),
-        child: Icon(Icons.delete_outline_rounded, color: theme.colorScheme.error),
-      ),
-      confirmDismiss: (direction) async {
-        return await showDialog(
-          context: context,
-          builder: (ctx) => AlertDialog(
-            title: const Text('Delete Account'),
-            content: const Text('Are you sure you want to delete this account?'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(ctx, false),
-                child: const Text('Cancel'),
-              ),
-              TextButton(
-                onPressed: () => Navigator.pop(ctx, true),
-                child: Text('Delete', style: TextStyle(color: theme.colorScheme.error)),
-              ),
-            ],
-          ),
-        );
-      },
-      onDismissed: (direction) {
-        context.read<AccountCubit>().deleteAccount(account.id);
-      },
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-          child: Container(
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surface.withOpacity(0.3),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.white.withOpacity(0.2)),
-              boxShadow: [
-                BoxShadow(
-                  color: theme.colorScheme.shadow.withOpacity(0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            padding: const EdgeInsets.all(20),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: account.type == AccountType.asset
-                    ? AppTheme.incomeColor.withValues(alpha: 0.1)
-                    : theme.colorScheme.error.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                icon,
-                color: Colors.black,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    account.name,
-                    style: GoogleFonts.poppins(
-                      textStyle: theme.textTheme.titleMedium,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  Text(
-                    account.type == AccountType.asset ? 'Asset' : 'Liability',
-                    style: GoogleFonts.poppins(
-                      textStyle: theme.textTheme.bodySmall,
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                if (account.type == AccountType.liability) ...[
-                  Text(
-                    AppFormatters.formatCurrency(context, account.creditLimit - account.balance),
-                    style: GoogleFonts.poppins(
-                      textStyle: theme.textTheme.titleMedium,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    AppFormatters.formatCurrency(context, account.balance),
-                    style: GoogleFonts.poppins(
-                      textStyle: theme.textTheme.bodySmall,
-                      color: theme.colorScheme.error,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ] else ...[
-                  Text(
-                    AppFormatters.formatCurrency(context, account.balance),
-                    style: GoogleFonts.poppins(
-                      textStyle: theme.textTheme.titleMedium,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ],
-            ),
-            const SizedBox(width: 8),
-            IconButton(
-              icon: Icon(Icons.edit_rounded, color: theme.colorScheme.onSurfaceVariant, size: 20),
-              onPressed: () {
-                context.push('/accounts/add-account', extra: account);
-              },
-            ),
-          ],
-        ),
-        ),
-        ),
-      ),
-    );
-  }
-}
 

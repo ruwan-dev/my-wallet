@@ -8,9 +8,9 @@ class ShimmerTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    // Derive shimmer colors for the cool purple aesthetic.
-    final baseColor      = const Color(0xFF8B5CF6).withOpacity(0.2);
-    final highlightColor = const Color(0xFFC4B5FD).withOpacity(0.5);
+    // Derive shimmer colors for the cool cyan aesthetic.
+    final baseColor      = const Color(0xFF60C5B8).withOpacity(0.2);
+    final highlightColor = const Color(0xFF60C5B8).withOpacity(0.5);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),

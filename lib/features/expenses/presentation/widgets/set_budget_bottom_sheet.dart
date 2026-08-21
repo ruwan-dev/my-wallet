@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter/services.dart';
 
 import '../../domain/entities/category.dart';
 import '../../domain/entities/category_budget.dart';
@@ -22,6 +23,7 @@ class SetBudgetBottomSheet extends StatefulWidget {
 
 class _SetBudgetBottomSheetState extends State<SetBudgetBottomSheet> {
   Category? _selectedCategory;
+  final TextEditingController _amountController = TextEditingController();
 
   @override
   void initState() {
@@ -29,10 +31,24 @@ class _SetBudgetBottomSheetState extends State<SetBudgetBottomSheet> {
     _selectedCategory = widget.initialCategory;
   }
 
+  @override
+  void dispose() {
+    _amountController.dispose();
+    super.dispose();
+  }
+
   void _save() {
     if (_selectedCategory == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please select a category')),
+      );
+      return;
+    }
+
+    final amount = double.tryParse(_amountController.text) ?? 0.0;
+    if (amount <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a valid amount')),
       );
       return;
     }
@@ -44,7 +60,7 @@ class _SetBudgetBottomSheetState extends State<SetBudgetBottomSheet> {
       userId: '', // Cubit will inject correct userId via Repository
       categoryId: _selectedCategory!.id,
       categoryName: _selectedCategory!.name,
-      limitAmount: 0.0,
+      limitAmount: amount,
       monthYear: currentMonthYear,
     );
 
@@ -152,6 +168,37 @@ class _SetBudgetBottomSheetState extends State<SetBudgetBottomSheet> {
               ),
             ),
             
+          const SizedBox(height: 24),
+          
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.white.withOpacity(0.2)),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                child: TextField(
+                  controller: _amountController,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
+                  ],
+                  style: theme.textTheme.bodyLarge?.copyWith(color: Colors.white),
+                  decoration: InputDecoration(
+                    hintText: 'Budget Amount',
+                    hintStyle: theme.textTheme.bodyLarge?.copyWith(color: Colors.white54),
+                    prefixIcon: const Icon(Icons.attach_money, color: Colors.white70),
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          
           const SizedBox(height: 32),
           Container(
             width: double.infinity,

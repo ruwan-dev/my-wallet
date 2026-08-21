@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:expense_tracker/features/expenses/domain/entities/transaction.dart';
 import '../../../../features/expenses/domain/entities/category.dart';
 
 class BudgetChecklistItem extends Equatable {
@@ -85,6 +86,34 @@ class CustomBudgetEntity extends Equatable {
       isCompleted: isCompleted ?? this.isCompleted,
       bucketType: bucketType ?? this.bucketType,
     );
+  }
+
+  double calculateItemSpent(BudgetChecklistItem item, List<TransactionEntity> transactions) {
+    if (item.categoryId == null) return item.isCompleted ? item.allocatedAmount : 0.0;
+    
+    // Filter transactions to the same month as this budget
+    final monthTxs = transactions.where((tx) {
+      return tx.date.year == createdAt.year && tx.date.month == createdAt.month;
+    });
+
+    // Sum transactions that match the item's category (and aren't income)
+    final spent = monthTxs
+        .where((tx) {
+          if (tx.isIncome) return false;
+          if (tx.categoryId != item.categoryId) return false;
+          
+          // If the transaction was explicitly logged under a different bucket, don't count it!
+          if (tx.bucketType != null && tx.bucketType != this.bucketType) return false;
+          
+          return true;
+        })
+        .fold(0.0, (sum, tx) => sum + tx.amount);
+        
+    return spent > 0 ? spent : (item.isCompleted ? item.allocatedAmount : 0.0);
+  }
+
+  double calculateDynamicTotalSpent(List<TransactionEntity> transactions) {
+    return items.fold(0.0, (sum, item) => sum + calculateItemSpent(item, transactions));
   }
 
   double get totalAllocated {

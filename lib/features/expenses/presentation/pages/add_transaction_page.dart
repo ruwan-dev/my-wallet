@@ -463,21 +463,21 @@ class _AddTransactionPageState extends State<AddTransactionPage>
                   gradient: isActive
                       ? const LinearGradient(
                           colors: [
-                            Color(0xFF7C3AED), // Lavender
-                            Color(0xFF3B82F6), // Blue
+                            Color(0xFF50C8C8), // Teal
+                            Color(0xFF7CDBD4), // Light Cyan
                           ],
                         )
                       : null,
                   color: isActive
                       ? null
                       : isCompleted
-                          ? const Color(0xFF7C3AED).withValues(alpha: 0.6)
+                          ? const Color(0xFF50C8C8).withValues(alpha: 0.6)
                           : theme.colorScheme.onSurface.withValues(alpha: 0.1),
                   boxShadow: isActive
                       ? [
                           BoxShadow(
                             color:
-                                const Color(0xFF7C3AED).withValues(alpha: 0.5),
+                                const Color(0xFF50C8C8).withValues(alpha: 0.5),
                             blurRadius: 8,
                             offset: const Offset(0, 2),
                           )
@@ -552,6 +552,14 @@ class _AddTransactionPageState extends State<AddTransactionPage>
             ],
           ),
           const SizedBox(height: 32),
+          Center(
+            child: Image.asset(
+              'assets/images/tran_screen.png',
+              fit: BoxFit.contain,
+              height: 300,
+            ),
+          ),
+          const SizedBox(height: 16),
           _buildFavoriteTemplates(theme),
           const SizedBox(height: 24),
         ],
@@ -663,25 +671,48 @@ class _AddTransactionPageState extends State<AddTransactionPage>
   }) {
     return GestureDetector(
       onTap: onTap,
-      child: Padding(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        margin: const EdgeInsets.symmetric(horizontal: 8),
         padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: isSelected ? color.withValues(alpha: 0.1) : Colors.transparent,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: isSelected ? color.withValues(alpha: 0.5) : Colors.transparent,
+            width: 2,
+          ),
+        ),
         child: AnimatedOpacity(
           duration: const Duration(milliseconds: 250),
-          opacity: isSelected ? 1.0 : 0.6,
+          opacity: isSelected ? 1.0 : 0.5,
           child: AnimatedScale(
             duration: const Duration(milliseconds: 250),
             curve: Curves.easeOut,
             scale: isSelected ? 1.05 : 0.95,
-            child: AspectRatio(
-              aspectRatio: 1.0,
-              child: imageAsset != null
-                  ? Image.asset(
-                      imageAsset,
-                      fit: BoxFit.contain,
-                      errorBuilder: (context, error, stackTrace) =>
-                          FittedBox(child: Text(emoji)),
-                    )
-                  : FittedBox(child: Text(emoji)),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                AspectRatio(
+                  aspectRatio: 1.2,
+                  child: imageAsset != null
+                      ? Image.asset(
+                          imageAsset,
+                          fit: BoxFit.contain,
+                          errorBuilder: (context, error, stackTrace) =>
+                              FittedBox(child: Text(emoji)),
+                        )
+                      : FittedBox(child: Text(emoji)),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  title,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                    color: isSelected ? color : theme.colorScheme.onSurface,
+                  ),
+                ),
+              ],
             ),
           ),
         ),
@@ -985,6 +1016,17 @@ class _AddTransactionPageState extends State<AddTransactionPage>
               },
             ),
           ),
+          const SizedBox(height: 24),
+          Center(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(24),
+              child: Image.asset(
+                'assets/images/select_buckt.jpeg',
+                height: 220,
+                fit: BoxFit.contain,
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -1151,73 +1193,59 @@ class _AddTransactionPageState extends State<AddTransactionPage>
         child: AnimatedScale(
           duration: const Duration(milliseconds: 250),
           scale: isSelected ? 1.1 : 0.9,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Expanded(
-                child: Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    boxShadow: isSelected
-                        ? [
-                            BoxShadow(
-                              color: meta.color.withValues(alpha: 0.4),
-                              blurRadius: 30,
-                              spreadRadius: 8,
-                            )
-                          ]
-                        : [],
-                  ),
-                  child: meta.imageAsset != null
-                      ? Image.asset(
-                          meta.imageAsset!,
-                          fit: BoxFit.contain,
-                          errorBuilder: (context, error, stackTrace) {
-                            return AnimatedDefaultTextStyle(
-                              duration: const Duration(milliseconds: 250),
-                              style: TextStyle(
-                                fontSize: isSelected ? 80 : 64,
-                                height: 1.0,
-                              ),
-                              child: Center(child: Text(meta.emoji)),
-                            );
-                          },
-                        )
-                      : AnimatedDefaultTextStyle(
-                          duration: const Duration(milliseconds: 250),
-                          style: TextStyle(
-                            fontSize: isSelected ? 80 : 64,
-                            height: 1.0,
-                          ),
-                          child: Center(child: Text(meta.emoji)),
-                        ),
-                ),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 250),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: isSelected ? meta.color.withValues(alpha: 0.1) : theme.colorScheme.surface.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: isSelected ? meta.color : theme.colorScheme.onSurface.withValues(alpha: 0.1),
+                width: isSelected ? 2 : 1,
               ),
-              const SizedBox(height: 8),
-              Text(
-                meta.name,
-                style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w800,
+              boxShadow: isSelected
+                  ? [
+                      BoxShadow(
+                        color: meta.color.withValues(alpha: 0.2),
+                        blurRadius: 16,
+                        offset: const Offset(0, 4),
+                      )
+                    ]
+                  : [],
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  meta.icon,
+                  size: 32,
                   color: isSelected ? meta.color : theme.colorScheme.onSurface,
                 ),
-                textAlign: TextAlign.center,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 2),
-              Text(
-                customSubtitle ?? meta.subtitle,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  fontSize: 9.5,
-                  height: 1.2,
-                  color: theme.colorScheme.onSurfaceVariant,
+                const SizedBox(height: 12),
+                Text(
+                  meta.name,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: isSelected ? meta.color : theme.colorScheme.onSurface,
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                textAlign: TextAlign.center,
-                maxLines: 4,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
+                const SizedBox(height: 4),
+                Text(
+                  customSubtitle ?? meta.subtitle,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontSize: 10,
+                    height: 1.2,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -1551,8 +1579,26 @@ class _AddTransactionPageState extends State<AddTransactionPage>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Scaffold(
-      backgroundColor: Colors.transparent,
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 350),
+      curve: Curves.easeInOut,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: _currentStep == 1
+              ? [
+                  const Color(0xFFE0F7FA), // Light Cyan for Choose Bucket
+                  const Color(0xFFE0F7FA),
+                ]
+              : [
+                  const Color(0xFF26C6DA), // Cyan 400
+                  const Color(0xFF00ACC1), // Cyan 600
+                ],
+        ),
+      ),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -1668,6 +1714,7 @@ class _AddTransactionPageState extends State<AddTransactionPage>
           ),
         ),
       ),
+    ),
     );
   }
 }

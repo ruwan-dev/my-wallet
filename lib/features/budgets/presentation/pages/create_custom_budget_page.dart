@@ -324,7 +324,8 @@ class _CreateCustomBudgetPageState extends State<CreateCustomBudgetPage> {
       backgroundColor: Colors.transparent,
       appBar: AppBar(
         title: Text(
-            widget.existingBudget == null ? 'Create Budget' : 'Edit Budget'),
+            widget.existingBudget == null ? 'Create Budget' : 'Edit Budget',
+            style: const TextStyle(fontWeight: FontWeight.w700)),
         backgroundColor: Colors.transparent,
         elevation: 0,
         actions: [
@@ -333,17 +334,17 @@ class _CreateCustomBudgetPageState extends State<CreateCustomBudgetPage> {
               padding: EdgeInsets.symmetric(horizontal: 16.0),
               child: Center(
                   child: SizedBox(
-                      width: 20, height: 20, child: const ShimmerTile())),
+                      width: 20, height: 20, child: ShimmerTile())),
             )
           else
             IconButton(
-              icon: const Icon(Icons.check_rounded),
+              icon: const Icon(Icons.check_rounded, color: Color(0xFF26C6DA), size: 28),
               onPressed: _saveBudget,
             ),
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
+        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -368,10 +369,10 @@ class _CreateCustomBudgetPageState extends State<CreateCustomBudgetPage> {
                         ?.copyWith(fontWeight: FontWeight.w600)),
                 TextButton.icon(
                   onPressed: _addItem,
-                  icon: const Icon(Icons.add, size: 18, color: Colors.black),
+                  icon: const Icon(Icons.add, size: 18, color: Color(0xFF26C6DA)),
                   label: const Text('Add Item',
                       style: TextStyle(
-                          color: Colors.black, fontWeight: FontWeight.bold)),
+                          color: Color(0xFF26C6DA), fontWeight: FontWeight.bold)),
                 ),
               ],
             ),
@@ -386,20 +387,26 @@ class _CreateCustomBudgetPageState extends State<CreateCustomBudgetPage> {
                     GestureDetector(
                       onTap: () => _pickCategory(index),
                       child: Container(
-                        width: 56,
-                        height: 56,
+                        width: 48,
+                        height: 48,
                         decoration: BoxDecoration(
-                          color: Colors.transparent,
+                          color: Colors.white,
                           shape: BoxShape.circle,
                           border: Border.all(
-                              color: theme.colorScheme.outlineVariant
-                                  .withOpacity(0.5)),
+                              color: const Color(0xFF26C6DA).withValues(alpha: 0.5)),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.02),
+                              blurRadius: 5,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
                         ),
                         child: Center(
                           child: Builder(builder: (context) {
                             if (item.selectedCategory == null) {
                               return const Icon(Icons.category_rounded,
-                                  size: 24, color: Colors.black);
+                                  size: 20, color: Color(0xFF26C6DA));
                             }
                             final iconStr = item.selectedCategory!.icon;
                             final codePoint = int.tryParse(iconStr);
@@ -407,37 +414,37 @@ class _CreateCustomBudgetPageState extends State<CreateCustomBudgetPage> {
                               return Icon(
                                   IconData(codePoint,
                                       fontFamily: 'MaterialIcons'),
-                                  size: 24,
-                                  color: Colors.black);
+                                  size: 20,
+                                  color: const Color(0xFF26C6DA));
                             }
                             return Text(iconStr,
-                                style: const TextStyle(fontSize: 24));
+                                style: const TextStyle(fontSize: 20));
                           }),
                         ),
                       ),
                     ),
                     const SizedBox(width: 8),
                     Expanded(
-                      flex: 2,
+                      flex: 5,
                       child: _buildGlassInput(
                         controller: item.titleController,
-                        hint: 'Item',
+                        hint: 'Item Name',
                         theme: theme,
                       ),
                     ),
                     const SizedBox(width: 8),
                     Expanded(
-                      flex: 1,
+                      flex: 2,
                       child: _buildGlassInput(
                         controller: item.amountController,
-                        hint: 'Amount',
+                        hint: 'Amt',
                         theme: theme,
                         isNumber: true,
                       ),
                     ),
                     IconButton(
                       icon: const Icon(Icons.remove_circle_outline,
-                          color: Colors.black),
+                          color: Colors.redAccent),
                       onPressed: () => _removeItem(index),
                     ),
                   ],
@@ -461,34 +468,38 @@ class _CreateCustomBudgetPageState extends State<CreateCustomBudgetPage> {
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.15),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: TextField(
-            controller: controller,
-            cursorColor: Colors.black,
-            keyboardType: isNumber ? TextInputType.number : TextInputType.text,
-            style: theme.textTheme.bodyMedium,
-            decoration: InputDecoration(
-              hintText: hint,
-              filled: true,
-              fillColor: Colors.transparent,
-              hintStyle: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant.withOpacity(0.5)),
-              prefixIcon:
-                  icon != null ? Icon(icon, color: Colors.black, size: 20) : null,
-              border: InputBorder.none,
-              enabledBorder: InputBorder.none,
-              focusedBorder: InputBorder.none,
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-            ),
+        border: Border.all(color: const Color(0xFF26C6DA).withValues(alpha: 0.3)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 5,
+            offset: const Offset(0, 2),
           ),
+        ],
+      ),
+      child: TextField(
+        controller: controller,
+        cursorColor: const Color(0xFF26C6DA),
+        keyboardType: isNumber ? TextInputType.number : TextInputType.text,
+        style: theme.textTheme.bodyMedium?.copyWith(color: Colors.black87),
+        decoration: InputDecoration(
+          hintText: hint,
+          filled: true,
+          fillColor: Colors.transparent,
+          hintStyle: theme.textTheme.bodyMedium?.copyWith(
+              color: Colors.black38),
+          prefixIcon:
+              icon != null ? Icon(icon, color: const Color(0xFF26C6DA), size: 20) : null,
+          border: InputBorder.none,
+          enabledBorder: InputBorder.none,
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: const BorderSide(color: Color(0xFF26C6DA), width: 1.5),
+          ),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
         ),
       ),
     );
@@ -498,12 +509,12 @@ class _CreateCustomBudgetPageState extends State<CreateCustomBudgetPage> {
     return Container(
       height: 50,
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.1),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(25),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.2), width: 1.5),
+        border: Border.all(color: const Color(0xFF26C6DA).withValues(alpha: 0.3), width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -511,11 +522,8 @@ class _CreateCustomBudgetPageState extends State<CreateCustomBudgetPage> {
       ),
       child: Row(
         children: [
-          _buildSegmentTab(BucketType.dailyExpenses, 'Blow', Icons.work_outline),
-          _buildSegmentTab(BucketType.smile, 'Smile', Icons.flight_takeoff),
-          _buildSegmentTab(BucketType.fire, 'Fire', Icons.local_fire_department),
-          _buildSegmentTab(BucketType.mojo, 'Mojo', Icons.security),
-          _buildSegmentTab(BucketType.grow, 'Grow', Icons.eco),
+          Expanded(child: _buildSegmentTab(BucketType.dailyExpenses, 'Blow', Icons.work_outline)),
+          Expanded(child: _buildSegmentTab(BucketType.splurge, 'Splurge', Icons.card_giftcard)),
         ],
       ),
     );
@@ -523,34 +531,34 @@ class _CreateCustomBudgetPageState extends State<CreateCustomBudgetPage> {
 
   Widget _buildSegmentTab(BucketType type, String title, IconData icon) {
     final isSelected = _selectedBucket == type;
-    return Expanded(
-      child: GestureDetector(
+    return GestureDetector(
         onTap: () => setState(() => _selectedBucket = type),
         behavior: HitTestBehavior.opaque,
         child: Container(
           margin: const EdgeInsets.all(4),
-          color: Colors.transparent,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: isSelected ? const Color(0xFF26C6DA) : Colors.transparent,
+            borderRadius: BorderRadius.circular(20),
+          ),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
             children: [
               Icon(icon,
-                  size: 16, color: isSelected ? Colors.white : Colors.white70),
-              const SizedBox(width: 6),
-              Flexible(
-                child: Text(
-                  title,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: isSelected ? Colors.white : Colors.white70,
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                    fontSize: 12,
-                  ),
+                  size: 14, color: isSelected ? Colors.white : Colors.black54),
+              const SizedBox(width: 4),
+              Text(
+                title,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: isSelected ? Colors.white : Colors.black54,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                  fontSize: 11,
                 ),
               ),
             ],
           ),
         ),
-      ),
     );
   }
 }

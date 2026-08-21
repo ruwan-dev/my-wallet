@@ -14,21 +14,11 @@ class BudgetsPage extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Scaffold(
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         title: const Text('Monthly Budgets'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add),
-            onPressed: () {
-              showModalBottomSheet(
-                context: context,
-                isScrollControlled: true,
-                backgroundColor: Colors.transparent,
-                builder: (_) => const SetBudgetBottomSheet(),
-              );
-            },
-          ),
-        ],
+        backgroundColor: Colors.transparent,
+        elevation: 0,
       ),
       body: BlocBuilder<BudgetCubit, BudgetState>(
         builder: (context, state) {
@@ -51,7 +41,7 @@ class BudgetsPage extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Tap + to set a budget for this month.',
+                      'Tap the + button to set a budget for this month.',
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
@@ -80,6 +70,21 @@ class BudgetsPage extends StatelessWidget {
           }
           return const SizedBox.shrink();
         },
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          showModalBottomSheet(
+            context: context,
+            isScrollControlled: true,
+            backgroundColor: Colors.transparent,
+            builder: (_) => const SetBudgetBottomSheet(),
+          );
+        },
+        backgroundColor: const Color(0xFF7C3AED),
+        foregroundColor: Colors.white,
+        elevation: 4,
+        icon: const Icon(Icons.add),
+        label: const Text('Set Budget'),
       ),
     );
   }

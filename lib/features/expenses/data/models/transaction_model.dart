@@ -23,6 +23,8 @@ class TransactionModel {
   final bool isFavorite;
   final bool isFixedExpense;
   final BucketType? bucketType;
+  final String? linkedBudgetId;
+  final String? linkedChecklistItemId;
 
   TransactionModel({
     required this.id,
@@ -44,6 +46,8 @@ class TransactionModel {
     this.isFavorite = false,
     this.isFixedExpense = false,
     this.bucketType,
+    this.linkedBudgetId,
+    this.linkedChecklistItemId,
   });
 
   factory TransactionModel.fromEntity(TransactionEntity entity) {
@@ -67,6 +71,8 @@ class TransactionModel {
       isFavorite: entity.isFavorite,
       isFixedExpense: entity.isFixedExpense,
       bucketType: entity.bucketType,
+      linkedBudgetId: entity.linkedBudgetId,
+      linkedChecklistItemId: entity.linkedChecklistItemId,
     );
   }
 
@@ -91,6 +97,8 @@ class TransactionModel {
       isFavorite: isFavorite,
       isFixedExpense: isFixedExpense,
       bucketType: bucketType,
+      linkedBudgetId: linkedBudgetId,
+      linkedChecklistItemId: linkedChecklistItemId,
     );
   }
 
@@ -122,6 +130,8 @@ class TransactionModel {
       isFavorite: data['isFavorite'] ?? false,
       isFixedExpense: data['isFixedExpense'] ?? false,
       bucketType: parsedBucketType,
+      linkedBudgetId: data['linkedBudgetId'],
+      linkedChecklistItemId: data['linkedChecklistItemId'],
     );
   }
 
@@ -145,6 +155,8 @@ class TransactionModel {
       'isFavorite': isFavorite,
       'isFixedExpense': isFixedExpense,
       if (bucketType != null) 'bucketType': bucketType!.name,
+      if (linkedBudgetId != null) 'linkedBudgetId': linkedBudgetId,
+      if (linkedChecklistItemId != null) 'linkedChecklistItemId': linkedChecklistItemId,
     };
   }
 }
@@ -188,13 +200,15 @@ class TransactionModelAdapter extends TypeAdapter<TransactionModel> {
       isFavorite: fields[16] as bool,
       isFixedExpense: fields[17] as bool,
       bucketType: bucketType,
+      linkedBudgetId: fields[19] as String?,
+      linkedChecklistItemId: fields[20] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, TransactionModel obj) {
     writer
-      ..writeByte(19)
+      ..writeByte(21)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -232,6 +246,10 @@ class TransactionModelAdapter extends TypeAdapter<TransactionModel> {
       ..writeByte(17)
       ..write(obj.isFixedExpense)
       ..writeByte(18)
-      ..write(obj.bucketType?.name);
+      ..write(obj.bucketType?.name)
+      ..writeByte(19)
+      ..write(obj.linkedBudgetId)
+      ..writeByte(20)
+      ..write(obj.linkedChecklistItemId);
   }
 }

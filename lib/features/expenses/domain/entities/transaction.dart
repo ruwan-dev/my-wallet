@@ -21,6 +21,8 @@ class TransactionEntity extends Equatable {
   final bool isFavorite;
   final bool isFixedExpense;
   final BucketType? bucketType;
+  final String? linkedBudgetId;
+  final String? linkedChecklistItemId;
 
   const TransactionEntity({
     required this.id,
@@ -42,6 +44,8 @@ class TransactionEntity extends Equatable {
     this.isFavorite = false,
     this.isFixedExpense = false,
     this.bucketType,
+    this.linkedBudgetId,
+    this.linkedChecklistItemId,
   });
 
   double get signedAmount => isIncome ? amount : -amount;
@@ -66,6 +70,8 @@ class TransactionEntity extends Equatable {
     bool? isFavorite,
     bool? isFixedExpense,
     BucketType? bucketType,
+    String? linkedBudgetId,
+    String? linkedChecklistItemId,
   }) {
     return TransactionEntity(
       id: id ?? this.id,
@@ -87,6 +93,8 @@ class TransactionEntity extends Equatable {
       isFavorite: isFavorite ?? this.isFavorite,
       isFixedExpense: isFixedExpense ?? this.isFixedExpense,
       bucketType: bucketType ?? this.bucketType,
+      linkedBudgetId: linkedBudgetId ?? this.linkedBudgetId,
+      linkedChecklistItemId: linkedChecklistItemId ?? this.linkedChecklistItemId,
     );
   }
 
@@ -111,5 +119,7 @@ class TransactionEntity extends Equatable {
         isFavorite,
         isFixedExpense,
         bucketType,
+        linkedBudgetId,
+        linkedChecklistItemId,
       ];
 }

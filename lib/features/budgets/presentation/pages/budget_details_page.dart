@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/utils/formatters.dart';
+import '../../domain/entities/custom_budget.dart';
 import '../bloc/custom_budget_cubit.dart';
 import '../bloc/custom_budget_state.dart';
-import 'create_custom_budget_page.dart';
+import '../../../expenses/presentation/bloc/transaction_cubit.dart';
+import '../../../expenses/presentation/bloc/transaction_state.dart';
+import '../../../expenses/domain/entities/transaction.dart';
 import 'create_custom_budget_page.dart';
 import 'package:expense_tracker/features/expenses/presentation/widgets/shimmer_tile.dart';
 import '../../../../features/expenses/domain/entities/category.dart';
@@ -31,10 +34,15 @@ class BudgetDetailsPage extends StatelessWidget {
           }
 
           final budget = state.budgets[budgetIndex];
+          
+          final txState = context.watch<TransactionCubit>().state;
+          final transactions = txState is TransactionLoaded ? txState.transactions : <TransactionEntity>[];
+          final dynamicTotalSpent = budget.calculateDynamicTotalSpent(transactions);
 
           final spentProgress = budget.totalAllocated > 0 
-              ? (budget.totalSpent / budget.totalAllocated).clamp(0.0, 1.0) 
+              ? (dynamicTotalSpent / budget.totalAllocated).clamp(0.0, 1.0) 
               : 0.0;
+          final isTotalOverBudget = budget.totalAllocated > 0 && dynamicTotalSpent > budget.totalAllocated;
 
             return Scaffold(
               backgroundColor: Colors.transparent,
@@ -186,8 +194,11 @@ class BudgetDetailsPage extends StatelessWidget {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              'Spent: ${AppFormatters.formatCurrency(context, budget.totalSpent)}',
-                              style: theme.textTheme.bodyMedium,
+                              'Spent: ${AppFormatters.formatCurrency(context, dynamicTotalSpent)}',
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: isTotalOverBudget ? Colors.cyan.shade700 : null,
+                                fontWeight: isTotalOverBudget ? FontWeight.bold : null,
+                              ),
                             ),
                           ],
                         ),
@@ -195,7 +206,7 @@ class BudgetDetailsPage extends StatelessWidget {
                         LinearProgressIndicator(
                           value: spentProgress,
                           backgroundColor: theme.colorScheme.surfaceContainerHighest,
-                          color: Colors.green,
+                          color: isTotalOverBudget ? Colors.cyan.shade700 : theme.colorScheme.primary,
                           minHeight: 8,
                           borderRadius: BorderRadius.circular(4),
                         ),
@@ -214,19 +225,27 @@ class BudgetDetailsPage extends StatelessWidget {
                     separatorBuilder: (ctx, i) => const SizedBox(height: 12),
                     itemBuilder: (ctx, index) {
                       final item = budget.items[index];
+                      final itemSpent = budget.calculateItemSpent(item, transactions);
+                      final isOverBudget = item.allocatedAmount > 0 && itemSpent > item.allocatedAmount;
+                      final isCompleted = (item.allocatedAmount > 0 && itemSpent >= item.allocatedAmount) || item.isCompleted;
+
                       return Container(
                         decoration: BoxDecoration(
-                          color: item.isCompleted 
-                              ? theme.colorScheme.primaryContainer.withOpacity(0.3)
-                              : theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                          color: isOverBudget 
+                              ? Colors.cyan.shade700.withValues(alpha: 0.1)
+                              : isCompleted 
+                                  ? theme.colorScheme.primaryContainer.withValues(alpha: 0.3)
+                                  : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
-                            color: item.isCompleted 
-                                ? theme.colorScheme.primary.withOpacity(0.5) 
-                                : Colors.transparent,
+                            color: isOverBudget
+                                ? Colors.cyan.shade700.withValues(alpha: 0.5)
+                                : isCompleted 
+                                    ? theme.colorScheme.primary.withValues(alpha: 0.5) 
+                                    : Colors.transparent,
                           )
                         ),
-                        child: CheckboxListTile(
+                        child: ListTile(
                           title: Row(
                             children: [
                               if (item.categoryIcon != null)
@@ -241,19 +260,33 @@ class BudgetDetailsPage extends StatelessWidget {
                                       : item.title,
                                   style: TextStyle(
                                     fontWeight: FontWeight.w600,
-                                    decoration: item.isCompleted ? TextDecoration.lineThrough : null,
+                                    decoration: isCompleted && !isOverBudget ? TextDecoration.lineThrough : null,
                                   ),
                                 ),
                               ),
                             ],
                           ),
-                          subtitle: Text(AppFormatters.formatCurrency(context, item.allocatedAmount)),
-                          value: item.isCompleted,
-                          onChanged: (val) {
-                            if (val != null) {
-                              context.read<CustomBudgetCubit>().toggleChecklistItem(budgetId, item.id, val);
-                            }
-                          },
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const SizedBox(height: 4),
+                              Text(
+                                'Spent: ${AppFormatters.formatCurrency(context, itemSpent)} / ${AppFormatters.formatCurrency(context, item.allocatedAmount)}',
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: isOverBudget ? Colors.cyan.shade700 : null,
+                                  fontWeight: isOverBudget ? FontWeight.bold : null,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              LinearProgressIndicator(
+                                value: item.allocatedAmount > 0 ? (itemSpent / item.allocatedAmount).clamp(0.0, 1.0) : 0,
+                                backgroundColor: Colors.black12,
+                                color: isOverBudget ? Colors.cyan.shade700 : theme.colorScheme.primary,
+                                minHeight: 4,
+                                borderRadius: BorderRadius.circular(2),
+                              )
+                            ],
+                          ),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                         ),
                       );

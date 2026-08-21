@@ -29,7 +29,6 @@ import '../widgets/transaction_card.dart';
 import '../widgets/budget_progress_card.dart';
 import '../widgets/set_budget_bottom_sheet.dart';
 import '../widgets/animated_dashboard_card.dart';
-import '../widgets/mesh_account_card.dart';
 import '../widgets/monthly_budget_progress_card.dart';
 import '../pages/budget_setup_page.dart';
 // ─────────────────────────────────────────────────────────────────────────────
@@ -115,72 +114,6 @@ class _DashboardPageState extends State<DashboardPage> {
               ),
             const SizedBox(height: 16),
 
-            // ── My Accounts Section ────────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: _SectionHeader(
-                title: 'My Accounts',
-                actionLabel: '',
-                onAction: null,
-              ),
-            ),
-            const SizedBox(height: 12),
-            BlocBuilder<AccountCubit, AccountState>(
-              builder: (context, state) {
-                if (state is AccountLoading) {
-                  return const SizedBox(
-                    height: 120,
-                    child: const ShimmerTile(),
-                  );
-                }
-                if (state is AccountLoaded) {
-                  if (state.accounts.isEmpty) {
-                    return SizedBox(
-                      height: 115,
-                      child: ListView(
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
-                        scrollDirection: Axis.horizontal,
-                        physics: const BouncingScrollPhysics(),
-                        children: [
-                          _ToolCard(
-                            title: 'Add Account',
-                            icon: Icons.add,
-                            color: const Color(0xFF50C8C8),
-                            onTap: () => context.push('/accounts/add-account'),
-                          ),
-                        ],
-                      ),
-                    );
-                  }
-
-                  return SizedBox(
-                    height: 120,
-                    child: ScrollConfiguration(
-                      behavior: ScrollConfiguration.of(context).copyWith(
-                        dragDevices: {
-                          PointerDeviceKind.touch,
-                          PointerDeviceKind.mouse,
-                          PointerDeviceKind.trackpad,
-                        },
-                      ),
-                      child: ListView.separated(
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
-                        scrollDirection: Axis.horizontal,
-                        physics: const BouncingScrollPhysics(),
-                        itemCount: state.accounts.length,
-                        separatorBuilder: (_, __) => const SizedBox(width: 12),
-                        itemBuilder: (context, i) {
-                          return MeshAccountCard(account: state.accounts[i]);
-                        },
-                      ),
-                    ),
-                  );
-                }
-                return const SizedBox.shrink();
-              },
-            ),
-            const SizedBox(height: 8),
-
             // ── Planning & Tools ───────────────────────────────────────────
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -191,44 +124,132 @@ class _DashboardPageState extends State<DashboardPage> {
               ),
             ),
             const SizedBox(height: 6),
-            SizedBox(
-              height: 115,
-              child: ListView(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                scrollDirection: Axis.horizontal,
-                physics: const BouncingScrollPhysics(),
-                children: [
-                  _ToolCard(
-                    title: 'Budgets',
-                    icon: Icons.check_box_outlined,
-                    color: Colors.blueAccent,
-                    onTap: () => context.push('/budgets-main'),
-                  ),
-                  const SizedBox(width: 12),
-                  _ToolCard(
-                    title: 'Analytics',
-                    icon: Icons.bar_chart_outlined,
-                    color: const Color(0xFFFF8C42),
-                    onTap: () => context.push('/analytics'),
-                  ),
-                  const SizedBox(width: 12),
-                  _ToolCard(
-                    title: 'Buckets',
-                    icon: Icons.water_drop_outlined,
-                    color: const Color(0xFF50C8C8),
-                    onTap: () => context.push('/buckets-planner'),
-                  ),
-                  const SizedBox(width: 12),
-                  _ToolCard(
-                    title: 'Recurring',
-                    icon: Icons.repeat_rounded,
-                    color: const Color(0xFF9B8FD4),
-                    onTap: () => context.push('/recurring-bills'),
-                  ),
-                ],
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  // Fit exactly 4 cards per row, spreading them evenly
+                  const int perRow = 4;
+                  const double spacing = 12;
+                  final double cardWidth =
+                      (constraints.maxWidth - spacing * (perRow - 1)) / perRow;
+
+                  Widget toolCard({
+                    required String title,
+                    required IconData icon,
+                    required Color color,
+                    required VoidCallback onTap,
+                  }) {
+                    return SizedBox(
+                      width: cardWidth,
+                      child: GestureDetector(
+                        onTap: onTap,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 56,
+                              height: 56,
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(18),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.08),
+                                    blurRadius: 24,
+                                    spreadRadius: 4,
+                                    offset: const Offset(0, 12),
+                                  ),
+                                ],
+                              ),
+                              child: Center(
+                                child: Icon(icon,
+                                    color: const Color(0xFF50C8C8), size: 24),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              title,
+                              style: const TextStyle(
+                                color: Color(0xFF6E6E82),
+                                fontWeight: FontWeight.w600,
+                                fontSize: 11,
+                                letterSpacing: 0.3,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }
+
+                  final tools = [
+                    toolCard(
+                      title: 'Accounts',
+                      icon: Icons.account_balance_wallet_outlined,
+                      color: const Color(0xFF4CAF82),
+                      onTap: () => context.push('/accounts'),
+                    ),
+                    toolCard(
+                      title: 'Budgets',
+                      icon: Icons.check_box_outlined,
+                      color: Colors.blueAccent,
+                      onTap: () => context.push('/budgets-main'),
+                    ),
+                    toolCard(
+                      title: 'Analytics',
+                      icon: Icons.bar_chart_outlined,
+                      color: const Color(0xFFFF8C42),
+                      onTap: () => context.push('/analytics'),
+                    ),
+                    toolCard(
+                      title: 'Buckets',
+                      icon: Icons.water_drop_outlined,
+                      color: const Color(0xFF50C8C8),
+                      onTap: () => context.push('/buckets-planner'),
+                    ),
+                    toolCard(
+                      title: 'Recurring',
+                      icon: Icons.repeat_rounded,
+                      color: const Color(0xFF9B8FD4),
+                      onTap: () => context.push('/recurring-bills'),
+                    ),
+                  ];
+
+                  // Split into rows of perRow
+                  final List<Widget> rows = [];
+                  for (int i = 0; i < tools.length; i += perRow) {
+                    final rowItems = tools.sublist(
+                        i, (i + perRow).clamp(0, tools.length));
+                    rows.add(
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        children: [
+                          for (int j = 0; j < rowItems.length; j++) ...[
+                            rowItems[j],
+                            if (j < rowItems.length - 1)
+                              const SizedBox(width: spacing),
+                          ],
+                        ],
+                      ),
+                    );
+                    if (i + perRow < tools.length) {
+                      rows.add(const SizedBox(height: 16));
+                    }
+                  }
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: rows,
+                  );
+                },
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 16),
+
 
             // ── Recent Transactions Header ─────────────────────────────────
             Container(

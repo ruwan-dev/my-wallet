@@ -5,6 +5,9 @@ import '../../../../core/utils/formatters.dart';
 import '../../domain/entities/custom_budget.dart';
 import '../bloc/custom_budget_cubit.dart';
 import '../bloc/custom_budget_state.dart';
+import '../../../expenses/presentation/bloc/transaction_cubit.dart';
+import '../../../expenses/presentation/bloc/transaction_state.dart';
+import '../../../expenses/domain/entities/transaction.dart';
 import 'create_custom_budget_page.dart';
 import 'budget_details_page.dart';
 import 'package:expense_tracker/features/expenses/presentation/widgets/shimmer_tile.dart';
@@ -26,6 +29,19 @@ class BudgetsMainPage extends StatelessWidget {
           title: const Text('My Budgets'),
           backgroundColor: Colors.transparent,
           elevation: 0,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.add, color: Color(0xFF26C6DA), size: 28),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const CreateCustomBudgetPage(),
+                  ),
+                );
+              },
+            ),
+          ],
           bottom: TabBar(
             indicatorSize: TabBarIndicatorSize.label,
             indicatorColor: const Color(0xFF6D28D9), // Deep Purple
@@ -187,12 +203,27 @@ class BudgetsMainPage extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 8),
-                Text(
-                  '${budget.items.where((i) => i.isCompleted).length} / ${budget.items.length} completed',
-                  style: const TextStyle(
-                    color: Colors.black,
-                    fontSize: 12,
-                  ),
+                Builder(
+                  builder: (context) {
+                    final txState = context.watch<TransactionCubit>().state;
+                    final transactions = txState is TransactionLoaded ? txState.transactions : <TransactionEntity>[];
+                    
+                    int completedCount = 0;
+                    for (final item in budget.items) {
+                      final spent = budget.calculateItemSpent(item, transactions);
+                      if ((item.allocatedAmount > 0 && spent >= item.allocatedAmount) || item.isCompleted) {
+                        completedCount++;
+                      }
+                    }
+                    
+                    return Text(
+                      '$completedCount / ${budget.items.length} completed',
+                      style: const TextStyle(
+                        color: Colors.black,
+                        fontSize: 12,
+                      ),
+                    );
+                  },
                 ),
                 const SizedBox(height: 12),
                 Stack(
@@ -250,6 +281,27 @@ class BudgetsMainPage extends StatelessWidget {
           ),
           if (!isHistory) ...[
             const SizedBox(height: 32),
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const CreateCustomBudgetPage(),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.add),
+              label: const Text('Create Budget'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF7C3AED),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(100),
+                ),
+                elevation: 2,
+              ),
+            ),
           ],
         ],
       ),

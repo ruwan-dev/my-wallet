@@ -12,6 +12,7 @@ import '../../../expenses/domain/entities/category.dart';
 import '../../../expenses/domain/entities/transaction.dart';
 import '../../../expenses/presentation/bloc/account_cubit.dart';
 import '../../../expenses/presentation/bloc/account_state.dart';
+import '../../../expenses/domain/entities/account.dart';
 import '../../../auth/presentation/bloc/auth_cubit.dart';
 import '../../../../core/bloc/settings_cubit.dart';
 import '../../../../core/bloc/settings_state.dart';
@@ -22,6 +23,8 @@ import '../../../debts/presentation/widgets/debt_timeline.dart';
 import '../../../debts/presentation/widgets/inline_debt_editor.dart';
 import '../widgets/inline_fund_editor.dart';
 
+import '../bloc/custom_budget_cubit.dart';
+import '../bloc/custom_budget_state.dart';
 import '../widgets/barefoot_settings_sheet.dart';
 import 'package:expense_tracker/features/expenses/presentation/widgets/shimmer_tile.dart';
 
@@ -41,6 +44,196 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
   bool _isAddingDebt = false;
   bool _isAddingMojoFunds = false;
   bool _showSinhalaPhilosophy = false;
+
+  // ── Account Sync ────────────────────────────────────────────────────────
+  void _showLinkAccountSheet(
+      BuildContext context, String bucketTypeName, Color themeColor) {
+    final accState = context.read<AccountCubit>().state;
+    final accounts =
+        accState is AccountLoaded ? accState.accounts : <dynamic>[];
+    final settings = context.read<SettingsCubit>().state;
+    final linkedId = settings.bucketAccountLinks[bucketTypeName];
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return ClipRRect(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+            child: Container(
+          constraints: const BoxConstraints(maxWidth: 500),
+          margin: const EdgeInsets.symmetric(horizontal: 0),
+          decoration: BoxDecoration(
+            color: const Color(0xFF3AAFA9).withOpacity(0.85),
+            borderRadius:
+                const BorderRadius.vertical(top: Radius.circular(28)),
+            border: Border.all(color: Colors.white.withOpacity(0.25)),
+          ),
+          padding: EdgeInsets.fromLTRB(
+              24, 20, 24, MediaQuery.of(ctx).viewInsets.bottom + 32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Handle
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.white24,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'Sync Account to Bucket',
+                style: TextStyle(
+                  color: themeColor,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                'One account can only be linked to one bucket at a time.',
+                style: TextStyle(color: Colors.white54, fontSize: 12),
+              ),
+              const SizedBox(height: 20),
+              if (accounts.isEmpty)
+                const Text(
+                  'No accounts found. Create an account first.',
+                  style: TextStyle(color: Colors.white70),
+                )
+              else
+                ...accounts.map((acc) {
+                  final isLinked = linkedId == acc.id;
+                  return GestureDetector(
+                    onTap: () {
+                      if (isLinked) {
+                        context
+                            .read<SettingsCubit>()
+                            .unlinkAccountFromBucket(bucketTypeName);
+                      } else {
+                        context
+                            .read<SettingsCubit>()
+                            .linkAccountToBucket(bucketTypeName, acc.id);
+                      }
+                      Navigator.pop(ctx);
+                    },
+                    child: Container(
+                      margin: const EdgeInsets.only(bottom: 10),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 14),
+                      decoration: BoxDecoration(
+                        color: isLinked
+                            ? themeColor.withOpacity(0.15)
+                            : Colors.white.withOpacity(0.05),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: isLinked
+                              ? themeColor.withOpacity(0.5)
+                              : Colors.white.withOpacity(0.1),
+                          width: 1.5,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: themeColor.withOpacity(0.15),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.account_balance_wallet_outlined,
+                              color: themeColor,
+                              size: 18,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  acc.name,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                                Text(
+                                  AppFormatters.formatCurrency(
+                                      context, acc.balance),
+                                  style: const TextStyle(
+                                    color: Colors.white60,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          if (isLinked)
+                            Icon(Icons.link_rounded,
+                                color: themeColor, size: 20)
+                          else
+                            const Icon(Icons.link_off_rounded,
+                                color: Colors.white30, size: 20),
+                        ],
+                      ),
+                    ),
+                  );
+                }),
+              if (linkedId != null) ...[
+                const SizedBox(height: 8),
+                GestureDetector(
+                  onTap: () {
+                    context
+                        .read<SettingsCubit>()
+                        .unlinkAccountFromBucket(bucketTypeName);
+                    Navigator.pop(ctx);
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.red.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                          color: Colors.red.withOpacity(0.3), width: 1),
+                    ),
+                    child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.link_off_rounded,
+                            color: Colors.redAccent, size: 16),
+                        SizedBox(width: 8),
+                        Text(
+                          'Remove Link',
+                          style: TextStyle(
+                            color: Colors.redAccent,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+            ),
+          ),
+        );
+      },
+    );
+  }
 
   @override
   void initState() {
@@ -154,6 +347,7 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
   Widget build(BuildContext context) {
     final txState = context.watch<TransactionCubit>().state;
     final catState = context.watch<CategoryCubit>().state;
+    final budgetState = context.watch<CustomBudgetCubit>().state;
 
     double totalIncome = 0;
     double spentDailyExpenses = 0;
@@ -164,9 +358,9 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
     double calculatedMojo = 0;
     double calculatedGrow = 0;
 
-    if (txState is TransactionLoaded && catState is CategoryLoaded) {
-      final now = DateTime.now();
+    final now = DateTime.now();
 
+    if (txState is TransactionLoaded && catState is CategoryLoaded) {
       // Calculate all-time Mojo and Grow
       for (final tx in txState.transactions) {
         final category = catState.categories.firstWhere(
@@ -229,7 +423,9 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
         }
       }
     }
-
+    
+    // Overarching bucket totals are purely driven by actual transactions.
+    
     const double dailyExpensesPct = 0.60;
     const double splurgePct = 0.10;
     const double smilePct = 0.10;
@@ -253,59 +449,73 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
           'Bucket Allocator',
-          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 18),
         ),
         centerTitle: true,
       ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            const SizedBox(height: 8),
-            _buildSegmentedControl(context),
-            const SizedBox(height: 16),
-            Expanded(
-              child: PageView(
-                controller: _pageController,
-                physics: const BouncingScrollPhysics(),
-                onPageChanged: (index) {
-                  setState(() => _selectedMainTab = index);
-                },
-                children: [
-                  _buildBlowTab(
-                    context: context,
-                    allocatedDailyExpenses: allocatedDailyExpenses,
-                    spentDailyExpenses: spentDailyExpenses,
-                    allocatedSplurge: allocatedSplurge,
-                    spentSplurge: spentSplurge,
-                    totalRemaining: totalRemaining,
-                  ),
-                  _buildSmileTab(
-                    context: context,
-                    allocatedSmile: allocatedSmile,
-                    spentSmile: spentSmile,
-                  ),
-                  _buildFireTab(
-                    context: context,
-                    allocatedFire: allocatedFire,
-                    spentFire: spentFire,
-                  ),
-                  _buildMojoTab(
-                    context, 
-                    mojoBalance, 
-                    allocatedDailyExpenses, 
-                    allocatedFire - spentFire, 
-                    allocatedSmile - spentSmile
-                  ),
-                  _buildGrowTab(context, growBalance),
-                ],
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0xFF3AAFA9), // deep teal
+              Color(0xFF60C5B8), // mid teal/cyan
+              Color(0xFFF2F8F7), // soft teal-white
+            ],
+            stops: [0.0, 0.40, 1.0],
+          ),
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              const SizedBox(height: 8),
+              _buildSegmentedControl(context),
+              const SizedBox(height: 16),
+              Expanded(
+                child: PageView(
+                  controller: _pageController,
+                  physics: const BouncingScrollPhysics(),
+                  onPageChanged: (index) {
+                    setState(() => _selectedMainTab = index);
+                  },
+                  children: [
+                    _buildBlowTab(
+                      context: context,
+                      allocatedDailyExpenses: allocatedDailyExpenses,
+                      spentDailyExpenses: spentDailyExpenses,
+                      allocatedSplurge: allocatedSplurge,
+                      spentSplurge: spentSplurge,
+                      totalRemaining: totalRemaining,
+                    ),
+                    _buildSmileTab(
+                      context: context,
+                      allocatedSmile: allocatedSmile,
+                      spentSmile: spentSmile,
+                    ),
+                    _buildFireTab(
+                      context: context,
+                      allocatedFire: allocatedFire,
+                      spentFire: spentFire,
+                    ),
+                    _buildMojoTab(
+                      context, 
+                      mojoBalance, 
+                      allocatedDailyExpenses, 
+                      allocatedFire - spentFire, 
+                      allocatedSmile - spentSmile
+                    ),
+                    _buildGrowTab(context, growBalance),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -314,28 +524,34 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
   Widget _buildSegmentedControl(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24.0),
-      child: Container(
-        height: 50,
-        decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(25),
-          border: Border.all(color: Colors.white.withOpacity(0.2), width: 1.5),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(25),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Container(
+            height: 50,
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.18),
+              borderRadius: BorderRadius.circular(25),
+              border: Border.all(color: Colors.white.withOpacity(0.3), width: 1.5),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF3AAFA9).withOpacity(0.2),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
-          ],
-        ),
-        child: Row(
-          children: [
-            _buildSegmentTab(0, 'Blow', Icons.work_outline),
-            _buildSegmentTab(1, 'Smile', Icons.flight_takeoff),
-            _buildSegmentTab(2, 'Fire', Icons.local_fire_department),
-            _buildSegmentTab(3, 'Mojo', Icons.security),
-            _buildSegmentTab(4, 'Grow', Icons.eco),
-          ],
+            child: Row(
+              children: [
+                _buildSegmentTab(0, 'Blow', Icons.work_outline),
+                _buildSegmentTab(1, 'Smile', Icons.flight_takeoff),
+                _buildSegmentTab(2, 'Fire', Icons.local_fire_department),
+                _buildSegmentTab(3, 'Mojo', Icons.security),
+                _buildSegmentTab(4, 'Grow', Icons.eco),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -347,22 +563,37 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
       child: GestureDetector(
         onTap: () => _onTabSelected(index),
         behavior: HitTestBehavior.opaque,
-        child: Container(
-          color: Colors.transparent,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          margin: const EdgeInsets.all(4),
+          decoration: isSelected
+              ? BoxDecoration(
+                  color: Colors.white.withOpacity(0.35),
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF50C8C8).withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                )
+              : null,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(icon,
-                  size: 14, color: isSelected ? Colors.white : Colors.white54),
-              const SizedBox(width: 4),
+                  size: 13,
+                  color: isSelected ? const Color(0xFF0D2626) : Colors.white70),
+              const SizedBox(width: 3),
               Flexible(
                 child: Text(
                   title,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: isSelected ? Colors.white : Colors.white54,
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                    fontSize: 12,
+                    color: isSelected ? const Color(0xFF0D2626) : Colors.white70,
+                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                    fontSize: 11,
                   ),
                 ),
               ),
@@ -441,233 +672,238 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
               child: Padding(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
-                child: Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(24),
-                    color: Colors.white.withOpacity(0.05),
-                    border: Border.all(
-                        color: Colors.white.withOpacity(0.1), width: 1),
-                  ),
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Title
-                      Row(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(24),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(24),
+                        color: Colors.white.withOpacity(0.18),
+                        border: Border.all(
+                            color: Colors.white.withOpacity(0.3), width: 1.5),
+                      ),
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'Balance Overview',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
+                          // Title
+                          Row(
+                            children: [
+                              const Text(
+                                'Balance Overview',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+
+                          // Interactive Donut Chart & Legend
+                          Expanded(
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  flex: 5,
+                                  child: LayoutBuilder(
+                                      builder: (context, constraints) {
+                                    final size = math.min(constraints.maxWidth,
+                                        constraints.maxHeight);
+                                    return GestureDetector(
+                                      onTapUp: (details) {
+                                        final center = Offset(
+                                            constraints.maxWidth / 2,
+                                            constraints.maxHeight / 2);
+                                        final dx =
+                                            details.localPosition.dx - center.dx;
+                                        final dy =
+                                            details.localPosition.dy - center.dy;
+                                        final distance =
+                                            math.sqrt(dx * dx + dy * dy);
+
+                                        // Only register taps near the donut ring
+                                        if (distance < (size / 2) - 80 ||
+                                            distance > (size / 2)) {
+                                          setState(() => _selectedBucketIndex = -1);
+                                          return;
+                                        }
+
+                                        double angle = math.atan2(dy, dx);
+                                        angle += math.pi / 2;
+                                        if (angle < 0) angle += 2 * math.pi;
+
+                                        final pct = angle / (2 * math.pi);
+                                        setState(() {
+                                          if (pct < 0.85)
+                                            _selectedBucketIndex = 0;
+                                          else
+                                            _selectedBucketIndex = 1;
+                                        });
+                                      },
+                                      child: Stack(
+                                        alignment: Alignment.center,
+                                        children: [
+                                          SizedBox(
+                                            width: size,
+                                            height: size,
+                                            child: CustomPaint(
+                                              painter: _ConcentricDonutPainter(
+                                                dailyExpensesSpentPct:
+                                                    allocatedDailyExpenses > 0
+                                                        ? (spentDailyExpenses /
+                                                                allocatedDailyExpenses)
+                                                            .clamp(0.0, 1.0)
+                                                        : 0.0,
+                                                splurgeSpentPct:
+                                                    allocatedSplurge > 0
+                                                        ? (spentSplurge /
+                                                                allocatedSplurge)
+                                                            .clamp(0.0, 1.0)
+                                                        : 0.0,
+                                                selectedIndex: _selectedBucketIndex,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  }),
+                                ),
+
+                                // Right Side: Interactive Details & Legend
+                                Expanded(
+                                  flex: 5,
+                                  child: Center(
+                                    child: SingleChildScrollView(
+                                      child: AnimatedSwitcher(
+                                        duration: const Duration(milliseconds: 300),
+                                        child: _selectedBucketIndex == -1
+                                            ? Column(
+                                                key: const ValueKey('total'),
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment.center,
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  const Text(
+                                                    'Total Remaining',
+                                                    style: TextStyle(
+                                                        color: Colors.white70,
+                                                        fontSize: 14,
+                                                        fontWeight: FontWeight.w600),
+                                                  ),
+                                                  const SizedBox(height: 4),
+                                                  FittedBox(
+                                                    fit: BoxFit.scaleDown,
+                                                    child: Text(
+                                                      AppFormatters.formatCurrency(
+                                                          context, totalRemaining),
+                                                      style: const TextStyle(
+                                                          color: Colors.white,
+                                                          fontSize: 28,
+                                                          fontWeight: FontWeight.bold),
+                                                    ),
+                                                  ),
+                                                  const SizedBox(height: 16),
+                                                  _buildLegendItem(
+                                                      color: const Color(0xFF3B82F6),
+                                                      label: 'Daily (60%)'),
+                                                  const SizedBox(height: 8),
+                                                  _buildLegendItem(
+                                                      color: const Color(0xFFEAB308),
+                                                      label: 'Splurge (10%)'),
+                                                ],
+                                              )
+                                            : Builder(
+                                                key: ValueKey(
+                                                    'bucket_$_selectedBucketIndex'),
+                                                builder: (context) {
+                                                  String name = '';
+                                                  IconData icon = Icons.circle;
+                                                  Color color = Colors.white;
+                                                  double allocated = 0;
+                                                  double spent = 0;
+
+                                                  if (_selectedBucketIndex == 0) {
+                                                    name = 'Daily Exp.';
+                                                    icon = Icons.home_rounded;
+                                                    color = const Color(0xFF3B82F6);
+                                                    allocated = allocatedDailyExpenses;
+                                                    spent = spentDailyExpenses;
+                                                  } else {
+                                                    name = 'Splurge';
+                                                    icon = Icons.card_giftcard;
+                                                    color = const Color(0xFFEAB308);
+                                                    allocated = allocatedSplurge;
+                                                    spent = spentSplurge;
+                                                  }
+
+                                                  final remaining = allocated - spent;
+
+                                                  return Column(
+                                                    mainAxisAlignment:
+                                                        MainAxisAlignment.center,
+                                                    crossAxisAlignment:
+                                                        CrossAxisAlignment.start,
+                                                    children: [
+                                                      Row(
+                                                        mainAxisSize:
+                                                            MainAxisSize.min,
+                                                        children: [
+                                                          Icon(icon,
+                                                              color: color,
+                                                              size: 16),
+                                                          const SizedBox(width: 6),
+                                                          Text(name,
+                                                              style: TextStyle(
+                                                                  color: color,
+                                                                  fontSize: 16,
+                                                                  fontWeight:
+                                                                      FontWeight.bold)),
+                                                        ],
+                                                      ),
+                                                      const SizedBox(height: 8),
+                                                      Text(
+                                                          'Allocated:\n${AppFormatters.formatCurrency(context, allocated)}',
+                                                          style: const TextStyle(
+                                                              color: Colors.white54,
+                                                              fontSize: 12)),
+                                                      const SizedBox(height: 4),
+                                                      Text(
+                                                          'Spent:\n-${AppFormatters.formatCurrency(context, spent)}',
+                                                          style: const TextStyle(
+                                                              color: Colors.redAccent,
+                                                              fontSize: 12)),
+                                                      const SizedBox(height: 8),
+                                                      FittedBox(
+                                                        fit: BoxFit.scaleDown,
+                                                        child: Text(
+                                                            AppFormatters
+                                                                .formatCurrency(
+                                                                    context,
+                                                                    remaining),
+                                                            style: const TextStyle(
+                                                                color: Colors.white,
+                                                                fontSize: 28,
+                                                                fontWeight:
+                                                                    FontWeight.bold)),
+                                                      ),
+                                                    ],
+                                                  );
+                                                }),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 12),
-
-                      // Interactive Donut Chart & Legend
-                      Expanded(
-                        child: Row(
-                          children: [
-                            Expanded(
-                              flex: 5,
-                              child: LayoutBuilder(
-                                  builder: (context, constraints) {
-                                final size = math.min(constraints.maxWidth,
-                                    constraints.maxHeight);
-                                return GestureDetector(
-                                  onTapUp: (details) {
-                                    final center = Offset(
-                                        constraints.maxWidth / 2,
-                                        constraints.maxHeight / 2);
-                                    final dx =
-                                        details.localPosition.dx - center.dx;
-                                    final dy =
-                                        details.localPosition.dy - center.dy;
-                                    final distance =
-                                        math.sqrt(dx * dx + dy * dy);
-
-                                    // Only register taps near the donut ring
-                                    if (distance < (size / 2) - 80 ||
-                                        distance > (size / 2)) {
-                                      // Tapped outside or in center hole: reset to total
-                                      setState(() => _selectedBucketIndex = -1);
-                                      return;
-                                    }
-
-                                    double angle = math.atan2(dy, dx);
-                                    angle += math.pi / 2; // start from top
-                                    if (angle < 0) angle += 2 * math.pi;
-
-                                    final pct = angle / (2 * math.pi);
-                                    setState(() {
-                                      if (pct < 0.85)
-                                        _selectedBucketIndex = 0;
-                                      else
-                                        _selectedBucketIndex = 1;
-                                    });
-                                  },
-                                  child: Stack(
-                                    alignment: Alignment.center,
-                                    children: [
-                                      // Donut Chart Custom Painter
-                                      SizedBox(
-                                        width: size,
-                                        height: size,
-                                        child: CustomPaint(
-                                          painter: _ConcentricDonutPainter(
-                                            dailyExpensesSpentPct:
-                                                allocatedDailyExpenses > 0
-                                                    ? (spentDailyExpenses /
-                                                            allocatedDailyExpenses)
-                                                        .clamp(0.0, 1.0)
-                                                    : 0.0,
-                                            splurgeSpentPct:
-                                                allocatedSplurge > 0
-                                                    ? (spentSplurge /
-                                                            allocatedSplurge)
-                                                        .clamp(0.0, 1.0)
-                                                    : 0.0,
-                                            selectedIndex: _selectedBucketIndex,
-                                          ),
-                                        ),
-                                      ),
-
-                                      // Empty center to keep the ring hollow
-                                    ],
-                                  ),
-                                );
-                              }),
-                            ),
-
-                            // Right Side: Interactive Details & Legend
-                            Expanded(
-                              flex: 5,
-                              child: Center(
-                                child: SingleChildScrollView(
-                                  child: AnimatedSwitcher(
-                                    duration: const Duration(milliseconds: 300),
-                                    child: _selectedBucketIndex == -1
-                                        ? Column(
-                                            key: const ValueKey('total'),
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.center,
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          const Text(
-                                            'Total Remaining',
-                                            style: TextStyle(
-                                                color: Colors.white70,
-                                                fontSize: 14,
-                                                fontWeight: FontWeight.w600),
-                                          ),
-                                          const SizedBox(height: 4),
-                                          FittedBox(
-                                            fit: BoxFit.scaleDown,
-                                            child: Text(
-                                              AppFormatters.formatCurrency(
-                                                  context, totalRemaining),
-                                              style: const TextStyle(
-                                                  color: Colors.white,
-                                                  fontSize: 28,
-                                                  fontWeight: FontWeight.bold),
-                                            ),
-                                          ),
-                                          const SizedBox(height: 16),
-                                          _buildLegendItem(
-                                              color: const Color(0xFF3B82F6),
-                                              label: 'Daily (60%)'),
-                                          const SizedBox(height: 8),
-                                          _buildLegendItem(
-                                              color: const Color(0xFFEAB308),
-                                              label: 'Splurge (10%)'),
-                                        ],
-                                      )
-                                    : Builder(
-                                        key: ValueKey(
-                                            'bucket_$_selectedBucketIndex'),
-                                        builder: (context) {
-                                          String name = '';
-                                          IconData icon = Icons.circle;
-                                          Color color = Colors.white;
-                                          double allocated = 0;
-                                          double spent = 0;
-
-                                          if (_selectedBucketIndex == 0) {
-                                            name = 'Daily Exp.';
-                                            icon = Icons.home_rounded;
-                                            color = const Color(0xFF3B82F6);
-                                            allocated = allocatedDailyExpenses;
-                                            spent = spentDailyExpenses;
-                                          } else {
-                                            name = 'Splurge';
-                                            icon = Icons.card_giftcard;
-                                            color = const Color(0xFFEAB308);
-                                            allocated = allocatedSplurge;
-                                            spent = spentSplurge;
-                                          }
-
-                                          final remaining = allocated - spent;
-
-                                          return Column(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.center,
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Row(
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                  Icon(icon,
-                                                      color: color, size: 16),
-                                                  const SizedBox(width: 6),
-                                                  Text(name,
-                                                      style: TextStyle(
-                                                          color: color,
-                                                          fontSize: 16,
-                                                          fontWeight:
-                                                              FontWeight.bold)),
-                                                ],
-                                              ),
-                                              const SizedBox(height: 8),
-                                              Text(
-                                                  'Allocated:\n${AppFormatters.formatCurrency(context, allocated)}',
-                                                  style: const TextStyle(
-                                                      color: Colors.white54,
-                                                      fontSize: 12)),
-                                              const SizedBox(height: 4),
-                                              Text(
-                                                  'Spent:\n-${AppFormatters.formatCurrency(context, spent)}',
-                                                  style: const TextStyle(
-                                                      color: Colors.redAccent,
-                                                      fontSize: 12)),
-                                              const SizedBox(height: 8),
-                                              FittedBox(
-                                                fit: BoxFit.scaleDown,
-                                                child: Text(
-                                                    AppFormatters
-                                                        .formatCurrency(
-                                                            context, remaining),
-                                                    style: const TextStyle(
-                                                        color: Colors.white,
-                                                        fontSize: 28,
-                                                        fontWeight:
-                                                            FontWeight.bold)),
-                                              ),
-                                            ],
-                                          );
-                                          }),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                 ),
               ),
@@ -692,6 +928,7 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
           padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
           child: _buildWideVaultCard(
             context: context,
+            bucketTypeName: 'smile',
             title: 'Smile Wallet',
             icon: Icons.flight_takeoff,
             primaryColor: const Color(0xFF34D399),
@@ -718,13 +955,17 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
   }
 
   Widget _buildZeroDebtMessage(BuildContext context) {
-    return Container(
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(24),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Container(
       padding: const EdgeInsets.all(24),
       margin: const EdgeInsets.only(top: 16),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
+        color: Colors.white.withOpacity(0.18),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withOpacity(0.1), width: 1.5),
+        border: Border.all(color: Colors.white.withOpacity(0.3), width: 1.5),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -771,6 +1012,8 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
            ),
         ],
       ),
+    ),
+      ),
     );
   }
 
@@ -800,6 +1043,7 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
           padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
           child: _buildWideVaultCard(
             context: context,
+            bucketTypeName: 'fire',
             title: 'Fire Wallet',
             icon: Icons.local_fire_department,
             primaryColor: const Color(0xFFF87171),
@@ -902,15 +1146,21 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
     if (accountState is AccountLoaded) {
       for (var acc in accountState.accounts) {
         if (acc.balance > 0) {
-          sourceAccounts.add({'id': acc.id, 'name': acc.name, 'balance': acc.balance});
+          sourceAccounts.add(
+              {'id': acc.id, 'name': acc.name, 'balance': acc.balance});
         }
       }
     }
     if (fireBalance > 0) {
-      sourceAccounts.add({'id': 'bucket_fire', 'name': 'Fire Vault', 'balance': fireBalance});
+      sourceAccounts.add(
+          {'id': 'bucket_fire', 'name': 'Fire Vault', 'balance': fireBalance});
     }
     if (smileBalance > 0) {
-      sourceAccounts.add({'id': 'bucket_smile', 'name': 'Smile Vault', 'balance': smileBalance});
+      sourceAccounts.add({
+        'id': 'bucket_smile',
+        'name': 'Smile Vault',
+        'balance': smileBalance
+      });
     }
 
     return Column(
@@ -919,23 +1169,26 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
           padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
           child: _buildWideVaultCard(
             context: context,
+            bucketTypeName: 'mojo',
             title: 'Mojo Vault (Emergency)',
             icon: Icons.security,
             primaryColor: const Color(0xFFFFD700),
             secondaryColor: const Color(0xFFF59E0B),
             balance: mojoBalance,
             targetAmount: targetGoal,
-            description: 'Things that keep you safe when life hits hard.\n• Examples: Unexpected medical bills or emergency car repairs.',
+            description:
+                'Things that keep you safe when life hits hard.\n• Examples: Unexpected medical bills or emergency car repairs.',
             actionWidget: !_isAddingMojoFunds
                 ? OutlinedButton.icon(
-                    onPressed: () {
-                      setState(() => _isAddingMojoFunds = true);
-                    },
+                    onPressed: () =>
+                        setState(() => _isAddingMojoFunds = true),
                     icon: const Icon(Icons.add, size: 14),
-                    label: const Text('Add Funds', style: TextStyle(fontSize: 12)),
+                    label: const Text('Add Funds',
+                        style: TextStyle(fontSize: 12)),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: Colors.black87,
-                      side: const BorderSide(color: Colors.black54, width: 1),
+                      side:
+                          const BorderSide(color: Colors.black54, width: 1),
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12)),
                       padding: const EdgeInsets.symmetric(
@@ -1017,11 +1270,11 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
                   Container(
                     padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.05),
+                      color: const Color(0xFF50C8C8).withOpacity(0.2),
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(Icons.account_balance,
-                        size: 48, color: Colors.white38),
+                        size: 48, color: Colors.white),
                   ),
                   const SizedBox(height: 24),
                   const Text(
@@ -1044,7 +1297,7 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
                     icon: const Icon(Icons.add, size: 18),
                     label: const Text('Add Investment'),
                     style: FilledButton.styleFrom(
-                      backgroundColor: const Color(0xFF10B981),
+                      backgroundColor: const Color(0xFF50C8C8),
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(
                           horizontal: 24, vertical: 16),
@@ -1068,6 +1321,7 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
     required Color primaryColor,
     required Color secondaryColor,
     required double balance,
+    String? bucketTypeName,   // e.g. 'mojo', 'grow', 'fire', 'smile'
     double? targetAmount,
     String? goalName,
     bool isRedirected = false,
@@ -1075,6 +1329,21 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
     String? description,
     Widget? actionWidget,
   }) {
+    final settings = context.watch<SettingsCubit>().state;
+    final accState = context.watch<AccountCubit>().state;
+
+    // Resolve linked account (if any)
+    AccountEntity? linkedAccount;
+    if (bucketTypeName != null &&
+        settings.bucketAccountLinks.containsKey(bucketTypeName) &&
+        accState is AccountLoaded) {
+      final linkedId = settings.bucketAccountLinks[bucketTypeName]!;
+      try {
+        linkedAccount = accState.accounts.firstWhere((a) => a.id == linkedId);
+      } catch (_) {
+        linkedAccount = null;
+      }
+    }
     final Color displayPrimary =
         isRedirected ? Colors.grey.shade700 : primaryColor;
     final Color displaySecondary =
@@ -1176,7 +1445,7 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
                     ),
                   ),
                 ],
-                const SizedBox(height: 24),
+                const SizedBox(height: 12),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -1192,6 +1461,54 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
                     if (actionWidget != null) actionWidget,
                   ],
                 ),
+
+                // ── Account Sync chip ─────────────────────────────────────
+                if (bucketTypeName != null) ...[
+                  const SizedBox(height: 10),
+                  GestureDetector(
+                    onTap: () => _showLinkAccountSheet(
+                        context, bucketTypeName, primaryColor),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: linkedAccount != null
+                            ? Colors.black.withOpacity(0.15)
+                            : Colors.black.withOpacity(0.08),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: linkedAccount != null
+                              ? Colors.black.withOpacity(0.3)
+                              : Colors.black.withOpacity(0.15),
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            linkedAccount != null
+                                ? Icons.link_rounded
+                                : Icons.link_off_rounded,
+                            size: 13,
+                            color: Colors.black54,
+                          ),
+                          const SizedBox(width: 5),
+                          Text(
+                            linkedAccount != null
+                                ? '${linkedAccount.name}  •  ${AppFormatters.formatCurrency(context, linkedAccount.balance)}'
+                                : 'Sync Account',
+                            style: const TextStyle(
+                              color: Colors.black54,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),

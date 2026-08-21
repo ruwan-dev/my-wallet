@@ -13,6 +13,7 @@ class SettingsCubit extends Cubit<SettingsState> {
   static const String _smileGoalNameKey = 'smile_goal_name';
   static const String _fireRedirectionKey = 'fire_redirection';
   static const String _nodeDivisorKey = 'node_divisor';
+  static const String _bucketAccountLinksKey = 'bucket_account_links';
 
   SettingsCubit(this._box) : super(SettingsState.initial()) {
     _loadSettings();
@@ -32,7 +33,16 @@ class SettingsCubit extends Cubit<SettingsState> {
     );
     
     final nodeDivisor = (_box.get(_nodeDivisorKey, defaultValue: 5000.0) as num).toDouble();
-    
+
+    // Load bucket↔account links (stored as Map<String, String>)
+    final rawLinks = _box.get(_bucketAccountLinksKey);
+    final Map<String, String> bucketLinks = {};
+    if (rawLinks is Map) {
+      rawLinks.forEach((k, v) {
+        if (k is String && v is String) bucketLinks[k] = v;
+      });
+    }
+
     emit(state.copyWith(
       currencySymbol: symbol,
       currencyCode: code,
@@ -41,6 +51,7 @@ class SettingsCubit extends Cubit<SettingsState> {
       smileGoalName: smileGoalName,
       fireRedirection: fireRedirection,
       nodeDivisor: nodeDivisor,
+      bucketAccountLinks: bucketLinks,
     ));
   }
 
@@ -76,5 +87,25 @@ class SettingsCubit extends Cubit<SettingsState> {
   Future<void> updateNodeDivisor(double nodeDivisor) async {
     await _box.put(_nodeDivisorKey, nodeDivisor);
     emit(state.copyWith(nodeDivisor: nodeDivisor));
+  }
+
+  /// Link a bucket to an account (one-to-one: any other bucket already linked
+  /// to [accountId] is automatically unlinked first).
+  Future<void> linkAccountToBucket(
+      String bucketTypeName, String accountId) async {
+    final updated = Map<String, String>.from(state.bucketAccountLinks);
+    // Remove any existing link pointing to this accountId
+    updated.removeWhere((_, v) => v == accountId);
+    updated[bucketTypeName] = accountId;
+    await _box.put(_bucketAccountLinksKey, updated);
+    emit(state.copyWith(bucketAccountLinks: updated));
+  }
+
+  /// Remove the sync link from a bucket.
+  Future<void> unlinkAccountFromBucket(String bucketTypeName) async {
+    final updated = Map<String, String>.from(state.bucketAccountLinks)
+      ..remove(bucketTypeName);
+    await _box.put(_bucketAccountLinksKey, updated);
+    emit(state.copyWith(bucketAccountLinks: updated));
   }
 }

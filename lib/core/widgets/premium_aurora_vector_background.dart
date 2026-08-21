@@ -35,52 +35,49 @@ class _AuroraVectorPainter extends CustomPainter {
     final double w = size.width;
     final double h = size.height;
 
-    // 1. Base Layer (Bottom-most, fills the screen)
-    // The image has a soft violet/purple base.
+    // 1. Base Layer — soft teal-white (matches home page F2F8F7)
     final basePaint = Paint()
-      ..color = const Color(0xFF9270F3); // Soft Violet
+      ..color = const Color(0xFFF2F8F7);
     canvas.drawRect(Rect.fromLTWH(0, 0, w, h), basePaint);
 
-    // 2. Middle Layer (Covers top ~80% with a curved bottom)
+    // 2. Middle Layer — deep teal wave covering top ~80%
     final path1 = Path();
     path1.moveTo(0, 0);
-    path1.lineTo(0, h * 0.55); // Starts halfway down the left side
-    // Curves down to ~85% in the middle, then up to ~65% on the right side
+    path1.lineTo(0, h * 0.55);
     path1.quadraticBezierTo(w * 0.45, h * 0.90, w, h * 0.50);
     path1.lineTo(w, 0);
     path1.close();
 
     final paint1 = Paint()
       ..shader = const LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
         colors: [
-          Color(0xFFDF8BEA), // Soft Pink
-          Color(0xFFB17BE8), // Blend to Purple
+          Color(0xFF3AAFA9), // deeper teal
+          Color(0xFF60C5B8), // mid teal/cyan
         ],
       ).createShader(Rect.fromLTWH(0, 0, w, h * 0.85));
-      
+
     canvas.drawPath(path1, paint1);
 
-    // 3. Top Layer (Covers top ~55% with a curved bottom)
+    // 3. Top Layer — bright cyan/teal wave covering top ~55%
     final path2 = Path();
     path2.moveTo(0, 0);
-    path2.lineTo(0, h * 0.45); // Starts 45% down the left side
-    // Curves down to ~60% in the middle, then up to ~30% on the right side
+    path2.lineTo(0, h * 0.45);
     path2.quadraticBezierTo(w * 0.5, h * 0.65, w, h * 0.20);
     path2.lineTo(w, 0);
     path2.close();
 
     final paint2 = Paint()
       ..shader = const LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
         colors: [
-          Color(0xFFE89EE2), // Light Pink
-          Color(0xFFCE88E6), // Blend to mid Pink
+          Color(0xFF7CDBD4), // light cyan
+          Color(0xFF50C8C8), // home page teal accent
         ],
       ).createShader(Rect.fromLTWH(0, 0, w, h * 0.65));
-      
+
     canvas.drawPath(path2, paint2);
   }
 
