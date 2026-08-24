@@ -102,17 +102,24 @@ class _DebtCardState extends State<DebtCard>
                       horizontal: 16.0, vertical: 10.0),
                   decoration: ShapeDecoration(
                     color: widget.debt.currentBalance <= 0
-                        ? const Color(0xFF7C3AED).withOpacity(0.15)
-                        : Colors.white.withOpacity(0.05),
+                        ? const Color(0xFFE0F7FA)
+                        : Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
                       side: BorderSide(
                         color: widget.debt.currentBalance <= 0
-                            ? Colors.transparent
-                            : Colors.white.withOpacity(0.2),
+                            ? const Color(0xFF80DEEA)
+                            : Colors.grey.withOpacity(0.2),
                         width: 1.0,
                       ),
                     ),
+                    shadows: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -125,7 +132,7 @@ class _DebtCardState extends State<DebtCard>
                               child: Text(
                                 widget.debt.name,
                                 style: const TextStyle(
-                                  color: Colors.white70,
+                                  color: Color(0xFF1E293B),
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -139,12 +146,14 @@ class _DebtCardState extends State<DebtCard>
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(
-                              'Need to be paid: Rs ${widget.debt.currentBalance.toStringAsFixed(0)}',
-                              style: const TextStyle(
-                                  color: Colors.white70,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600),
+                            Expanded(
+                              child: Text(
+                                'Need to be paid: Rs ${widget.debt.currentBalance.toStringAsFixed(0)}',
+                                style: const TextStyle(
+                                    color: Colors.black54,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600),
+                              ),
                             ),
                           ],
                         ),
@@ -153,9 +162,9 @@ class _DebtCardState extends State<DebtCard>
                           borderRadius: BorderRadius.circular(4),
                           child: LinearProgressIndicator(
                             value: progress,
-                            backgroundColor: Colors.white.withOpacity(0.1),
+                            backgroundColor: Colors.grey.shade200,
                             valueColor: const AlwaysStoppedAnimation<Color>(
-                                Color(0xFF7C3AED)),
+                                Color(0xFF00ACC1)),
                             minHeight: 4,
                           ),
                         ),
@@ -163,13 +172,13 @@ class _DebtCardState extends State<DebtCard>
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            const Icon(Icons.stars_rounded, color: Color(0xFFD8B4E2), size: 18),
+                            const Icon(Icons.stars_rounded, color: Color(0xFF00ACC1), size: 18),
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
                                 'Hooray! You successfully completed ${widget.debt.name} amount of Rs ${widget.debt.totalAmount.toStringAsFixed(0)}!',
                                 style: const TextStyle(
-                                  color: Color(0xFFD8B4E2),
+                                  color: Color(0xFF00838F),
                                   fontSize: 13,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -181,64 +190,46 @@ class _DebtCardState extends State<DebtCard>
                               child: TextButton(
                                 onPressed: widget.onDeleteTap,
                                 style: TextButton.styleFrom(
+                                  backgroundColor: const Color(0xFFE0F7FA),
+                                  foregroundColor: const Color(0xFF00ACC1),
                                   shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                    side: BorderSide(
-                                        color: Colors.white.withOpacity(0.5)),
+                                    borderRadius: BorderRadius.circular(16),
                                   ),
                                 ),
                                 child: const Text('Delete',
                                     style: TextStyle(
-                                        color: Colors.white70,
-                                        fontSize: 12)),
+                                        fontSize: 12, fontWeight: FontWeight.bold)),
                               ),
                             ),
                           ],
                         ),
                       ],
                       if (widget.debt.currentBalance > 0) ...[
-                        const SizedBox(height: 8),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
+                        const SizedBox(height: 12),
+                        Wrap(
+                          alignment: WrapAlignment.end,
+                          spacing: 8,
+                          runSpacing: 8,
                           children: [
-                            SizedBox(
-                              height: 28,
-                              child: TextButton(
-                                onPressed: widget.onDeleteTap,
-                                child: const Text('Delete',
-                                    style: TextStyle(
-                                        color: Colors.white70, fontSize: 12)),
-                              ),
+                            _buildActionButton(
+                              icon: Icons.delete_outline,
+                              label: 'Delete',
+                              onPressed: widget.onDeleteTap,
                             ),
-                            const SizedBox(width: 8),
-                            SizedBox(
-                              height: 28,
-                              child: TextButton(
-                                onPressed: widget.onEditTap,
-                                child: const Text('Edit',
-                                    style: TextStyle(
-                                        color: Colors.white70, fontSize: 12)),
-                              ),
+                            _buildActionButton(
+                              icon: Icons.edit_outlined,
+                              label: 'Edit',
+                              onPressed: widget.onEditTap,
                             ),
-                            const SizedBox(width: 8),
-                            SizedBox(
-                              height: 28,
-                              child: TextButton(
-                                onPressed: widget.onCompleteTap,
-                                child: const Text('Complete',
-                                    style: TextStyle(
-                                        color: Colors.white70, fontSize: 12)),
-                              ),
+                            _buildActionButton(
+                              icon: Icons.check_circle_outline,
+                              label: 'Complete',
+                              onPressed: widget.onCompleteTap,
                             ),
-                            const SizedBox(width: 8),
-                            SizedBox(
-                              height: 28,
-                              child: TextButton(
-                                onPressed: widget.onPayTap,
-                                child: const Text('Pay',
-                                    style: TextStyle(
-                                        color: Colors.white70, fontSize: 12)),
-                              ),
+                            _buildActionButton(
+                              icon: Icons.payment_outlined,
+                              label: 'Pay',
+                              onPressed: widget.onPayTap,
                             ),
                           ],
                         ),
@@ -262,6 +253,30 @@ class _DebtCardState extends State<DebtCard>
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildActionButton({
+    required IconData icon,
+    required String label,
+    required VoidCallback onPressed,
+  }) {
+    return SizedBox(
+      height: 28,
+      child: TextButton.icon(
+        onPressed: onPressed,
+        icon: Icon(icon, size: 14),
+        label: Text(label,
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+        style: TextButton.styleFrom(
+          backgroundColor: const Color(0xFFE0F7FA),
+          foregroundColor: const Color(0xFF00ACC1),
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ),
       ),
     );
   }

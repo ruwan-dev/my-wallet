@@ -443,35 +443,26 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
     final double mojoBalance = calculatedMojo;
     final double growBalance = calculatedGrow;
 
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: const Text(
-          'Bucket Allocator',
-          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 18),
-        ),
-        centerTitle: true,
+    return Container(
+      decoration: const BoxDecoration(
+        color: Color(0xFFF4F9F9), // very soft, almost-white cyan
       ),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFF3AAFA9), // deep teal
-              Color(0xFF60C5B8), // mid teal/cyan
-              Color(0xFFF2F8F7), // soft teal-white
-            ],
-            stops: [0.0, 0.40, 1.0],
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black87, size: 20),
+            onPressed: () => Navigator.pop(context),
           ),
+          title: const Text(
+            'Bucket Allocator',
+            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black87, fontSize: 18),
+          ),
+          centerTitle: true,
         ),
-        child: SafeArea(
+        body: SafeArea(
           child: Column(
             children: [
               const SizedBox(height: 8),
@@ -524,34 +515,22 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
   Widget _buildSegmentedControl(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24.0),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(25),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: Container(
-            height: 50,
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.18),
-              borderRadius: BorderRadius.circular(25),
-              border: Border.all(color: Colors.white.withOpacity(0.3), width: 1.5),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF3AAFA9).withOpacity(0.2),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Row(
-              children: [
-                _buildSegmentTab(0, 'Blow', Icons.work_outline),
-                _buildSegmentTab(1, 'Smile', Icons.flight_takeoff),
-                _buildSegmentTab(2, 'Fire', Icons.local_fire_department),
-                _buildSegmentTab(3, 'Mojo', Icons.security),
-                _buildSegmentTab(4, 'Grow', Icons.eco),
-              ],
-            ),
-          ),
+      child: Container(
+        height: 50,
+        decoration: BoxDecoration(
+          color: Colors.black.withOpacity(0.04),
+          borderRadius: BorderRadius.circular(25),
+          border: Border.all(color: Colors.black.withOpacity(0.05), width: 1),
+        ),
+        padding: const EdgeInsets.all(4),
+        child: Row(
+          children: [
+            _buildSegmentTab(0, 'Blow', Icons.work_outline),
+            _buildSegmentTab(1, 'Smile', Icons.flight_takeoff),
+            _buildSegmentTab(2, 'Fire', Icons.local_fire_department),
+            _buildSegmentTab(3, 'Mojo', Icons.security),
+            _buildSegmentTab(4, 'Grow', Icons.eco),
+          ],
         ),
       ),
     );
@@ -565,15 +544,15 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
         behavior: HitTestBehavior.opaque,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
-          margin: const EdgeInsets.all(4),
+          margin: const EdgeInsets.symmetric(horizontal: 2),
           decoration: isSelected
               ? BoxDecoration(
-                  color: Colors.white.withOpacity(0.35),
+                  color: Colors.white,
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF50C8C8).withOpacity(0.3),
-                      blurRadius: 8,
+                      color: Colors.black.withOpacity(0.04),
+                      blurRadius: 4,
                       offset: const Offset(0, 2),
                     ),
                   ],
@@ -584,14 +563,14 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
             children: [
               Icon(icon,
                   size: 13,
-                  color: isSelected ? const Color(0xFF0D2626) : Colors.white70),
-              const SizedBox(width: 3),
+                  color: isSelected ? Colors.black87 : Colors.black45),
+              const SizedBox(width: 4),
               Flexible(
                 child: Text(
                   title,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: isSelected ? const Color(0xFF0D2626) : Colors.white70,
+                    color: isSelected ? Colors.black87 : Colors.black45,
                     fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                     fontSize: 11,
                   ),
@@ -618,7 +597,7 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
       builder: (context, constraints) {
         Widget content = Column(
           children: [
-            // Top Half: Responsive Credit Cards
+            // Responsive Credit Cards
             LayoutBuilder(
               builder: (context, constraints) {
                 final bool isDesktop = constraints.maxWidth > 800;
@@ -647,6 +626,7 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
                           balance: allocatedDailyExpenses - spentDailyExpenses,
                           cardNumberEnding: '**** 0001',
                           description: 'Things that keep you running.\n• Examples: Utility bills, groceries.',
+                          backgroundImagePath: 'assets/images/daily_expenses.png',
                         ),
                       ),
                       SizedBox(
@@ -654,11 +634,12 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
                         child: _buildCreditCard(
                           title: 'Splurge Wallet',
                           icon: Icons.card_giftcard,
-                          color: const Color(0xFFEAB308),
+                          color: const Color(0xFFFFD700),
                           badgeText: '10%',
                           balance: allocatedSplurge - spentSplurge,
                           cardNumberEnding: '**** 0002',
                           description: 'Things you enjoy purely for fun, without any guilt or second-guessing.\n• Examples: Ordering takeout, dining out, fancy coffee, or music festivals.',
+                          backgroundImagePath: 'assets/images/splurge.jpg',
                         ),
                       ),
                     ],
@@ -666,253 +647,36 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
                 );
               },
             ),
-
-            // Bottom Half: Interactive Donut Chart Tile
-            Expanded(
-              child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(24),
-                  child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(24),
-                        color: Colors.white.withOpacity(0.18),
-                        border: Border.all(
-                            color: Colors.white.withOpacity(0.3), width: 1.5),
-                      ),
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Title
-                          Row(
-                            children: [
-                              const Text(
-                                'Balance Overview',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-
-                          // Interactive Donut Chart & Legend
-                          Expanded(
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  flex: 5,
-                                  child: LayoutBuilder(
-                                      builder: (context, constraints) {
-                                    final size = math.min(constraints.maxWidth,
-                                        constraints.maxHeight);
-                                    return GestureDetector(
-                                      onTapUp: (details) {
-                                        final center = Offset(
-                                            constraints.maxWidth / 2,
-                                            constraints.maxHeight / 2);
-                                        final dx =
-                                            details.localPosition.dx - center.dx;
-                                        final dy =
-                                            details.localPosition.dy - center.dy;
-                                        final distance =
-                                            math.sqrt(dx * dx + dy * dy);
-
-                                        // Only register taps near the donut ring
-                                        if (distance < (size / 2) - 80 ||
-                                            distance > (size / 2)) {
-                                          setState(() => _selectedBucketIndex = -1);
-                                          return;
-                                        }
-
-                                        double angle = math.atan2(dy, dx);
-                                        angle += math.pi / 2;
-                                        if (angle < 0) angle += 2 * math.pi;
-
-                                        final pct = angle / (2 * math.pi);
-                                        setState(() {
-                                          if (pct < 0.85)
-                                            _selectedBucketIndex = 0;
-                                          else
-                                            _selectedBucketIndex = 1;
-                                        });
-                                      },
-                                      child: Stack(
-                                        alignment: Alignment.center,
-                                        children: [
-                                          SizedBox(
-                                            width: size,
-                                            height: size,
-                                            child: CustomPaint(
-                                              painter: _ConcentricDonutPainter(
-                                                dailyExpensesSpentPct:
-                                                    allocatedDailyExpenses > 0
-                                                        ? (spentDailyExpenses /
-                                                                allocatedDailyExpenses)
-                                                            .clamp(0.0, 1.0)
-                                                        : 0.0,
-                                                splurgeSpentPct:
-                                                    allocatedSplurge > 0
-                                                        ? (spentSplurge /
-                                                                allocatedSplurge)
-                                                            .clamp(0.0, 1.0)
-                                                        : 0.0,
-                                                selectedIndex: _selectedBucketIndex,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    );
-                                  }),
-                                ),
-
-                                // Right Side: Interactive Details & Legend
-                                Expanded(
-                                  flex: 5,
-                                  child: Center(
-                                    child: SingleChildScrollView(
-                                      child: AnimatedSwitcher(
-                                        duration: const Duration(milliseconds: 300),
-                                        child: _selectedBucketIndex == -1
-                                            ? Column(
-                                                key: const ValueKey('total'),
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment.center,
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.start,
-                                                children: [
-                                                  const Text(
-                                                    'Total Remaining',
-                                                    style: TextStyle(
-                                                        color: Colors.white70,
-                                                        fontSize: 14,
-                                                        fontWeight: FontWeight.w600),
-                                                  ),
-                                                  const SizedBox(height: 4),
-                                                  FittedBox(
-                                                    fit: BoxFit.scaleDown,
-                                                    child: Text(
-                                                      AppFormatters.formatCurrency(
-                                                          context, totalRemaining),
-                                                      style: const TextStyle(
-                                                          color: Colors.white,
-                                                          fontSize: 28,
-                                                          fontWeight: FontWeight.bold),
-                                                    ),
-                                                  ),
-                                                  const SizedBox(height: 16),
-                                                  _buildLegendItem(
-                                                      color: const Color(0xFF3B82F6),
-                                                      label: 'Daily (60%)'),
-                                                  const SizedBox(height: 8),
-                                                  _buildLegendItem(
-                                                      color: const Color(0xFFEAB308),
-                                                      label: 'Splurge (10%)'),
-                                                ],
-                                              )
-                                            : Builder(
-                                                key: ValueKey(
-                                                    'bucket_$_selectedBucketIndex'),
-                                                builder: (context) {
-                                                  String name = '';
-                                                  IconData icon = Icons.circle;
-                                                  Color color = Colors.white;
-                                                  double allocated = 0;
-                                                  double spent = 0;
-
-                                                  if (_selectedBucketIndex == 0) {
-                                                    name = 'Daily Exp.';
-                                                    icon = Icons.home_rounded;
-                                                    color = const Color(0xFF3B82F6);
-                                                    allocated = allocatedDailyExpenses;
-                                                    spent = spentDailyExpenses;
-                                                  } else {
-                                                    name = 'Splurge';
-                                                    icon = Icons.card_giftcard;
-                                                    color = const Color(0xFFEAB308);
-                                                    allocated = allocatedSplurge;
-                                                    spent = spentSplurge;
-                                                  }
-
-                                                  final remaining = allocated - spent;
-
-                                                  return Column(
-                                                    mainAxisAlignment:
-                                                        MainAxisAlignment.center,
-                                                    crossAxisAlignment:
-                                                        CrossAxisAlignment.start,
-                                                    children: [
-                                                      Row(
-                                                        mainAxisSize:
-                                                            MainAxisSize.min,
-                                                        children: [
-                                                          Icon(icon,
-                                                              color: color,
-                                                              size: 16),
-                                                          const SizedBox(width: 6),
-                                                          Text(name,
-                                                              style: TextStyle(
-                                                                  color: color,
-                                                                  fontSize: 16,
-                                                                  fontWeight:
-                                                                      FontWeight.bold)),
-                                                        ],
-                                                      ),
-                                                      const SizedBox(height: 8),
-                                                      Text(
-                                                          'Allocated:\n${AppFormatters.formatCurrency(context, allocated)}',
-                                                          style: const TextStyle(
-                                                              color: Colors.white54,
-                                                              fontSize: 12)),
-                                                      const SizedBox(height: 4),
-                                                      Text(
-                                                          'Spent:\n-${AppFormatters.formatCurrency(context, spent)}',
-                                                          style: const TextStyle(
-                                                              color: Colors.redAccent,
-                                                              fontSize: 12)),
-                                                      const SizedBox(height: 8),
-                                                      FittedBox(
-                                                        fit: BoxFit.scaleDown,
-                                                        child: Text(
-                                                            AppFormatters
-                                                                .formatCurrency(
-                                                                    context,
-                                                                    remaining),
-                                                            style: const TextStyle(
-                                                                color: Colors.white,
-                                                                fontSize: 28,
-                                                                fontWeight:
-                                                                    FontWeight.bold)),
-                                                      ),
-                                                    ],
-                                                  );
-                                                }),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
           ],
         );
 
         return content;
       },
+    );
+  }
+
+  Widget _buildCurrencyText(double amount, {double mainFontSize = 28, double smallFontSize = 14, Color color = Colors.white}) {
+    final formatted = AppFormatters.formatCurrency(context, amount); // e.g. "Rs 57,500.00"
+    
+    int firstDigitIdx = formatted.indexOf(RegExp(r'\d'));
+    if (firstDigitIdx == -1) firstDigitIdx = 0;
+    
+    int decimalIdx = formatted.lastIndexOf('.');
+    if (decimalIdx == -1) decimalIdx = formatted.length;
+    
+    final symbolPart = formatted.substring(0, firstDigitIdx);
+    final mainPart = formatted.substring(firstDigitIdx, decimalIdx);
+    final decimalPart = formatted.substring(decimalIdx);
+    
+    return RichText(
+      text: TextSpan(
+        style: TextStyle(color: color, fontWeight: FontWeight.bold, fontFamily: 'Inter'),
+        children: [
+          TextSpan(text: symbolPart, style: TextStyle(fontSize: smallFontSize)),
+          TextSpan(text: mainPart, style: TextStyle(fontSize: mainFontSize)),
+          TextSpan(text: decimalPart, style: TextStyle(fontSize: smallFontSize)),
+        ],
+      ),
     );
   }
 
@@ -937,6 +701,7 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
             targetAmount: settings.smileTargetAmount,
             goalName: settings.smileGoalName,
             description: 'Things that put a genuine smile on your face.\n• Examples: Weekend getaway trips, new tech gadgets, or special gifts.',
+            backgroundImagePath: 'assets/images/smile.jpg',
           ),
         ),
         Expanded(
@@ -1056,6 +821,7 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
                     ? 'Mojo'
                     : 'Grow',
             description: 'Things that crush your burdens and build your freedom.\n• Examples: Clearing credit card debt and paying off vehicle leases.',
+            backgroundImagePath: 'assets/images/fire.jpg',
           ),
         ),
         Expanded(
@@ -1178,6 +944,7 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
             targetAmount: targetGoal,
             description:
                 'Things that keep you safe when life hits hard.\n• Examples: Unexpected medical bills or emergency car repairs.',
+            backgroundImagePath: 'assets/images/mojo.jpg',
             actionWidget: !_isAddingMojoFunds
                 ? OutlinedButton.icon(
                     onPressed: () =>
@@ -1249,6 +1016,7 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
             secondaryColor: const Color(0xFF10B981),
             balance: growBalance,
             description: 'Things that multiply your wealth for the future.\n• Examples: Stock market investments or real estate property purchases.',
+            backgroundImagePath: 'assets/images/grow.jpg',
           ),
         ),
         Expanded(
@@ -1328,6 +1096,7 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
     String? redirectTarget,
     String? description,
     Widget? actionWidget,
+    String? backgroundImagePath,
   }) {
     final settings = context.watch<SettingsCubit>().state;
     final accState = context.watch<AccountCubit>().state;
@@ -1352,22 +1121,32 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
 
     return Container(
       width: double.infinity,
+      height: 195,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            displayPrimary.withOpacity(0.9),
-            displaySecondary.withOpacity(0.9),
-          ],
-        ),
+        gradient: backgroundImagePath == null
+            ? LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  displayPrimary.withOpacity(0.9),
+                  displaySecondary.withOpacity(0.9),
+                ],
+              )
+            : null,
+        image: backgroundImagePath != null
+            ? DecorationImage(
+                image: AssetImage(backgroundImagePath),
+                fit: BoxFit.cover,
+                alignment: Alignment.centerRight,
+              )
+            : null,
         border: Border.all(color: Colors.white.withOpacity(0.3), width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: displaySecondary.withOpacity(0.4),
-            blurRadius: 15,
-            offset: const Offset(0, 6),
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 24,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
@@ -1399,29 +1178,11 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
                     ),
                   ],
                 ),
-                if (description != null) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    description,
-                    style: TextStyle(
-                      color: textColor.withValues(alpha: 0.7),
-                      fontSize: 12,
-                      height: 1.4,
-                    ),
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
                 const SizedBox(height: 8),
-                Text(
-                  AppFormatters.formatCurrency(
-                      context, isRedirected ? 0 : balance),
-                  style: TextStyle(
-                    color: textColor,
-                    fontSize: 28,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: -0.5,
-                  ),
+                _buildCurrencyText(
+                   isRedirected ? 0 : balance,
+                   color: textColor,
+                   mainFontSize: 28,
                 ),
                 if (targetAmount != null && targetAmount > 0) ...[
                   const SizedBox(height: 16),
@@ -1445,22 +1206,13 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
                     ),
                   ),
                 ],
-                const SizedBox(height: 12),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'BAREFOOT',
-                      style: TextStyle(
-                        color: textColor.withOpacity(0.7),
-                        fontSize: 9,
-                        letterSpacing: 1.0,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    if (actionWidget != null) actionWidget,
-                  ],
-                ),
+                if (actionWidget != null) ...[
+                  const SizedBox(height: 12),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: actionWidget,
+                  ),
+                ],
 
                 // ── Account Sync chip ─────────────────────────────────────
                 if (bucketTypeName != null) ...[
@@ -1512,10 +1264,11 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
               ],
             ),
           ),
-          Opacity(
-            opacity: 0.15,
-            child: Icon(icon, size: 60, color: Colors.black),
-          ),
+          if (backgroundImagePath == null)
+            Opacity(
+              opacity: 0.10,
+              child: Icon(icon, size: 60, color: Colors.black),
+            ),
         ],
       ),
     );
@@ -1555,6 +1308,7 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
     bool isRedirected = false,
     String? redirectTarget,
     String? description,
+    String? backgroundImagePath,
   }) {
     final bool hasGoal = targetAmount != null && targetAmount > 0;
     final double progress =
@@ -1566,22 +1320,32 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
 
     return Container(
       width: double.infinity,
+      height: 195,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            displayColor.withOpacity(0.9),
-            displayColor.withOpacity(0.5),
-          ],
-        ),
+        gradient: backgroundImagePath == null
+            ? LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  displayColor.withOpacity(0.9),
+                  displayColor.withOpacity(0.5),
+                ],
+              )
+            : null,
+        image: backgroundImagePath != null
+            ? DecorationImage(
+                image: AssetImage(backgroundImagePath),
+                fit: BoxFit.cover,
+                alignment: Alignment.centerRight,
+              )
+            : null,
         border: Border.all(color: Colors.white.withOpacity(0.3), width: 1.2),
         boxShadow: [
           BoxShadow(
-            color: displayColor.withOpacity(0.4),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 24,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
@@ -1589,18 +1353,19 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
       child: Stack(
         children: [
           // Watermark Icon
-          Positioned(
-            right: -20,
-            bottom: -10,
-            child: Opacity(
-              opacity: 0.15,
-              child: Icon(
-                icon,
-                size: 120,
-                color: Colors.black,
+          if (backgroundImagePath == null)
+            Positioned(
+              right: -20,
+              bottom: -10,
+              child: Opacity(
+                opacity: 0.10,
+                child: Icon(
+                  icon,
+                  size: 120,
+                  color: Colors.black,
+                ),
               ),
             ),
-          ),
           // Foreground Content
           Padding(
             padding: const EdgeInsets.all(20),
@@ -1651,29 +1416,11 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
                     ),
                   ],
                 ),
-                if (description != null) ...[
-                  const SizedBox(height: 6),
-                  Text(
-                    description,
-                    style: TextStyle(
-                      color: textColor.withValues(alpha: 0.8),
-                      fontSize: 10,
-                      height: 1.4,
-                    ),
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
                 const SizedBox(height: 8),
-                Text(
-                  AppFormatters.formatCurrency(
-                      context, isRedirected ? 0 : balance),
-                  style: TextStyle(
-                    color: textColor,
-                    fontSize: 28,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: -0.5,
-                  ),
+                _buildCurrencyText(
+                   isRedirected ? 0 : balance,
+                   color: textColor,
+                   mainFontSize: 28,
                 ),
                 if (hasGoal && !isRedirected) ...[
                   const SizedBox(height: 16),
@@ -1701,16 +1448,6 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
                         color: textColor.withOpacity(0.8), fontSize: 8),
                   ),
                 ],
-                const SizedBox(height: 24),
-                Text(
-                  'BAREFOOT',
-                  style: TextStyle(
-                    color: textColor.withOpacity(0.7),
-                    fontSize: 9,
-                    letterSpacing: 1.0,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
               ],
             ),
           ),

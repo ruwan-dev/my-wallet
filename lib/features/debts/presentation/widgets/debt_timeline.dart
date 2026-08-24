@@ -51,7 +51,7 @@ class _DebtTimelineState extends State<DebtTimeline> {
           const NeverScrollableScrollPhysics(), // Since it's inside a SingleChildScrollView already
       reverse: true, // Builds from bottom to top
       itemCount: sortedDebts.length,
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: 8),
       itemBuilder: (context, index) {
         return _buildTimelineNode(
             context, index, sortedDebts, maxDebt, widget.fireBalance);
@@ -71,11 +71,11 @@ class _DebtTimelineState extends State<DebtTimeline> {
     final bool isLast = index == sortedDebts.length - 1;
 
     Color calculateNodeColor(Debt d) {
-      if (maxDebt <= 0) return const Color(0xFFD8B4E2); // lightPurple
+      if (maxDebt <= 0) return const Color(0xFF80DEEA); // lightCyan
       double ratio = (d.currentBalance / maxDebt).clamp(0.0, 1.0);
       return Color.lerp(
-        const Color(0xFFD8B4E2), // 0%
-        const Color(0xFF4A148C), // 100%
+        const Color(0xFF80DEEA), // 0%
+        const Color(0xFF0097A7), // 100%
         ratio,
       )!;
     }
@@ -132,7 +132,7 @@ class _DebtTimelineState extends State<DebtTimeline> {
                       return BackdropFilter(
                         filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
                         child: AlertDialog(
-                          backgroundColor: const Color(0xFF7C3AED).withOpacity(0.15),
+                          backgroundColor: const Color(0xFF0F172A).withOpacity(0.15),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(24),
                             side: BorderSide(color: Colors.white.withOpacity(0.2), width: 1.5),
@@ -164,7 +164,7 @@ class _DebtTimelineState extends State<DebtTimeline> {
                       return BackdropFilter(
                         filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
                         child: AlertDialog(
-                          backgroundColor: const Color(0xFF7C3AED).withOpacity(0.15),
+                          backgroundColor: const Color(0xFF0F172A).withOpacity(0.15),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(24),
                             side: BorderSide(color: Colors.white.withOpacity(0.2), width: 1.5),
@@ -234,7 +234,7 @@ class _DebtTimelineState extends State<DebtTimeline> {
                     // Top Half
                     Expanded(
                       child: Container(
-                        width: 3,
+                        width: 1,
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             begin: Alignment.bottomCenter,
@@ -244,18 +244,13 @@ class _DebtTimelineState extends State<DebtTimeline> {
                               Color.lerp(colorMe, colorAbove, 0.5)!,
                             ],
                           ),
-                          borderRadius: isLast
-                              ? const BorderRadius.only(
-                                  topLeft: Radius.circular(6),
-                                  topRight: Radius.circular(6))
-                              : null,
                         ),
                       ),
                     ),
                     // Bottom Half
                     Expanded(
                       child: Container(
-                        width: 3,
+                        width: 1,
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             begin: Alignment.topCenter,
@@ -265,11 +260,6 @@ class _DebtTimelineState extends State<DebtTimeline> {
                               colorMe,
                             ],
                           ),
-                          borderRadius: isFirst
-                              ? const BorderRadius.only(
-                                  bottomLeft: Radius.circular(6),
-                                  bottomRight: Radius.circular(6))
-                              : null,
                         ),
                       ),
                     ),
@@ -279,11 +269,22 @@ class _DebtTimelineState extends State<DebtTimeline> {
 
               // The Node / Checkpoint
               Container(
-                width: nodeSize,
-                height: nodeSize,
+                width: 36,
+                height: 36,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: nodeColor,
+                  color: Colors.white,
+                  border: Border.all(
+                    color: nodeColor.withOpacity(0.5),
+                    width: 1.5,
+                  ),
+                ),
+                child: Center(
+                  child: Icon(
+                    isCompleted ? Icons.check_circle_outline : Icons.adjust,
+                    color: nodeColor,
+                    size: 20,
+                  ),
                 ),
               ),
             ],

@@ -75,7 +75,10 @@ class _RegisterPageState extends State<RegisterPage> {
     final isSmallScreen = MediaQuery.of(context).size.height < 700;
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 32, vertical: isSmallScreen ? 12 : 24),
-      child: const QuotesCarousel(),
+      child: SizedBox(
+        height: isSmallScreen ? 150 : 200,
+        child: const QuotesCarousel(),
+      ),
     );
   }
 

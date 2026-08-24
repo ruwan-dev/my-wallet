@@ -514,9 +514,8 @@ class _AddTransactionPageState extends State<AddTransactionPage>
                 child: _buildTypeCard(
                   theme,
                   title: 'Expense',
-                  emoji: '💸',
-                  imageAsset: 'assets/images/type_expense.png',
-                  color: const Color(0xFFEF4444),
+                  iconData: Icons.remove_circle_outline_rounded,
+                  color: theme.colorScheme.onSurface,
                   isSelected: _isIncome == false,
                   onTap: () {
                     setState(() {
@@ -534,9 +533,8 @@ class _AddTransactionPageState extends State<AddTransactionPage>
                 child: _buildTypeCard(
                   theme,
                   title: 'Income',
-                  emoji: '💰',
-                  imageAsset: 'assets/images/type_income.png',
-                  color: const Color(0xFF10B981),
+                  iconData: Icons.add_circle_outline_rounded,
+                  color: theme.colorScheme.onSurface,
                   isSelected: _isIncome == true,
                   onTap: () {
                     setState(() {
@@ -663,54 +661,58 @@ class _AddTransactionPageState extends State<AddTransactionPage>
   Widget _buildTypeCard(
     ThemeData theme, {
     required String title,
-    required String emoji,
     required Color color,
     required bool isSelected,
     required VoidCallback onTap,
-    String? imageAsset,
+    required IconData iconData,
   }) {
     return GestureDetector(
       onTap: onTap,
-      child: AnimatedContainer(
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedOpacity(
         duration: const Duration(milliseconds: 250),
-        margin: const EdgeInsets.symmetric(horizontal: 8),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: isSelected ? color.withValues(alpha: 0.1) : Colors.transparent,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(
-            color: isSelected ? color.withValues(alpha: 0.5) : Colors.transparent,
-            width: 2,
-          ),
-        ),
-        child: AnimatedOpacity(
+        opacity: isSelected ? 1.0 : 0.8,
+        child: AnimatedScale(
           duration: const Duration(milliseconds: 250),
-          opacity: isSelected ? 1.0 : 0.5,
-          child: AnimatedScale(
+          scale: isSelected ? 1.1 : 0.9,
+          child: AnimatedContainer(
             duration: const Duration(milliseconds: 250),
-            curve: Curves.easeOut,
-            scale: isSelected ? 1.05 : 0.95,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: isSelected ? color.withValues(alpha: 0.1) : theme.colorScheme.surface.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: isSelected ? color : theme.colorScheme.onSurface.withValues(alpha: 0.1),
+                width: isSelected ? 2 : 1,
+              ),
+              boxShadow: isSelected
+                  ? [
+                      BoxShadow(
+                        color: color.withValues(alpha: 0.2),
+                        blurRadius: 16,
+                        offset: const Offset(0, 4),
+                      )
+                    ]
+                  : [],
+            ),
             child: Column(
-              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                AspectRatio(
-                  aspectRatio: 1.2,
-                  child: imageAsset != null
-                      ? Image.asset(
-                          imageAsset,
-                          fit: BoxFit.contain,
-                          errorBuilder: (context, error, stackTrace) =>
-                              FittedBox(child: Text(emoji)),
-                        )
-                      : FittedBox(child: Text(emoji)),
+                Icon(
+                  iconData,
+                  size: 32,
+                  color: isSelected ? color : theme.colorScheme.onSurface,
                 ),
                 const SizedBox(height: 12),
                 Text(
                   title,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
                     color: isSelected ? color : theme.colorScheme.onSurface,
                   ),
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
@@ -983,47 +985,48 @@ class _AddTransactionPageState extends State<AddTransactionPage>
           ),
           const SizedBox(height: 16),
           // 2x2 Static Grid
-          Expanded(
-            child: BlocBuilder<MonthlyBudgetCubit, MonthlyBudgetState>(
-              builder: (context, budgetState) {
-                return BlocBuilder<TransactionCubit, TransactionState>(
-                  builder: (context, txState) {
-                    return Column(
-                      children: [
-                        Expanded(
-                          child: Row(
-                            children: [
-                              Expanded(child: _buildBucketItem(context, theme, 0, budgetState, txState)),
-                              const SizedBox(width: 16),
-                              Expanded(child: _buildBucketItem(context, theme, 1, budgetState, txState)),
-                            ],
-                          ),
+          BlocBuilder<MonthlyBudgetCubit, MonthlyBudgetState>(
+            builder: (context, budgetState) {
+              return BlocBuilder<TransactionCubit, TransactionState>(
+                builder: (context, txState) {
+                  return Column(
+                    children: [
+                      SizedBox(
+                        height: 115,
+                        child: Row(
+                          children: [
+                            Expanded(child: _buildBucketItem(context, theme, 0, budgetState, txState)),
+                            const SizedBox(width: 16),
+                            Expanded(child: _buildBucketItem(context, theme, 1, budgetState, txState)),
+                          ],
                         ),
-                        const SizedBox(height: 16),
-                        Expanded(
-                          child: Row(
-                            children: [
-                              Expanded(child: _buildBucketItem(context, theme, 2, budgetState, txState)),
-                              const SizedBox(width: 16),
-                              Expanded(child: _buildBucketItem(context, theme, 3, budgetState, txState)),
-                            ],
-                          ),
+                      ),
+                      const SizedBox(height: 16),
+                      SizedBox(
+                        height: 115,
+                        child: Row(
+                          children: [
+                            Expanded(child: _buildBucketItem(context, theme, 2, budgetState, txState)),
+                            const SizedBox(width: 16),
+                            Expanded(child: _buildBucketItem(context, theme, 3, budgetState, txState)),
+                          ],
                         ),
-                      ],
-                    );
-                  },
-                );
-              },
-            ),
+                      ),
+                    ],
+                  );
+                },
+              );
+            },
           ),
           const SizedBox(height: 24),
-          Center(
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(24),
-              child: Image.asset(
-                'assets/images/select_buckt.jpeg',
-                height: 220,
-                fit: BoxFit.contain,
+          Expanded(
+            child: Center(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(24),
+                child: Image.asset(
+                  'assets/images/select_buckt.png',
+                  fit: BoxFit.contain,
+                ),
               ),
             ),
           ),
@@ -1069,9 +1072,8 @@ class _AddTransactionPageState extends State<AddTransactionPage>
     }
 
     double remainingBalance = (totalIncome * meta.percentage) - totalSpentInBucket;
-    String customSubtitle = meta.subtitle;
     final remainingStr = AppFormatters.formatCurrency(context, remainingBalance);
-    customSubtitle += '\nRemaining: $remainingStr';
+    String customSubtitle = 'Remaining: $remainingStr';
 
     return _buildCompactBucketCard(
       theme,
@@ -1586,15 +1588,10 @@ class _AddTransactionPageState extends State<AddTransactionPage>
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: _currentStep == 1
-              ? [
-                  const Color(0xFFE0F7FA), // Light Cyan for Choose Bucket
-                  const Color(0xFFE0F7FA),
-                ]
-              : [
-                  const Color(0xFF26C6DA), // Cyan 400
-                  const Color(0xFF00ACC1), // Cyan 600
-                ],
+          colors: const [
+            Color(0xFFE0F7FA),
+            Color(0xFFE0F7FA),
+          ],
         ),
       ),
       child: Scaffold(
