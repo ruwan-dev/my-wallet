@@ -117,6 +117,9 @@ class ExpenseTrackerApp extends StatelessWidget {
               FirebaseFirestore.instance.collection('users').doc(state.user.id).update({'forceSync': false}).catchError((e) {
                 print('Failed to reset forceSync flag: $e');
               });
+            } else if (state.user.isPremium) {
+              // Not force sync, but premium, fetch latest settings from cloud
+              context.read<SettingsCubit>().syncFromCloud();
             }
             context.read<AccountCubit>().loadAccounts();
             context.read<TransactionCubit>().loadTransactions();

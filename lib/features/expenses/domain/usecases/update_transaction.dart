@@ -2,6 +2,7 @@ import 'package:dartz/dartz.dart';
 import '../../../../core/errors/failures.dart';
 import '../../../../core/utils/use_case.dart';
 import '../entities/transaction.dart';
+import '../entities/account.dart';
 import '../repositories/transaction_repository.dart';
 import '../repositories/account_repository.dart';
 

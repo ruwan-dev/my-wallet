@@ -160,6 +160,7 @@ Future<void> configureDependencies() async {
       transactionRemote: sl(),
       categoryRemote: sl(),
       prefs: sl(),
+      settingsCubit: sl(),
     ),
   );
 
@@ -235,6 +236,6 @@ Future<void> configureDependencies() async {
   );
 
   sl.registerLazySingleton(
-    () => SettingsCubit(Hive.box(AppConstants.settingsBox)),
+    () => SettingsCubit(Hive.box(AppConstants.settingsBox), sl(), sl()),
   );
 }

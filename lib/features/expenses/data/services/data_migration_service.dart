@@ -9,6 +9,7 @@ import '../datasources/account_remote_datasource.dart';
 import '../datasources/transaction_remote_datasource.dart';
 import '../datasources/category_remote_datasource.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../../../core/bloc/settings_cubit.dart';
 
 class DataMigrationService {
   final AccountLocalDatasource accountLocal;
@@ -20,6 +21,7 @@ class DataMigrationService {
   final CategoryRemoteDatasource categoryRemote;
   
   final SharedPreferences prefs;
+  final SettingsCubit settingsCubit;
 
   DataMigrationService({
     required this.accountLocal,
@@ -29,6 +31,7 @@ class DataMigrationService {
     required this.transactionRemote,
     required this.categoryRemote,
     required this.prefs,
+    required this.settingsCubit,
   });
 
   Future<void> migrateLocalToFirebase(String userId, {bool force = false}) async {
@@ -53,6 +56,9 @@ class DataMigrationService {
       for (final txn in localTransactions) {
         await transactionRemote.saveTransaction(userId, txn);
       }
+
+      // 4. Migrate Settings
+      await settingsCubit.syncToCloud();
 
       await prefs.setBool('has_migrated_$userId', true);
       
