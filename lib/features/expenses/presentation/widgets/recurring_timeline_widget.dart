@@ -171,26 +171,7 @@ class _StraightTimelinePainter extends CustomPainter {
         ..style = PaintingStyle.fill;
       canvas.drawCircle(Offset(trunkX, y), 5, trunkDotPaint);
 
-      if (event.isPaid) {
-        // Outer colored ring
-        final nodeOuterPaint = Paint()
-          ..color = event.statusColor
-          ..style = PaintingStyle.fill;
-        canvas.drawCircle(Offset(trunkX, y), 8, nodeOuterPaint);
 
-        // Inner white circle
-        final nodeInnerPaint = Paint()
-          ..color = Colors.white
-          ..style = PaintingStyle.fill;
-        canvas.drawCircle(Offset(trunkX, y), 4, nodeInnerPaint);
-      } else {
-        // Pending Payment: hollow ring
-        final pendingPaint = Paint()
-          ..color = event.statusColor
-          ..strokeWidth = 2.0
-          ..style = PaintingStyle.stroke;
-        canvas.drawCircle(Offset(trunkX, y), 7, pendingPaint);
-      }
     }
   }
 

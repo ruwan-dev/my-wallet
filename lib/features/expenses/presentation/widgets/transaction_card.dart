@@ -22,6 +22,121 @@ class TransactionCard extends StatelessWidget {
     required this.accountName,
   });
 
+  void _showTransactionDetails(BuildContext context, ThemeData theme, Color amountColor, String amountText, Category category) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        padding: const EdgeInsets.only(top: 24, left: 24, right: 24, bottom: 40),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('Transaction Details', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            Center(
+              child: Column(
+                children: [
+                  Container(
+                    width: 64,
+                    height: 64,
+                    decoration: BoxDecoration(
+                      color: amountColor.withOpacity(0.12),
+                      shape: BoxShape.circle,
+                    ),
+                    alignment: Alignment.center,
+                    child: CategoryIcon(
+                      iconStr: category.icon,
+                      size: 32,
+                      color: Colors.black,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(amountText, style: theme.textTheme.headlineMedium?.copyWith(color: amountColor, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  Text(transaction.title, style: theme.textTheme.titleMedium),
+                ],
+              ),
+            ),
+            const SizedBox(height: 32),
+            _buildDetailRow(context, 'Category', transaction.categoryName),
+            if (transaction.subCategory != null && transaction.subCategory!.isNotEmpty)
+              _buildDetailRow(context, 'Subcategory', transaction.subCategory!),
+            _buildDetailRow(context, 'Date', AppFormatters.formatDate(transaction.date)),
+            _buildDetailRow(context, 'Account', accountName),
+            if (transaction.bucketType != null && transaction.bucketType != BucketType.none)
+              _buildDetailRow(context, 'Bucket', transaction.bucketType!.displayName),
+            const SizedBox(height: 32),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.pop(context); // Close the modal
+                  context.push('/add-transaction', extra: transaction); // Then push edit
+                },
+                icon: const Icon(Icons.edit, size: 18),
+                label: const Text('Edit Transaction'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF38B2AC),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(BuildContext context, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 120,
+            child: Text(
+              label,
+              style: TextStyle(
+                color: Colors.grey[600],
+                fontWeight: FontWeight.w500,
+                fontSize: 15,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+                color: Colors.black87,
+                fontSize: 15,
+              ),
+              textAlign: TextAlign.right,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme    = Theme.of(context);
@@ -39,10 +154,7 @@ class TransactionCard extends StatelessWidget {
         '${isIncome ? '+' : '-'}${AppFormatters.formatCurrency(context, transaction.amount)}';
 
     final cardContent = InkWell(
-      onTap: () => context.push(
-        '/add-transaction',
-        extra: transaction,
-      ),
+      onTap: () => _showTransactionDetails(context, theme, amountColor, amountText, category),
       borderRadius: BorderRadius.circular(20),
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
@@ -87,27 +199,26 @@ class TransactionCard extends StatelessWidget {
                     const SizedBox(width: 14),
 
                     // ── Middle: amount + subtitle ───────────────────────────────────
+                    // ── Middle: amount + category ───────────────────────────────────
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
                             amountText,
-                            style: theme.textTheme.bodyLarge?.copyWith(
+                            style: theme.textTheme.titleMedium?.copyWith(
                               color: amountColor,
-                              fontWeight: FontWeight.w700,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 18,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
-                          const SizedBox(height: 3),
+                          const SizedBox(height: 4),
                           Text(
-                            transaction.subCategory != null && transaction.subCategory!.isNotEmpty
-                                ? '${transaction.categoryName} (${transaction.subCategory})  •  ${AppFormatters.formatRelativeDate(transaction.date)}'
-                                : '${transaction.categoryName}  •  ${AppFormatters.formatRelativeDate(transaction.date)}',
-                            style: theme.textTheme.bodySmall?.copyWith(
+                            transaction.categoryName,
+                            style: theme.textTheme.bodyMedium?.copyWith(
                               color: theme.colorScheme.onSurfaceVariant,
-                              fontWeight: FontWeight.w400,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -116,37 +227,12 @@ class TransactionCard extends StatelessWidget {
                       ),
                     ),
 
-                    // ── Trailing: title + account ───────────────────────────────────────────
+                    // ── Trailing: favorite button ───────────────────────────────────────────
                     Padding(
                       padding: const EdgeInsets.only(right: 8.0),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          ConstrainedBox(
-                            constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.35),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                Text(
-                                  transaction.title,
-                                  style: theme.textTheme.bodyLarge?.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                const SizedBox(height: 3),
-                                Text(
-                                  accountName,
-                                  style: theme.textTheme.bodySmall?.copyWith(
-                                    color: theme.colorScheme.onSurfaceVariant,
-                                    fontWeight: FontWeight.w400,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 4),
                           IconButton(
                             icon: Icon(
                               transaction.isFavorite ? Icons.favorite : Icons.favorite_border,

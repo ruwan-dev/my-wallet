@@ -100,24 +100,24 @@ class RecurringBillsPage extends StatelessWidget {
         data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
         child: ExpansionTile(
           initiallyExpanded: true,
-          iconColor: Colors.black,
-          collapsedIconColor: Colors.black,
+          iconColor: const Color(0xFF38B2AC),
+          collapsedIconColor: const Color(0xFF38B2AC),
           tilePadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
           leading: CircleAvatar(
-            backgroundColor: Colors.transparent,
+            backgroundColor: const Color(0xFF38B2AC).withOpacity(0.12),
             child: Builder(builder: (context) {
               final codePoint = int.tryParse(cat.icon);
               if (codePoint != null) {
                 return Icon(
                     IconData(codePoint, fontFamily: 'MaterialIcons'),
                     size: 24,
-                    color: Colors.black);
+                    color: const Color(0xFF38B2AC));
               }
-              return Text(cat.icon, style: const TextStyle(fontSize: 20, color: Colors.black));
+              return Text(cat.icon, style: const TextStyle(fontSize: 20, color: Color(0xFF38B2AC)));
             }),
           ),
-          title: Text('$subCat (${cat.name})', style: const TextStyle(fontWeight: FontWeight.bold)),
-          subtitle: Text('${frequency ?? 'One-time'} • ${AppFormatters.formatCurrency(context, expectedAmount)}', style: TextStyle(color: const Color(0xFF7C3AED).withOpacity(0.7), fontSize: 13)),
+          title: Text('$subCat (${cat.name})', style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
+          subtitle: Text('${frequency ?? 'One-time'} • ${AppFormatters.formatCurrency(context, expectedAmount)}', style: TextStyle(color: const Color(0xFF38B2AC).withOpacity(0.9), fontSize: 13, fontWeight: FontWeight.w600)),
           children: [
             const Divider(height: 1, indent: 20, endIndent: 20, color: Color(0xFFF1F5F9)),
             Padding(
@@ -142,7 +142,7 @@ class RecurringBillsPage extends StatelessWidget {
                   }
                   
                   final statusColor = isPaid
-                      ? (isLate ? Colors.orange : const Color(0xFF7C3AED))
+                      ? (isLate ? Colors.orange : const Color(0xFF38B2AC))
                       : (expectedDate.isBefore(now) ? Colors.red : Colors.grey);
                       
                   String statusText;

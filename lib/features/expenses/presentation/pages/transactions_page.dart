@@ -29,12 +29,12 @@ class _TransactionsPageState extends State<TransactionsPage> {
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
-        title: Text('All Transactions', style: theme.textTheme.titleMedium?.copyWith(color: Colors.white)),
+        title: Text('All Transactions', style: theme.textTheme.titleMedium?.copyWith(color: const Color(0xFF1E293B), fontWeight: FontWeight.bold)),
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20, color: Colors.white),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20, color: Color(0xFF1E293B)),
           onPressed: () => context.pop(),
         ),
         actions: [
@@ -48,7 +48,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
               return IconButton(
                 icon: Icon(
                   _selectedCategoryFilter != null ? Icons.filter_alt : Icons.filter_alt_outlined, 
-                  color: _selectedCategoryFilter != null ? Colors.white : Colors.white70,
+                  color: _selectedCategoryFilter != null ? const Color(0xFF38B2AC) : const Color(0xFF1E293B),
                 ),
                 onPressed: () {
                   showModalBottomSheet(
@@ -128,20 +128,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
           ),
         ],
       ),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFF3AAFA9), // deep teal at top
-              Color(0xFF60C5B8), // mid teal
-              Color(0xFFF2F8F7), // soft teal-white at bottom
-            ],
-            stops: [0.0, 0.35, 1.0],
-          ),
-        ),
-        child: BlocBuilder<TransactionCubit, TransactionState>(
+      body: BlocBuilder<TransactionCubit, TransactionState>(
           builder: (context, txState) {
             if (txState is TransactionLoading) {
               return const ShimmerTile();
@@ -160,13 +147,13 @@ class _TransactionsPageState extends State<TransactionsPage> {
                       Text(
                         'No transactions found.',
                         style: theme.textTheme.bodyMedium?.copyWith(
-                          color: Colors.white70,
+                          color: theme.colorScheme.onSurfaceVariant,
                         ),
                       ),
                       if (_selectedCategoryFilter != null)
                         TextButton(
                           onPressed: () => setState(() => _selectedCategoryFilter = null),
-                          child: const Text('Clear Filter', style: TextStyle(color: Colors.white)),
+                          child: Text('Clear Filter', style: TextStyle(color: theme.colorScheme.primary)),
                         ),
                     ],
                   ),
@@ -208,7 +195,6 @@ class _TransactionsPageState extends State<TransactionsPage> {
             return const SizedBox.shrink();
           },
         ),
-      ),
     );
   }
 }
