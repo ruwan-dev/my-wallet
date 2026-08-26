@@ -31,9 +31,10 @@
 
   <title>expense_tracker</title>
   <link rel="manifest" href="manifest.json">
+  <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
   <style>
     body {
-      background-color: #1E1B4B;
+      background-color: #F2F8F7;
       margin: 0;
       height: 100vh;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -44,7 +45,7 @@
       left: 0;
       width: 100%;
       height: 100%;
-      background-color: #0F0C29;
+      background-color: #F2F8F7;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -60,63 +61,37 @@
       animation: float 10s infinite ease-in-out alternate;
     }
     .blob-1 {
-      top: -20%; left: -10%; width: 60vw; height: 60vw; background: rgba(124, 58, 237, 0.4);
+      top: -20%; left: -10%; width: 60vw; height: 60vw; background: rgba(56, 178, 172, 0.4); /* Cyan */
     }
     .blob-2 {
-      bottom: -20%; right: -10%; width: 70vw; height: 70vw; background: rgba(49, 16, 96, 0.6); animation-delay: -5s;
+      bottom: -20%; right: -10%; width: 70vw; height: 70vw; background: rgba(13, 148, 136, 0.5); /* Teal */
+      animation-delay: -5s;
     }
     .blob-3 {
-      top: 30%; left: 20%; width: 50vw; height: 50vw; background: rgba(167, 139, 250, 0.2); animation-duration: 15s;
+      top: 30%; left: 20%; width: 50vw; height: 50vw; background: rgba(45, 212, 191, 0.3); /* Light Teal */
+      animation-duration: 15s;
     }
     @keyframes float {
       0% { transform: translate(0, 0) scale(1); }
       100% { transform: translate(5vw, 5vh) scale(1.1); }
     }
-    .progress-bar {
-      width: 200px;
-      height: 2px;
-      background: rgba(255, 255, 255, 0.1);
-      margin-bottom: 24px;
-      position: relative;
-      overflow: hidden;
-      border-radius: 2px;
-    }
-    .progress-bar::after {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 40%;
-      height: 100%;
-      background: #A78BFA;
-      border-radius: 2px;
-      animation: progress 1.5s ease-in-out infinite;
-    }
-    @keyframes progress {
-      0% { left: -40%; }
-      100% { left: 100%; }
-    }
     .statement {
       font-size: 1.4rem;
-      font-weight: 500;
-      color: #E2E8F0;
+      font-weight: 600;
+      color: #0F172A;
       letter-spacing: 0.5px;
-      animation: pulse 2s infinite ease-in-out;
       text-align: center;
       max-width: 80%;
+      margin-top: -10px;
+      transition: opacity 0.5s ease-in-out;
     }
     .company {
       font-size: 0.75rem;
-      color: #94A3B8;
+      color: #475569;
       margin-top: 8px;
-      font-weight: 600;
+      font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 1.5px;
-    }
-    @keyframes pulse {
-      0% { opacity: 0.7; }
-      50% { opacity: 1; }
-      100% { opacity: 0.7; }
     }
   </style>
 </head>
@@ -125,19 +100,42 @@
     <div class="aurora-blob blob-1"></div>
     <div class="aurora-blob blob-2"></div>
     <div class="aurora-blob blob-3"></div>
-    <div class="progress-bar"></div>
-    <div class="statement" id="loading-statement">Focus on the discipline, not the amount..</div>
+    
+    <div class="statement" id="loading-statement">Time is money.<br><span style="font-size:0.9rem;color:#475569;font-weight:500;">- Benjamin Franklin</span></div>
     <div class="company">OrbitView Innovations</div>
   </div>
 
   <script src="flutter_bootstrap.js" async></script>
   
   <script>
+    const quotes = [
+      'Time is money.<br><span style="font-size:0.9rem;color:#475569;font-weight:500;">- Benjamin Franklin</span>',
+      'Invest in what you know.<br><span style="font-size:0.9rem;color:#475569;font-weight:500;">- Peter Lynch</span>',
+      'Every day is a bank account.<br><span style="font-size:0.9rem;color:#475569;font-weight:500;">- Christopher Morley</span>',
+      'Before you spend, earn.<br><span style="font-size:0.9rem;color:#475569;font-weight:500;">- William Arthur Ward</span>',
+      'Never depend on a single income.<br><span style="font-size:0.9rem;color:#475569;font-weight:500;">- Warren Buffett</span>',
+      'Take decisions based on data, not emotions.<br><span style="font-size:0.9rem;color:#475569;font-weight:500;">- Dhammika Perera</span>'
+    ];
+    let quoteIndex = 0;
+    const statementEl = document.getElementById('loading-statement');
+    let quoteInterval;
+
+    if (statementEl) {
+      quoteInterval = setInterval(() => {
+        statementEl.style.opacity = '0';
+        setTimeout(() => {
+          quoteIndex = (quoteIndex + 1) % quotes.length;
+          statementEl.innerHTML = quotes[quoteIndex];
+          statementEl.style.opacity = '1';
+        }, 500);
+      }, 3000);
+    }
+
     // Remove the loading screen once Flutter renders the first frame
     window.addEventListener('flutter-first-frame', function() {
+      if (quoteInterval) clearInterval(quoteInterval);
       var loadingScreen = document.getElementById('loading-screen');
       if (loadingScreen) {
-        // Fade out transition
         loadingScreen.style.transition = 'opacity 0.5s ease-out';
         loadingScreen.style.opacity = '0';
         setTimeout(function() {

@@ -31,6 +31,7 @@ import '../../features/expenses/domain/entities/account.dart';
 import '../widgets/responsive_layout.dart';
 import '../../features/budgets/presentation/pages/budgets_main_page.dart';
 import '../../features/expenses/presentation/pages/recurring_bills_page.dart';
+import '../../features/expenses/presentation/pages/financial_forecast_page.dart';
 import '../../features/budgets/presentation/pages/bucket_planner_page.dart';
 class GoRouterRefreshStream extends ChangeNotifier {
   GoRouterRefreshStream(Stream<dynamic> stream) {
@@ -184,6 +185,10 @@ final appRouter = GoRouter(
                 GoRoute(
                   path: 'recurring-bills',
                   pageBuilder: (context, state) => const NoTransitionPage(child: RecurringBillsPage()),
+                ),
+                GoRoute(
+                  path: 'financial-forecast',
+                  pageBuilder: (context, state) => const NoTransitionPage(child: FinancialForecastPage()),
                 ),
                 GoRoute(
                   path: 'all-transactions',

@@ -163,8 +163,7 @@ class _DashboardPageState extends State<DashboardPage> {
                                 ],
                               ),
                               child: Center(
-                                child: Icon(icon,
-                                    color: const Color(0xFF50C8C8), size: 24),
+                                child: Icon(icon, color: color, size: 24),
                               ),
                             ),
                             const SizedBox(height: 8),
@@ -216,6 +215,12 @@ class _DashboardPageState extends State<DashboardPage> {
                       icon: Icons.repeat_rounded,
                       color: const Color(0xFF9B8FD4),
                       onTap: () => context.push('/recurring-bills'),
+                    ),
+                    toolCard(
+                      title: 'Forecast',
+                      icon: Icons.online_prediction,
+                      color: const Color(0xFFEC4899),
+                      onTap: () => context.push('/financial-forecast'),
                     ),
                   ];
 
