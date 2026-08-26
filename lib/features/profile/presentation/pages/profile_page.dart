@@ -53,7 +53,7 @@ class _ProfilePageState extends State<ProfilePage> {
         elevation: 0,
         title: const Text(
           'Profile & Settings',
-          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+          style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
         ),
         centerTitle: true,
       ),
@@ -121,7 +121,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     title: 'Payday Cycle',
                     subtitle: 'Every month on the ${context.watch<SettingsCubit>().state.paydayDate}${_getDaySuffix(context.watch<SettingsCubit>().state.paydayDate)}',
                     trailing: IconButton(
-                      icon: const Icon(Icons.flash_on, color: Color(0xFF4C1D95)),
+                      icon: const Icon(Icons.flash_on, color: Color(0xFF38B2AC)),
                       tooltip: 'Test Sweep Now',
                       onPressed: () {
                         SweepUtil.checkAndTriggerAutoSweep(context, force: true);
@@ -189,8 +189,8 @@ class _ProfilePageState extends State<ProfilePage> {
               child: Text(
                 'Version 1.0.0\n© 2026 OrbitView Innovations',
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.4),
+                style: const TextStyle(
+                  color: Color(0xFF94A3B8),
                   fontSize: 12,
                   height: 1.5,
                 ),
@@ -260,7 +260,7 @@ class _ProfilePageState extends State<ProfilePage> {
   }) {
     return GlassListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      leading: Icon(icon, color: const Color(0xFF4C1D95), size: 28),
+      leading: Icon(icon, color: const Color(0xFF38B2AC), size: 28),
       title: Row(
         children: [
           Expanded(
@@ -268,16 +268,16 @@ class _ProfilePageState extends State<ProfilePage> {
               controller: _inlineEditController,
               keyboardType: keyboardType,
               autofocus: true,
-              cursorColor: const Color(0xFF4C1D95),
+              cursorColor: const Color(0xFF38B2AC),
               style: const TextStyle(
-                color: Color(0xFF4C1D95),
+                color: Color(0xFF1E293B),
                 fontSize: 15,
                 fontWeight: FontWeight.w700,
               ),
               decoration: InputDecoration(
                 filled: false,
                 hintText: label,
-                hintStyle: TextStyle(color: const Color(0xFF4C1D95).withOpacity(0.5)),
+                hintStyle: const TextStyle(color: Color(0xFF94A3B8)),
                 border: InputBorder.none,
                 enabledBorder: InputBorder.none,
                 focusedBorder: InputBorder.none,
@@ -287,7 +287,7 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.check, color: Color(0xFF8B5CF6)),
+            icon: const Icon(Icons.check, color: Color(0xFF38B2AC)),
             onPressed: () => onSave(_inlineEditController.text),
             splashRadius: 20,
             padding: EdgeInsets.zero,
@@ -295,7 +295,7 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
           const SizedBox(width: 16),
           IconButton(
-            icon: const Icon(Icons.close, color: Color(0xFF8B5CF6)),
+            icon: const Icon(Icons.close, color: Color(0xFF38B2AC)),
             onPressed: onCancel,
             splashRadius: 20,
             padding: EdgeInsets.zero,
@@ -324,7 +324,7 @@ class _ProfilePageState extends State<ProfilePage> {
           child: Text(
             title.toUpperCase(),
             style: const TextStyle(
-              color: Colors.white70,
+              color: Color(0xFF94A3B8),
               fontSize: 12,
               fontWeight: FontWeight.w700,
               letterSpacing: 1.2,
@@ -346,11 +346,11 @@ class _ProfilePageState extends State<ProfilePage> {
     return GlassListTile(
       onTap: onTap,
       contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: subtitle != null ? 8 : 14),
-      leading: Icon(icon, color: const Color(0xFF4C1D95), size: 28),
+      leading: Icon(icon, color: const Color(0xFF38B2AC), size: 28),
       title: Text(
         title,
         style: const TextStyle(
-          color: Color(0xFF4C1D95),
+          color: Color(0xFF1E293B),
           fontSize: 15,
           fontWeight: FontWeight.w700,
         ),
@@ -361,7 +361,7 @@ class _ProfilePageState extends State<ProfilePage> {
               child: Text(
                 subtitle,
                 style: const TextStyle(
-                  color: Color(0xFF5B21B6),
+                  color: Color(0xFF64748B),
                   fontSize: 13,
                   fontWeight: FontWeight.w500,
                 ),
