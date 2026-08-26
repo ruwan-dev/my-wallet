@@ -62,6 +62,11 @@ class DataMigrationService {
 
       await prefs.setBool('has_migrated_$userId', true);
       
+      // Update Firestore so the user is marked as migrated permanently
+      await FirebaseFirestore.instance.collection('users').doc(userId).update({
+        'hasMigratedToCloud': true,
+      });
+      
       // Optionally, clear local db after migration
       // await accountLocal.clear();
       // await transactionLocal.clear();

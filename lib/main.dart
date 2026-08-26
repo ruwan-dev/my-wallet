@@ -107,18 +107,20 @@ class ExpenseTrackerApp extends StatelessWidget {
           if (state is AuthUnauthenticated) {
             appRouter.go('/login');
           } else if (state is AuthAuthenticated) {
-            if (state.user.isPremium) {
-              // Automatically try to migrate once (service checks SharedPreferences to avoid duplicate)
+            if (state.user.isPremium && !state.user.hasMigratedToCloud) {
+              // Automatically try to migrate once (if not already migrated)
               sl<DataMigrationService>().migrateLocalToFirebase(state.user.id);
             }
             if (state.user.forceSync) {
-              // Force migrate when requested by admin, ignoring the SharedPreferences check
-              sl<DataMigrationService>().migrateLocalToFirebase(state.user.id, force: true);
+              // Force migrate only if they haven't already safely migrated to cloud
+              if (!state.user.hasMigratedToCloud) {
+                sl<DataMigrationService>().migrateLocalToFirebase(state.user.id, force: true);
+              }
               FirebaseFirestore.instance.collection('users').doc(state.user.id).update({'forceSync': false}).catchError((e) {
                 print('Failed to reset forceSync flag: $e');
               });
             } else if (state.user.isPremium) {
-              // Not force sync, but premium, fetch latest settings from cloud
+              // Not migrating, but premium, fetch latest settings from cloud
               context.read<SettingsCubit>().syncFromCloud();
             }
             context.read<AccountCubit>().loadAccounts();

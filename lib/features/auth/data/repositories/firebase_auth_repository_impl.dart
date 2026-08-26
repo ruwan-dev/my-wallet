@@ -30,6 +30,7 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
           isPremium: data['isPremium'] ?? false,
           isAdmin: data['isAdmin'] ?? false,
           forceSync: data['forceSync'] ?? false,
+          hasMigratedToCloud: data['hasMigratedToCloud'] ?? false,
         );
       } else {
         // Prevent login if Firestore document was deleted
@@ -53,13 +54,14 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
       );
       
       final uid = credential.user!.uid;
-      final user = UserEntity(id: uid, email: email, isPremium: false, isAdmin: false, forceSync: false);
+      final user = UserEntity(id: uid, email: email, isPremium: false, isAdmin: false, forceSync: false, hasMigratedToCloud: false);
       
       await _firestore.collection('users').doc(uid).set({
         'email': email,
         'isPremium': false,
         'isAdmin': false,
         'forceSync': false,
+        'hasMigratedToCloud': false,
       });
       
       return user;
@@ -100,6 +102,7 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
           'isPremium': false,
           'isAdmin': false,
           'forceSync': false,
+        'hasMigratedToCloud': false,
         });
       }
 
@@ -110,6 +113,7 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
         isPremium: userData['isPremium'] ?? false,
         isAdmin: userData['isAdmin'] ?? false,
         forceSync: userData['forceSync'] ?? false,
+        hasMigratedToCloud: userData['hasMigratedToCloud'] ?? false,
       );
     } on FirebaseAuthException catch (e) {
       throw Exception(_mapAuthErrorCode(e.code));
@@ -153,6 +157,7 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
           isPremium: data['isPremium'] ?? false,
           isAdmin: data['isAdmin'] ?? firebaseUser.email == 'admin@admin.com',
           forceSync: data['forceSync'] ?? false,
+          hasMigratedToCloud: data['hasMigratedToCloud'] ?? false,
         );
       }
       

@@ -6,6 +6,7 @@ class UserEntity extends Equatable {
   final bool isPremium;
   final bool isAdmin;
   final bool forceSync;
+  final bool hasMigratedToCloud;
 
   const UserEntity({
     required this.id,
@@ -13,8 +14,9 @@ class UserEntity extends Equatable {
     this.isPremium = false,
     this.isAdmin = false,
     this.forceSync = false,
+    this.hasMigratedToCloud = false,
   });
 
   @override
-  List<Object?> get props => [id, email, isPremium, isAdmin, forceSync];
+  List<Object?> get props => [id, email, isPremium, isAdmin, forceSync, hasMigratedToCloud];
 }
