@@ -39,6 +39,28 @@ class DeleteTransactionUseCase implements UseCase<void, TransactionEntity> {
         return updateResult.fold(
           (failure) => Left(failure),
           (_) async {
+            // Revert transfer target if present
+            if (params.transferAccountId != null && params.transferAccountId!.isNotEmpty) {
+              final targetAccountResult = await accountRepository.getAccount(params.userId, params.transferAccountId!);
+              final targetFailure = await targetAccountResult.fold(
+                (failure) async => failure,
+                (targetAccount) async {
+                  double targetDelta;
+                  if (targetAccount.type == AccountType.liability) {
+                    targetDelta = params.amount; // Revert payment to liability
+                  } else {
+                    targetDelta = -params.amount; // Revert transfer to asset
+                  }
+                  final updatedTarget = targetAccount.copyWith(balance: targetAccount.balance + targetDelta);
+                  final targetUpdateResult = await accountRepository.updateAccount(updatedTarget);
+                  return targetUpdateResult.fold((f) => f, (_) => null);
+                }
+              );
+              if (targetFailure != null) {
+                return Left(targetFailure);
+              }
+            }
+
             // 2. Delete transaction
             return transactionRepository.deleteTransaction(params.userId, params.id);
           }

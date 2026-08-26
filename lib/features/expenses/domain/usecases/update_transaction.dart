@@ -25,26 +25,53 @@ class UpdateTransactionUseCase implements UseCase<TransactionEntity, UpdateTrans
 
     final transactionToSave = newTx.copyWith(updatedAt: DateTime.now());
 
-    // Strategy: Revert old transaction effect, then apply new transaction effect.
-    // This is safer especially if the accountId changed.
-
-    // 1. Revert old transaction from old account (if not planned)
+    // 1. Revert old transaction from old account
     if (oldTx.accountId != 'planned') {
       final oldAccountResult = await accountRepository.getAccount(oldTx.userId, oldTx.accountId);
       if (oldAccountResult.isRight()) {
         final oldAccount = oldAccountResult.getOrElse(() => throw Exception());
-        final double oldRevertDelta = oldTx.isIncome ? -oldTx.amount : oldTx.amount;
+        double oldRevertDelta;
+        if (oldAccount.type == AccountType.liability) {
+          oldRevertDelta = oldTx.isIncome ? oldTx.amount : -oldTx.amount;
+        } else {
+          oldRevertDelta = oldTx.isIncome ? -oldTx.amount : oldTx.amount;
+        }
         await accountRepository.updateAccount(oldAccount.copyWith(balance: oldAccount.balance + oldRevertDelta));
+      }
+
+      // Revert transfer target if old transaction had one
+      if (oldTx.transferAccountId != null && oldTx.transferAccountId!.isNotEmpty) {
+        final oldTargetResult = await accountRepository.getAccount(oldTx.userId, oldTx.transferAccountId!);
+        if (oldTargetResult.isRight()) {
+          final oldTarget = oldTargetResult.getOrElse(() => throw Exception());
+          double oldTargetDelta = oldTarget.type == AccountType.liability ? oldTx.amount : -oldTx.amount;
+          await accountRepository.updateAccount(oldTarget.copyWith(balance: oldTarget.balance + oldTargetDelta));
+        }
       }
     }
 
-    // 2. Apply new transaction to new account (if not planned)
+    // 2. Apply new transaction to new account
     if (newTx.accountId != 'planned') {
       final newAccountResult = await accountRepository.getAccount(newTx.userId, newTx.accountId);
       if (newAccountResult.isRight()) {
         final newAccount = newAccountResult.getOrElse(() => throw Exception());
-        final double newApplyDelta = newTx.isIncome ? newTx.amount : -newTx.amount;
+        double newApplyDelta;
+        if (newAccount.type == AccountType.liability) {
+          newApplyDelta = newTx.isIncome ? -newTx.amount : newTx.amount;
+        } else {
+          newApplyDelta = newTx.isIncome ? newTx.amount : -newTx.amount;
+        }
         await accountRepository.updateAccount(newAccount.copyWith(balance: newAccount.balance + newApplyDelta));
+      }
+
+      // Apply transfer target if new transaction has one
+      if (newTx.transferAccountId != null && newTx.transferAccountId!.isNotEmpty) {
+        final newTargetResult = await accountRepository.getAccount(newTx.userId, newTx.transferAccountId!);
+        if (newTargetResult.isRight()) {
+          final newTarget = newTargetResult.getOrElse(() => throw Exception());
+          double newTargetDelta = newTarget.type == AccountType.liability ? -newTx.amount : newTx.amount;
+          await accountRepository.updateAccount(newTarget.copyWith(balance: newTarget.balance + newTargetDelta));
+        }
       }
     }
 
