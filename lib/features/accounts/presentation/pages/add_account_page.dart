@@ -232,7 +232,7 @@ class _AddAccountPageState extends State<AddAccountPage> {
             ),
             _buildInputField(
               controller: _balanceController,
-              label: 'Initial Balance',
+              label: widget.account != null ? 'Current Balance' : 'Initial Balance',
               hint: '0.00',
               icon: Icons.attach_money_rounded,
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
