@@ -36,49 +36,51 @@ class _ManageCategoriesPageState extends State<ManageCategoriesPage> {
   Widget build(BuildContext context) {
 
     Widget page = DefaultTabController(
-      length: 2,
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        appBar: AppBar(
-          title: const Text('Categories',
-              style: TextStyle(color: Color(0xFF1E293B))),
+        length: 2,
+        child: Scaffold(
           backgroundColor: Colors.transparent,
-          elevation: 0,
-          bottom: const TabBar(
-            indicatorColor: Color(0xFF6D28D9), // Deep Purple
-            labelColor: Color(0xFF6D28D9), // Deep Purple
-            unselectedLabelColor: Colors.black54,
-            tabs: [
-              Tab(text: 'Expense'),
-              Tab(text: 'Income'),
+          appBar: AppBar(
+            title: const Text('Categories', style: TextStyle(color: Color(0xFF1E293B), fontWeight: FontWeight.bold)),
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            actions: [
+              Builder(
+                builder: (context) => IconButton(
+                  icon: const Icon(Icons.add, color: Color(0xFF38B2AC), size: 28),
+                  tooltip: 'Add Category',
+                  onPressed: () {
+                    final isIncome = DefaultTabController.of(context).index == 1;
+                    if (isIncome) {
+                      _isAddingIncome.value = true;
+                    } else {
+                      _isAddingExpense.value = true;
+                    }
+                  },
+                ),
+              ),
+              const SizedBox(width: 8),
+            ],
+            bottom: const TabBar(
+              indicatorColor: Color(0xFF38B2AC),
+              labelColor: Color(0xFF38B2AC),
+              unselectedLabelColor: Colors.black54,
+              indicatorWeight: 3,
+              labelStyle: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              unselectedLabelStyle: TextStyle(fontWeight: FontWeight.w500, fontSize: 16),
+              tabs: [
+                Tab(text: 'Expense'),
+                Tab(text: 'Income'),
+              ],
+            ),
+          ),
+          body: TabBarView(
+            children: [
+              _CategoryListView(isIncome: false, isAddingNotifier: _isAddingExpense, isSubpageActiveNotifier: _isSubpageActive),
+              _CategoryListView(isIncome: true, isAddingNotifier: _isAddingIncome, isSubpageActiveNotifier: _isSubpageActive),
             ],
           ),
         ),
-        body: TabBarView(
-          children: [
-            _CategoryListView(isIncome: false, isAddingNotifier: _isAddingExpense, isSubpageActiveNotifier: _isSubpageActive),
-            _CategoryListView(isIncome: true, isAddingNotifier: _isAddingIncome, isSubpageActiveNotifier: _isSubpageActive),
-          ],
-        ),
-        floatingActionButton: Builder(builder: (context) {
-          return FloatingActionButton.extended(
-            onPressed: () {
-              final isIncome = DefaultTabController.of(context).index == 1;
-              if (isIncome) {
-                _isAddingIncome.value = true;
-              } else {
-                _isAddingExpense.value = true;
-              }
-            },
-            backgroundColor: const Color(0xFF7C3AED),
-            foregroundColor: Colors.white,
-            elevation: 4,
-            icon: const Icon(Icons.add),
-            label: const Text('Add Category'),
-          );
-        }),
-      ),
-    );
+      );
 
     return ValueListenableBuilder<bool>(
       valueListenable: _isSubpageActive,
@@ -229,18 +231,18 @@ class _CategoryListViewState extends State<_CategoryListView> {
                     child: CategoryIcon(
                       iconStr: cat.icon,
                       size: 20,
-                      color: Colors.black,
+                      color: const Color(0xFF38B2AC),
                     ),
                   ),
                   title: Text(cat.name,
-                      style: const TextStyle(fontWeight: FontWeight.w600)),
+                      style: const TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF38B2AC))),
                   subtitle: Text('${cat.subcategories.length} subcategories'),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       if (!cat.isDefault)
                         IconButton(
-                          icon: const Icon(Icons.edit, color: Colors.black),
+                          icon: const Icon(Icons.edit, color: Color(0xFF38B2AC)),
                           onPressed: () {
                             setState(() {
                               _editingCategoryId = cat.id;
@@ -250,7 +252,7 @@ class _CategoryListViewState extends State<_CategoryListView> {
                         ),
                       if (!cat.isDefault)
                         IconButton(
-                          icon: const Icon(Icons.delete_outline, color: Colors.black),
+                          icon: const Icon(Icons.delete_outline, color: Color(0xFF38B2AC)),
                           onPressed: () => _deleteCategory(context, cat),
                         ),
                     ],
@@ -394,20 +396,23 @@ class _InlineCategoryFormState extends State<_InlineCategoryForm> {
         behavior: HitTestBehavior.opaque,
         child: Container(
           margin: const EdgeInsets.all(4),
-          color: Colors.transparent,
+          decoration: BoxDecoration(
+            color: isSelected ? const Color(0xFF38B2AC) : Colors.transparent,
+            borderRadius: BorderRadius.circular(20),
+          ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, size: 16, color: isSelected ? Colors.white : Colors.white70),
-              const SizedBox(width: 6),
+              Icon(icon, size: 14, color: isSelected ? Colors.white : Colors.black54),
+              const SizedBox(width: 4),
               Flexible(
                 child: Text(
                   title,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: isSelected ? Colors.white : Colors.white70,
+                    color: isSelected ? Colors.white : Colors.black54,
                     fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                    fontSize: 14,
+                    fontSize: 12,
                   ),
                 ),
               ),
@@ -420,148 +425,175 @@ class _InlineCategoryFormState extends State<_InlineCategoryForm> {
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(24),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-        child: Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.15),
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: Colors.white.withOpacity(0.2), width: 1.5),
+    return Container(
+      padding: const EdgeInsets.only(
+        top: 24,
+        left: 20,
+        right: 20,
+        bottom: 24,
+      ),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF2F8F7), // Light cyan-ish background
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0xFF38B2AC).withOpacity(0.3), width: 1.5),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            widget.isAdding ? 'Add Category' : 'Edit Category', 
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: const Color(0xFF1E293B))
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
+          const SizedBox(height: 16),
+          TextField(
+            controller: _ctrl,
+            style: const TextStyle(color: Colors.black87),
+            decoration: InputDecoration(
+              labelText: 'Category Name',
+              labelStyle: const TextStyle(color: Colors.black54),
+              filled: true,
+              fillColor: Colors.white,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide(color: Colors.grey[300]!),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide(color: Colors.grey[300]!),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: const BorderSide(color: Color(0xFF38B2AC)),
+              ),
+            ),
+            textCapitalization: TextCapitalization.words,
+            autofocus: true,
+          ),
+          const SizedBox(height: 20),
+          const Text('Icon', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.black87)),
+          const SizedBox(height: 12),
+          Container(
+            height: 140,
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.grey[300]!),
+            ),
+            child: SingleChildScrollView(
+              child: Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: _icons.map((iconCode) {
+                  final isSelected = _selectedIcon == iconCode;
+                  return GestureDetector(
+                    onTap: () => setState(() => _selectedIcon = iconCode),
+                    child: Container(
+                      width: 50,
+                      height: 50,
+                      decoration: BoxDecoration(
+                        color: isSelected ? const Color(0xFF38B2AC) : Colors.transparent,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: isSelected ? const Color(0xFF38B2AC) : Colors.grey[300]!,
+                        ),
+                      ),
+                      child: Center(
+                        child: CategoryIcon(
+                          iconStr: iconCode,
+                          size: 24,
+                          color: isSelected ? Colors.white : Colors.black54,
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          ),
+          if (!widget.isIncome) ...[
+            const SizedBox(height: 20),
+            const Text('Default Bucket', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.black87)),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: BucketType.values.where((b) => b != BucketType.none).map((bucket) {
+                final isSelected = _selectedBucket == bucket;
+                IconData bucketIcon;
+                switch (bucket) {
+                  case BucketType.dailyExpenses: bucketIcon = Icons.work_outline; break;
+                  case BucketType.smile: bucketIcon = Icons.flight_takeoff; break;
+                  case BucketType.fire: bucketIcon = Icons.local_fire_department; break;
+                  case BucketType.mojo: bucketIcon = Icons.security; break;
+                  case BucketType.grow: bucketIcon = Icons.eco; break;
+                  default: bucketIcon = Icons.category;
+                }
+                return GestureDetector(
+                  onTap: () => setState(() => _selectedBucket = isSelected ? BucketType.none : bucket),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: isSelected ? const Color(0xFF38B2AC) : Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: isSelected ? const Color(0xFF38B2AC) : Colors.grey[300]!,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(bucketIcon, size: 14, color: isSelected ? Colors.white : Colors.black54),
+                        const SizedBox(width: 4),
+                        Text(
+                          bucket.displayName,
+                          style: TextStyle(
+                            color: isSelected ? Colors.white : Colors.black54,
+                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ],
+          const SizedBox(height: 24),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              Text(
-                widget.isAdding ? 'Add Category' : 'Edit Category', 
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: Colors.white)
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _ctrl,
-                style: const TextStyle(color: Colors.white),
-                decoration: InputDecoration(
-                  labelText: 'Category Name',
-                  labelStyle: const TextStyle(color: Colors.white70),
-                  filled: true,
-                  fillColor: Colors.white.withOpacity(0.1),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide(color: Colors.white.withOpacity(0.2)),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide(color: Colors.white.withOpacity(0.2)),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: const BorderSide(color: Color(0xFF6D28D9)),
-                  ),
-                ),
-                textCapitalization: TextCapitalization.words,
-                autofocus: true,
-              ),
-              const SizedBox(height: 20),
-              const Text('Icon', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white)),
-              const SizedBox(height: 12),
-              SizedBox(
-                height: 50,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: _icons.length,
-                  itemBuilder: (context, index) {
-                    final iconCode = _icons[index];
-                    final isSelected = _selectedIcon == iconCode;
-                    return GestureDetector(
-                      onTap: () => setState(() => _selectedIcon = iconCode),
-                      child: Container(
-                        margin: const EdgeInsets.only(right: 12),
-                        width: 50,
-                        decoration: BoxDecoration(
-                          color: isSelected ? const Color(0xFF6D28D9) : Colors.white.withOpacity(0.1),
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: isSelected ? const Color(0xFF6D28D9) : Colors.white.withOpacity(0.2),
-                          ),
-                        ),
-                        child: Center(
-                          child: CategoryIcon(
-                            iconStr: iconCode,
-                            size: 24,
-                            color: isSelected ? Colors.white : Colors.white70,
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-              if (!widget.isIncome) ...[
-                const SizedBox(height: 20),
-                const Text('Default Bucket', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white)),
-                const SizedBox(height: 12),
-                Container(
-                  height: 50,
+              InkWell(
+                onTap: widget.onCancel,
+                borderRadius: BorderRadius.circular(24),
+                child: Container(
+                  padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(25),
-                    border: Border.all(color: Colors.white.withOpacity(0.2), width: 1.5),
+                    color: Colors.grey[200],
+                    shape: BoxShape.circle,
                   ),
-                  child: Row(
-                    children: [
-                      _buildSegmentTab(BucketType.dailyExpenses, 'Blow', Icons.work_outline),
-                      _buildSegmentTab(BucketType.smile, 'Smile', Icons.flight_takeoff),
-                      _buildSegmentTab(BucketType.fire, 'Fire', Icons.local_fire_department),
-                      _buildSegmentTab(BucketType.mojo, 'Mojo', Icons.security),
-                      _buildSegmentTab(BucketType.grow, 'Grow', Icons.eco),
-                    ],
-                  ),
+                  child: const Icon(Icons.close, color: Colors.black54, size: 24),
                 ),
-              ],
-              const SizedBox(height: 24),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  InkWell(
-                    onTap: widget.onCancel,
-                    borderRadius: BorderRadius.circular(24),
-                    child: Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.1),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(Icons.close, color: Colors.white70, size: 24),
-                    ),
+              ),
+              const SizedBox(width: 16),
+              InkWell(
+                onTap: _handleSave,
+                borderRadius: BorderRadius.circular(24),
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: const BoxDecoration(
+                    color: Color(0xFF38B2AC),
+                    shape: BoxShape.circle,
                   ),
-                  const SizedBox(width: 16),
-                  InkWell(
-                    onTap: _handleSave,
-                    borderRadius: BorderRadius.circular(24),
-                    child: Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF6D28D9),
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFF6D28D9).withOpacity(0.3),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: const Icon(Icons.check, color: Colors.white, size: 24),
-                    ),
-                  ),
-                ],
+                  child: const Icon(Icons.check, color: Colors.white, size: 24),
+                ),
               ),
             ],
           ),
-        ),
+        ],
       ),
     );
   }

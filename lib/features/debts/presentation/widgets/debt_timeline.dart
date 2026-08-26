@@ -114,16 +114,37 @@ class _DebtTimelineState extends State<DebtTimeline> {
                     );
                     return;
                   }
-                  setState(() {
-                    _payingDebtId = debt.id;
-                    _editingDebtId = null;
-                  });
+                  showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                        useRootNavigator: true,
+                    backgroundColor: Colors.transparent,
+                    builder: (context) => Padding(
+                      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+                      child: InlinePaymentEditor(
+                        debt: debt,
+                        currentFireBalance: currentFireBalance,
+                        onCancel: () => Navigator.pop(context),
+                        onSave: () => Navigator.pop(context),
+                      ),
+                    ),
+                  );
                 },
                 onEditTap: () {
-                  setState(() {
-                    _editingDebtId = debt.id;
-                    _payingDebtId = null;
-                  });
+                  showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                        useRootNavigator: true,
+                    backgroundColor: Colors.transparent,
+                    builder: (context) => Padding(
+                      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+                      child: InlineDebtEditor(
+                        initialDebt: debt,
+                        onCancel: () => Navigator.pop(context),
+                        onSave: () => Navigator.pop(context),
+                      ),
+                    ),
+                  );
                 },
                 onDeleteTap: () {
                   showDialog(
@@ -195,25 +216,6 @@ class _DebtTimelineState extends State<DebtTimeline> {
                   );
                 },
               ),
-              if (_payingDebtId == debt.id)
-                Padding(
-                  padding: const EdgeInsets.only(top: 8.0),
-                  child: InlinePaymentEditor(
-                    debt: debt,
-                    currentFireBalance: currentFireBalance,
-                    onCancel: () => setState(() => _payingDebtId = null),
-                    onSave: () => setState(() => _payingDebtId = null),
-                  ),
-                ),
-              if (_editingDebtId == debt.id)
-                Padding(
-                  padding: const EdgeInsets.only(top: 8.0),
-                  child: InlineDebtEditor(
-                    initialDebt: debt,
-                    onCancel: () => setState(() => _editingDebtId = null),
-                    onSave: () => setState(() => _editingDebtId = null),
-                  ),
-                ),
             ],
           ),
         ),
@@ -269,21 +271,17 @@ class _DebtTimelineState extends State<DebtTimeline> {
 
               // The Node / Checkpoint
               Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
+                width: 24,
+                height: 24,
+                decoration: const BoxDecoration(
                   shape: BoxShape.circle,
                   color: Colors.white,
-                  border: Border.all(
-                    color: nodeColor.withOpacity(0.5),
-                    width: 1.5,
-                  ),
                 ),
                 child: Center(
                   child: Icon(
-                    isCompleted ? Icons.check_circle_outline : Icons.adjust,
+                    isCompleted ? Icons.check_circle : Icons.circle,
                     color: nodeColor,
-                    size: 20,
+                    size: 16,
                   ),
                 ),
               ),

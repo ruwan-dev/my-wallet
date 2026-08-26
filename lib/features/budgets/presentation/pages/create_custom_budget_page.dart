@@ -29,6 +29,7 @@ class _CreateCustomBudgetPageState extends State<CreateCustomBudgetPage> {
   final List<_ChecklistItemInput> _items = [];
   bool _isLoading = false;
   BucketType _selectedBucket = BucketType.dailyExpenses;
+  bool _isRecurring = false;
 
   @override
   void initState() {
@@ -37,6 +38,7 @@ class _CreateCustomBudgetPageState extends State<CreateCustomBudgetPage> {
       final budget = widget.existingBudget!;
       _titleController.text = budget.title;
       _selectedBucket = budget.bucketType;
+      _isRecurring = budget.isRecurring;
 
       for (var item in budget.items) {
         final input = _ChecklistItemInput();
@@ -52,19 +54,10 @@ class _CreateCustomBudgetPageState extends State<CreateCustomBudgetPage> {
               subcategories: []);
         }
         input.selectedSubcategory = item.subcategory;
+        input.isMonthlyFixed = item.isMonthlyFixed;
         input.amountController.addListener(_onAmountChanged);
         _items.add(input);
       }
-
-      if (_items.isEmpty) {
-        final input = _ChecklistItemInput();
-        input.amountController.addListener(_onAmountChanged);
-        _items.add(input);
-      }
-    } else {
-      final input = _ChecklistItemInput();
-      input.amountController.addListener(_onAmountChanged);
-      _items.add(input);
     }
   }
 
@@ -84,11 +77,28 @@ class _CreateCustomBudgetPageState extends State<CreateCustomBudgetPage> {
   }
 
   void _addItem() {
-    setState(() {
-      final input = _ChecklistItemInput();
-      input.amountController.addListener(_onAmountChanged);
-      _items.insert(0, input); // Add to the top of the list
-    });
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return _AddItemForm(
+          onPickCategory: _showCategoryPickerModal,
+          onSave: (name, amount, category, isMonthlyFixed) {
+            setState(() {
+              final input = _ChecklistItemInput();
+              input.titleController.text = name;
+              input.amountController.text = amount;
+              input.selectedCategory = category;
+              input.isMonthlyFixed = isMonthlyFixed;
+              input.amountController.addListener(_onAmountChanged);
+              _items.insert(0, input);
+            });
+            _onAmountChanged(); // update total
+          },
+        );
+      },
+    );
   }
 
   void _removeItem(int index) {
@@ -100,9 +110,9 @@ class _CreateCustomBudgetPageState extends State<CreateCustomBudgetPage> {
     });
   }
 
-  void _pickCategory(int index) async {
+  Future<Map<String, dynamic>?> _showCategoryPickerModal() async {
     final categoryState = context.read<CategoryCubit>().state;
-    if (categoryState is! CategoryLoaded) return;
+    if (categoryState is! CategoryLoaded) return null;
 
     final result = await showModalBottomSheet<Map<String, dynamic>>(
       context: context,
@@ -243,6 +253,11 @@ class _CreateCustomBudgetPageState extends State<CreateCustomBudgetPage> {
       },
     );
 
+    return result;
+  }
+
+  void _pickCategory(int index) async {
+    final result = await _showCategoryPickerModal();
     if (result != null) {
       setState(() {
         _items[index].selectedCategory = result['category'] as Category?;
@@ -292,6 +307,7 @@ class _CreateCustomBudgetPageState extends State<CreateCustomBudgetPage> {
           categoryId: input.selectedCategory?.id,
           categoryIcon: input.selectedCategory?.icon,
           subcategory: input.selectedSubcategory,
+          isMonthlyFixed: input.isMonthlyFixed,
         ));
       }
     }
@@ -307,6 +323,7 @@ class _CreateCustomBudgetPageState extends State<CreateCustomBudgetPage> {
       createdAt: widget.existingBudget?.createdAt ?? DateTime.now(),
       isCompleted: widget.existingBudget?.isCompleted ?? false,
       bucketType: _selectedBucket,
+      isRecurring: _isRecurring,
     );
 
     await context.read<CustomBudgetCubit>().saveBudget(budget);
@@ -360,6 +377,44 @@ class _CreateCustomBudgetPageState extends State<CreateCustomBudgetPage> {
               icon: Icons.title_rounded,
               theme: theme,
             ),
+            if (_selectedBucket != BucketType.splurge) ...[
+              const SizedBox(height: 12),
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFF26C6DA).withValues(alpha: 0.3)),
+                ),
+                child: Column(
+                  children: [
+                    SwitchListTile(
+                      title: const Text('Recurring Monthly', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                      value: _isRecurring,
+                      onChanged: (val) {
+                        setState(() => _isRecurring = val);
+                      },
+                      activeColor: const Color(0xFF38B2AC),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    ),
+                    if (_isRecurring)
+                      Container(
+                        padding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                'A fresh copy of this budget will be auto-created on the 1st of next month. Any unspent funds will automatically sweep into your Fire bucket.',
+                                style: TextStyle(fontSize: 12, color: Colors.grey[700], height: 1.4),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
             const SizedBox(height: 32),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -377,7 +432,32 @@ class _CreateCustomBudgetPageState extends State<CreateCustomBudgetPage> {
               ],
             ),
             const SizedBox(height: 12),
-            ..._items.asMap().entries.map((entry) {
+            if (_items.isEmpty)
+              Center(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 24.0),
+                  child: Column(
+                    children: [
+                      Image.asset(
+                        'assets/images/empty_checklist.png',
+                        height: 160,
+                        fit: BoxFit.contain,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'No checklist items yet',
+                        style: TextStyle(
+                          color: Colors.grey[500],
+                          fontSize: 15,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            else
+              ..._items.asMap().entries.map((entry) {
               final index = entry.key;
               final item = entry.value;
               return Padding(
@@ -423,23 +503,23 @@ class _CreateCustomBudgetPageState extends State<CreateCustomBudgetPage> {
                         ),
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 16),
                     Expanded(
-                      flex: 5,
-                      child: _buildGlassInput(
-                        controller: item.titleController,
-                        hint: 'Item Name',
-                        theme: theme,
+                      child: Text(
+                        item.titleController.text.isEmpty ? 'Item Name' : item.titleController.text,
+                        style: theme.textTheme.bodyLarge?.copyWith(
+                          color: Colors.black87,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     const SizedBox(width: 8),
-                    Expanded(
-                      flex: 2,
-                      child: _buildGlassInput(
-                        controller: item.amountController,
-                        hint: 'Amt',
-                        theme: theme,
-                        isNumber: true,
+                    Text(
+                      item.amountController.text.isEmpty ? 'Amt' : item.amountController.text,
+                      style: theme.textTheme.bodyLarge?.copyWith(
+                        color: Colors.black87,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                     IconButton(
@@ -457,6 +537,8 @@ class _CreateCustomBudgetPageState extends State<CreateCustomBudgetPage> {
       ),
     );
   }
+
+
 
 
   Widget _buildGlassInput({
@@ -532,26 +614,34 @@ class _CreateCustomBudgetPageState extends State<CreateCustomBudgetPage> {
   Widget _buildSegmentTab(BucketType type, String title, IconData icon) {
     final isSelected = _selectedBucket == type;
     return GestureDetector(
-        onTap: () => setState(() => _selectedBucket = type),
+        onTap: () {
+          setState(() {
+            _selectedBucket = type;
+            if (type == BucketType.splurge) {
+              _isRecurring = false;
+            }
+          });
+        },
         behavior: HitTestBehavior.opaque,
         child: Container(
           margin: const EdgeInsets.all(4),
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
-            color: isSelected ? const Color(0xFF26C6DA) : Colors.transparent,
+            color: Colors.transparent,
             borderRadius: BorderRadius.circular(20),
           ),
           child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(icon,
-                  size: 14, color: isSelected ? Colors.white : Colors.black54),
+                  size: 14, color: isSelected ? const Color(0xFF38B2AC) : Colors.black54),
               const SizedBox(width: 4),
               Text(
                 title,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  color: isSelected ? Colors.white : Colors.black54,
+                  color: isSelected ? const Color(0xFF38B2AC) : Colors.black54,
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                   fontSize: 11,
                 ),
@@ -568,4 +658,193 @@ class _ChecklistItemInput {
   final TextEditingController amountController = TextEditingController();
   Category? selectedCategory;
   String? selectedSubcategory;
+  bool isMonthlyFixed = false;
+}
+
+class _AddItemForm extends StatefulWidget {
+  final Future<Map<String, dynamic>?> Function() onPickCategory;
+  final Function(String name, String amount, Category? category, bool isMonthlyFixed) onSave;
+
+  const _AddItemForm({Key? key, required this.onPickCategory, required this.onSave}) : super(key: key);
+
+  @override
+  State<_AddItemForm> createState() => _AddItemFormState();
+}
+
+class _AddItemFormState extends State<_AddItemForm> {
+  final _nameController = TextEditingController();
+  final _amountController = TextEditingController();
+  Category? _selectedCategory;
+  bool _isMonthlyFixed = false;
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _amountController.dispose();
+    super.dispose();
+  }
+
+  void _pickCategory() async {
+    final result = await widget.onPickCategory();
+    if (result != null) {
+      setState(() {
+        _selectedCategory = result['category'] as Category?;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      padding: EdgeInsets.only(
+        left: 24,
+        right: 24,
+        top: 24,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 120,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Add New Item',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 24),
+          Row(
+            children: [
+              GestureDetector(
+                onTap: _pickCategory,
+                child: Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                        color: const Color(0xFF26C6DA).withValues(alpha: 0.5)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.02),
+                        blurRadius: 5,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Center(
+                    child: Builder(builder: (context) {
+                      if (_selectedCategory == null) {
+                        return const Icon(Icons.category_rounded,
+                            size: 24, color: Color(0xFF26C6DA));
+                      }
+                      final iconStr = _selectedCategory!.icon;
+                      final codePoint = int.tryParse(iconStr);
+                      if (codePoint != null) {
+                        return Icon(
+                            IconData(codePoint,
+                                fontFamily: 'MaterialIcons'),
+                            size: 24,
+                            color: const Color(0xFF26C6DA));
+                      }
+                      return Text(iconStr,
+                          style: const TextStyle(fontSize: 24));
+                    }),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildTextField(_nameController, 'Item Name'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          _buildTextField(_amountController, 'Amount', isNumber: true),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Checkbox(
+                value: _isMonthlyFixed,
+                onChanged: (val) => setState(() => _isMonthlyFixed = val ?? false),
+                activeColor: const Color(0xFF38B2AC),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+              ),
+              const Text('Monthly fixed', style: TextStyle(fontWeight: FontWeight.w500, color: Colors.black87)),
+            ],
+          ),
+          const SizedBox(height: 24),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                style: TextButton.styleFrom(
+                  backgroundColor: const Color(0xFFE5E7EB),
+                  foregroundColor: Colors.black87,
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(24),
+                  ),
+                ),
+                child: const Text('Cancel', style: TextStyle(fontWeight: FontWeight.w600)),
+              ),
+              const SizedBox(width: 12),
+              ElevatedButton(
+                onPressed: () {
+                  if (_nameController.text.isNotEmpty && _amountController.text.isNotEmpty) {
+                    widget.onSave(_nameController.text, _amountController.text, _selectedCategory, _isMonthlyFixed);
+                    Navigator.pop(context);
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF38B2AC),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(24),
+                  ),
+                  elevation: 0,
+                ),
+                child: const Text('Save', style: TextStyle(fontWeight: FontWeight.w600)),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTextField(TextEditingController controller, String hint, {bool isNumber = false}) {
+    return TextField(
+      controller: controller,
+      keyboardType: isNumber ? const TextInputType.numberWithOptions(decimal: true) : TextInputType.text,
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: const TextStyle(color: Colors.black38),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide.none,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide.none,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide.none,
+        ),
+        filled: true,
+        fillColor: const Color(0xFFF3F4F6),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      ),
+    );
+  }
 }

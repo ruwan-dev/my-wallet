@@ -22,6 +22,7 @@ import '../../../debts/presentation/widgets/debt_card.dart';
 import '../../../debts/presentation/widgets/debt_timeline.dart';
 import '../../../debts/presentation/widgets/inline_debt_editor.dart';
 import '../widgets/inline_fund_editor.dart';
+import '../widgets/inline_investment_editor.dart';
 
 import '../bloc/custom_budget_cubit.dart';
 import '../bloc/custom_budget_state.dart';
@@ -53,6 +54,17 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
         accState is AccountLoaded ? accState.accounts : <dynamic>[];
     final settings = context.read<SettingsCubit>().state;
     final linkedId = settings.bucketAccountLinks[bucketTypeName];
+
+    final availableAccounts = accounts.where((acc) {
+      bool isLinkedToAnother = false;
+      for (var entry in settings.bucketAccountLinks.entries) {
+        if (entry.value == acc.id && entry.key != bucketTypeName) {
+          isLinkedToAnother = true;
+          break;
+        }
+      }
+      return !isLinkedToAnother;
+    }).toList();
 
     showModalBottomSheet(
       context: context,
@@ -104,13 +116,13 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
                 style: TextStyle(color: Colors.white54, fontSize: 12),
               ),
               const SizedBox(height: 20),
-              if (accounts.isEmpty)
+              if (availableAccounts.isEmpty)
                 const Text(
-                  'No accounts found. Create an account first.',
+                  'No available accounts found. Create an account first or unsync one from another bucket.',
                   style: TextStyle(color: Colors.white70),
                 )
               else
-                ...accounts.map((acc) {
+                ...availableAccounts.map((acc) {
                   final isLinked = linkedId == acc.id;
                   return GestureDetector(
                     onTap: () {
@@ -542,41 +554,32 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
       child: GestureDetector(
         onTap: () => _onTabSelected(index),
         behavior: HitTestBehavior.opaque,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
+        child: Container(
           margin: const EdgeInsets.symmetric(horizontal: 2),
-          decoration: isSelected
-              ? BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.04),
-                      blurRadius: 4,
-                      offset: const Offset(0, 2),
+          child: AnimatedScale(
+            scale: isSelected ? 1.30 : 1.0,
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeOutBack,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icon,
+                    size: 13,
+                    color: isSelected ? Colors.black87 : Colors.black45),
+                const SizedBox(width: 4),
+                Flexible(
+                  child: Text(
+                    title,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: isSelected ? Colors.black87 : Colors.black45,
+                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                      fontSize: 11,
                     ),
-                  ],
-                )
-              : null,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon,
-                  size: 13,
-                  color: isSelected ? Colors.black87 : Colors.black45),
-              const SizedBox(width: 4),
-              Flexible(
-                child: Text(
-                  title,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: isSelected ? Colors.black87 : Colors.black45,
-                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                    fontSize: 11,
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -725,59 +728,59 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
         child: Container(
-      padding: const EdgeInsets.all(24),
-      margin: const EdgeInsets.only(top: 16),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.18),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withOpacity(0.3), width: 1.5),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-           _buildPhilosophyPoint(
-             title: 'The Fire Evolves',
-             description: _showSinhalaPhilosophy ? 'ගෙවන්න ණය නැති නිසා, ඔයාගේ 20% Fire මුදල සම්පූර්ණයෙන්ම වෙන් වෙන්නේ ධනය ගොඩනගන්නයි.' : 'With zero debt to pay, your 20% Fire allocation is fully unlocked to build your wealth.',
-           ),
-           const SizedBox(height: 12),
-           _buildPhilosophyPoint(
-             title: 'Maxing Out Mojo',
-             description: _showSinhalaPhilosophy ? 'මාස 3ක හදිසි අරමුදල පිරෙනකම්, අර 20% කෙලින්ම යන්නේ ඔයාගේ Mojo බකට් එකටයි.' : 'That 20% now flows directly into your Mojo bucket until your 3-month emergency safety net is completely full.',
-           ),
-           const SizedBox(height: 12),
-           _buildPhilosophyPoint(
-             title: 'Unlocking the Grow Machine',
-             description: _showSinhalaPhilosophy ? 'Mojo එක පිරුණු ගමන්, ඒ 20% දිගටම Grow බකට් එකට ගිහින් ස්වයංක්‍රීයව ආයෝජනය වෙනවා.' : 'Once Mojo is full, that same 20% redirects into your Grow bucket to build long-term wealth through automated investments.',
-           ),
-           const SizedBox(height: 12),
-           _buildPhilosophyPoint(
-             title: '100% Guilt-Free Spending',
-             description: _showSinhalaPhilosophy ? 'කිසිම මානසික පීඩනයක් නැතුව Daily (60%), Splurge (10%), සහ Smile (10%) සල්ලි වලින් ඔයාට උපරිම සතුටක් ගන්න පුළුවන්.' : 'You can fully enjoy your Daily (60%), Splurge (10%), and Smile (10%) money with zero financial stress.',
-           ),
-           const SizedBox(height: 12),
-           _buildPhilosophyPoint(
-             title: 'No New Debt',
-             description: _showSinhalaPhilosophy ? 'ආපහු හැරී බැලීමක් නැහැ. වාහනයක්, ෆෝන් එකක් වගේ ඕනෑම අලුත් දෙයක් ගන්නේ Smile බකට් එකෙන් සල්ලි එකතු කරලා Cash වලින් විතරයි.' : 'You never look back. Any new purchases (like a car or tech) are saved for via the Smile bucket and bought in cash.',
-           ),
-           const SizedBox(height: 16),
-           Row(
-             mainAxisAlignment: MainAxisAlignment.end,
-             children: [
-               TextButton(
-                 onPressed: () => setState(() => _showSinhalaPhilosophy = !_showSinhalaPhilosophy),
-                 style: TextButton.styleFrom(
-                   foregroundColor: Colors.white54,
-                   padding: const EdgeInsets.all(12),
-                   shape: const CircleBorder(),
-                   backgroundColor: Colors.white.withOpacity(0.1),
-                 ),
-                 child: Text(_showSinhalaPhilosophy ? 'En' : 'Si', style: const TextStyle(fontWeight: FontWeight.bold)),
+          padding: const EdgeInsets.all(24),
+          margin: const EdgeInsets.only(top: 16),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.18),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: Colors.white.withOpacity(0.3), width: 1.5),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+               _buildPhilosophyPoint(
+                 title: 'The Fire Evolves',
+                 description: _showSinhalaPhilosophy ? 'ගෙවන්න ණය නැති නිසා, ඔයාගේ 20% Fire මුදල සම්පූර්ණයෙන්ම වෙන් වෙන්නේ ධනය ගොඩනගන්නයි.' : 'With zero debt to pay, your 20% Fire allocation is fully unlocked to build your wealth.',
                ),
-             ],
-           ),
-        ],
-      ),
-    ),
+               const SizedBox(height: 12),
+               _buildPhilosophyPoint(
+                 title: 'Maxing Out Mojo',
+                 description: _showSinhalaPhilosophy ? 'මාස 3ක හදිසි අරමුදල පිරෙනකම්, අර 20% කෙලින්ම යන්නේ ඔයාගේ Mojo බකට් එකටයි.' : 'That 20% now flows directly into your Mojo bucket until your 3-month emergency safety net is completely full.',
+               ),
+               const SizedBox(height: 12),
+               _buildPhilosophyPoint(
+                 title: 'Unlocking the Grow Machine',
+                 description: _showSinhalaPhilosophy ? 'Mojo එක පිරුණු ගමන්, ඒ 20% දිගටම Grow බකට් එකට ගිහින් ස්වයංක්‍රීයව ආයෝජනය වෙනවා.' : 'Once Mojo is full, that same 20% redirects into your Grow bucket to build long-term wealth through automated investments.',
+               ),
+               const SizedBox(height: 12),
+               _buildPhilosophyPoint(
+                 title: '100% Guilt-Free Spending',
+                 description: _showSinhalaPhilosophy ? 'කිසිම මානසික පීඩනයක් නැතුව Daily (60%), Splurge (10%), සහ Smile (10%) සල්ලි වලින් ඔයාට උපරිම සතුටක් ගන්න පුළුවන්.' : 'You can fully enjoy your Daily (60%), Splurge (10%), and Smile (10%) money with zero financial stress.',
+               ),
+               const SizedBox(height: 12),
+               _buildPhilosophyPoint(
+                 title: 'No New Debt',
+                 description: _showSinhalaPhilosophy ? 'ආපහු හැරී බැලීමක් නැහැ. වාහනයක්, ෆෝන් එකක් වගේ ඕනෑම අලුත් දෙයක් ගන්නේ Smile බකට් එකෙන් සල්ලි එකතු කරලා Cash වලින් විතරයි.' : 'You never look back. Any new purchases (like a car or tech) are saved for via the Smile bucket and bought in cash.',
+               ),
+               const SizedBox(height: 16),
+               Row(
+                 mainAxisAlignment: MainAxisAlignment.end,
+                 children: [
+                   TextButton(
+                     onPressed: () => setState(() => _showSinhalaPhilosophy = !_showSinhalaPhilosophy),
+                     style: TextButton.styleFrom(
+                       foregroundColor: Colors.black54,
+                       padding: const EdgeInsets.all(12),
+                       shape: const CircleBorder(),
+                       backgroundColor: Colors.black.withOpacity(0.05),
+                     ),
+                     child: Text(_showSinhalaPhilosophy ? 'En' : 'Si', style: const TextStyle(fontWeight: FontWeight.bold)),
+                   ),
+                 ],
+               ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -787,7 +790,7 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
     return Text(
       text,
       style: const TextStyle(
-        color: Colors.white70,
+        color: Colors.black87,
         fontSize: 14,
         height: 1.5,
       ),
@@ -822,6 +825,42 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
                     : 'Grow',
             description: 'Things that crush your burdens and build your freedom.\n• Examples: Clearing credit card debt and paying off vehicle leases.',
             backgroundImagePath: 'assets/images/fire.jpg',
+            actionWidget: GestureDetector(
+                    onTap: () {
+                      showModalBottomSheet(
+                        context: context,
+                        isScrollControlled: true,
+                        backgroundColor: Colors.transparent,
+                        builder: (context) => Padding(
+                          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+                          child: InlineDebtEditor(
+                            onCancel: () => Navigator.pop(context),
+                            onSave: () => Navigator.pop(context),
+                          ),
+                        ),
+                      );
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.08),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: Colors.black.withOpacity(0.15)),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.add, size: 13, color: Colors.black54),
+                          SizedBox(width: 5),
+                          Text('Add Debt',
+                              style: TextStyle(
+                                  color: Colors.black54,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600)),
+                        ],
+                      ),
+                    ),
+                  ),
           ),
         ),
         Expanded(
@@ -829,52 +868,25 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
             padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0)
                 .copyWith(top: 16.0),
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'Trophy Road',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    if (!_isAddingDebt)
-                      OutlinedButton.icon(
-                        onPressed: () => setState(() => _isAddingDebt = true),
-                        icon: const Icon(Icons.add, size: 18),
-                        label: const Text('Add Debt'),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.white,
-                          side: const BorderSide(color: Colors.white30),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12)),
-                        ),
-                      ),
-                  ],
-                ),
-                if (_isAddingDebt)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 16.0),
-                    child: InlineDebtEditor(
-                      onCancel: () => setState(() => _isAddingDebt = false),
-                      onSave: () => setState(() => _isAddingDebt = false),
-                    ),
+                const Text(
+                  'Trophy Road',
+                  style: TextStyle(
+                    color: Colors.black87,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
                   ),
+                ),
                 const SizedBox(height: 16),
                 BlocBuilder<DebtCubit, DebtState>(
                   builder: (context, state) {
                     if (state is DebtLoading) {
-                      return const ShimmerTile();
+                       return const ShimmerTile();
                     } else if (state is DebtLoaded) {
                       final debts = state.debts;
 
                       if (debts.isEmpty) {
-                        if (_isAddingDebt) {
-                          return const SizedBox.shrink();
-                        }
                         return _buildZeroDebtMessage(context);
                       }
 
@@ -945,10 +957,27 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
             description:
                 'Things that keep you safe when life hits hard.\n• Examples: Unexpected medical bills or emergency car repairs.',
             backgroundImagePath: 'assets/images/mojo.jpg',
-            actionWidget: !_isAddingMojoFunds
-                ? OutlinedButton.icon(
-                    onPressed: () =>
-                        setState(() => _isAddingMojoFunds = true),
+            actionWidget: OutlinedButton.icon(
+                    onPressed: () {
+                      showModalBottomSheet(
+                        context: context,
+                        isScrollControlled: true,
+                        backgroundColor: Colors.transparent,
+                        builder: (context) => Padding(
+                          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+                          child: InlineFundEditor(
+                            title: 'Add Funds to Mojo',
+                            themeColor: const Color(0xFFF59E0B),
+                            sourceAccounts: sourceAccounts,
+                            onCancel: () => Navigator.pop(context),
+                            onSave: (amount, sourceId) {
+                              _addMojoFunds(amount, sourceId);
+                              Navigator.pop(context);
+                            },
+                          ),
+                        ),
+                      );
+                    },
                     icon: const Icon(Icons.add, size: 14),
                     label: const Text('Add Funds',
                         style: TextStyle(fontSize: 12)),
@@ -962,8 +991,7 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
                           horizontal: 12, vertical: 0),
                       minimumSize: const Size(0, 28),
                     ),
-                  )
-                : null,
+                  ),
           ),
         ),
         Expanded(
@@ -972,25 +1000,11 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
                 .copyWith(top: 16.0),
             child: Column(
               children: [
-
-                if (_isAddingMojoFunds) ...[
-                  const SizedBox(height: 16),
-                  InlineFundEditor(
-                    title: 'Add Funds to Mojo',
-                    themeColor: const Color(0xFFF59E0B),
-                    sourceAccounts: sourceAccounts,
-                    onCancel: () => setState(() => _isAddingMojoFunds = false),
-                    onSave: (amount, sourceId) {
-                      _addMojoFunds(amount, sourceId);
-                      setState(() => _isAddingMojoFunds = false);
-                    },
-                  ),
-                ],
                 const SizedBox(height: 48),
                 Text(
                   'Keep sweeping your leftover Daily Expenses here!',
                   style: TextStyle(
-                      color: Colors.white.withOpacity(0.4),
+                      color: Colors.black.withOpacity(0.4),
                       fontSize: 12,
                       fontStyle: FontStyle.italic),
                 ),
@@ -1010,6 +1024,7 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
           padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
           child: _buildWideVaultCard(
             context: context,
+            bucketTypeName: 'grow',
             title: 'Grow Wealth',
             icon: Icons.trending_up,
             primaryColor: const Color(0xFF34D399),
@@ -1017,6 +1032,42 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
             balance: growBalance,
             description: 'Things that multiply your wealth for the future.\n• Examples: Stock market investments or real estate property purchases.',
             backgroundImagePath: 'assets/images/grow.jpg',
+            actionWidget: GestureDetector(
+              onTap: () {
+                showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  backgroundColor: Colors.transparent,
+                  builder: (context) => Padding(
+                    padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+                    child: InlineInvestmentEditor(
+                      onCancel: () => Navigator.pop(context),
+                      onSave: () => Navigator.pop(context),
+                    ),
+                  ),
+                );
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Colors.black.withOpacity(0.15)),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.add, size: 13, color: Colors.black54),
+                    SizedBox(width: 5),
+                    Text('Add Investment',
+                        style: TextStyle(
+                            color: Colors.black54,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600)),
+                  ],
+                ),
+              ),
+            ),
           ),
         ),
         Expanded(
@@ -1028,9 +1079,9 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
               padding: const EdgeInsets.all(32),
               margin: const EdgeInsets.only(bottom: 24),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.03),
+                color: Colors.black.withOpacity(0.03),
                 borderRadius: BorderRadius.circular(32),
-                border: Border.all(color: Colors.white.withOpacity(0.05)),
+                border: Border.all(color: Colors.black.withOpacity(0.05)),
               ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -1038,17 +1089,17 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
                   Container(
                     padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF50C8C8).withOpacity(0.2),
+                      color: const Color(0xFF10B981).withOpacity(0.15),
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(Icons.account_balance,
-                        size: 48, color: Colors.white),
+                        size: 48, color: Color(0xFF10B981)),
                   ),
                   const SizedBox(height: 24),
                   const Text(
                     'Net Worth Tracking',
                     style: TextStyle(
-                        color: Colors.white,
+                        color: Colors.black87,
                         fontSize: 20,
                         fontWeight: FontWeight.bold),
                   ),
@@ -1056,22 +1107,7 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
                   const Text(
                     'Connect your investment accounts, superannuation, and property values to track your long-term wealth growth.',
                     textAlign: TextAlign.center,
-                    style: TextStyle(
-                        color: Colors.white54, fontSize: 14, height: 1.5),
-                  ),
-                  const SizedBox(height: 32),
-                  FilledButton.icon(
-                    onPressed: () {},
-                    icon: const Icon(Icons.add, size: 18),
-                    label: const Text('Add Investment'),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: const Color(0xFF50C8C8),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 24, vertical: 16),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16)),
-                    ),
+                    style: TextStyle(color: Colors.black54, fontSize: 14, height: 1.5),
                   ),
                 ],
               ),
@@ -1144,9 +1180,15 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
         border: Border.all(color: Colors.white.withOpacity(0.3), width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 24,
-            offset: const Offset(0, 8),
+            color: Colors.black.withOpacity(0.12),
+            blurRadius: 32,
+            spreadRadius: 4,
+            offset: const Offset(0, 12),
+          ),
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -1184,81 +1226,61 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
                    color: textColor,
                    mainFontSize: 28,
                 ),
-                if (targetAmount != null && targetAmount > 0) ...[
-                  const SizedBox(height: 16),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: LinearProgressIndicator(
-                      value: (balance / targetAmount).clamp(0.0, 1.0),
-                      backgroundColor: Colors.black.withOpacity(0.1),
-                      valueColor:
-                          const AlwaysStoppedAnimation<Color>(Colors.black),
-                      minHeight: 6,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '${AppFormatters.formatCurrency(context, balance)} / ${AppFormatters.formatCurrency(context, targetAmount)}',
-                    style: TextStyle(
-                      color: textColor.withOpacity(0.8),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-                if (actionWidget != null) ...[
-                  const SizedBox(height: 12),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: actionWidget,
-                  ),
-                ],
 
-                // ── Account Sync chip ─────────────────────────────────────
-                if (bucketTypeName != null) ...[
-                  const SizedBox(height: 10),
-                  GestureDetector(
-                    onTap: () => _showLinkAccountSheet(
-                        context, bucketTypeName, primaryColor),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 5),
-                      decoration: BoxDecoration(
-                        color: linkedAccount != null
-                            ? Colors.black.withOpacity(0.15)
-                            : Colors.black.withOpacity(0.08),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: linkedAccount != null
-                              ? Colors.black.withOpacity(0.3)
-                              : Colors.black.withOpacity(0.15),
-                          width: 1,
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            linkedAccount != null
-                                ? Icons.link_rounded
-                                : Icons.link_off_rounded,
-                            size: 13,
-                            color: Colors.black54,
-                          ),
-                          const SizedBox(width: 5),
-                          Text(
-                            linkedAccount != null
-                                ? '${linkedAccount.name}  •  ${AppFormatters.formatCurrency(context, linkedAccount.balance)}'
-                                : 'Sync Account',
-                            style: const TextStyle(
-                              color: Colors.black54,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
+                if (actionWidget != null || bucketTypeName != null) ...[
+                  const Spacer(),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (bucketTypeName != null)
+                        GestureDetector(
+                          onTap: () => _showLinkAccountSheet(
+                              context, bucketTypeName, primaryColor),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 5),
+                            decoration: BoxDecoration(
+                              color: linkedAccount != null
+                                  ? Colors.black.withOpacity(0.15)
+                                  : Colors.black.withOpacity(0.08),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: linkedAccount != null
+                                    ? Colors.black.withOpacity(0.3)
+                                    : Colors.black.withOpacity(0.15),
+                                width: 1,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  linkedAccount != null
+                                      ? Icons.link_rounded
+                                      : Icons.link_off_rounded,
+                                  size: 13,
+                                  color: Colors.black54,
+                                ),
+                                const SizedBox(width: 5),
+                                Text(
+                                  linkedAccount != null
+                                      ? '${linkedAccount.name}  •  ${AppFormatters.formatCurrency(context, linkedAccount.balance)}'
+                                      : 'Sync Account',
+                                  style: const TextStyle(
+                                    color: Colors.black54,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                        ],
-                      ),
-                    ),
+                        ),
+                      if (actionWidget != null && bucketTypeName != null)
+                        const SizedBox(height: 8),
+                      if (actionWidget != null) actionWidget,
+                    ],
                   ),
                 ],
               ],
@@ -1343,9 +1365,15 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
         border: Border.all(color: Colors.white.withOpacity(0.3), width: 1.2),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 24,
-            offset: const Offset(0, 8),
+            color: Colors.black.withOpacity(0.12),
+            blurRadius: 32,
+            spreadRadius: 4,
+            offset: const Offset(0, 12),
+          ),
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -1422,32 +1450,7 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
                    color: textColor,
                    mainFontSize: 28,
                 ),
-                if (hasGoal && !isRedirected) ...[
-                  const SizedBox(height: 16),
-                  Text(
-                    goalName ?? 'Goal',
-                    style: TextStyle(
-                        color: textColor.withOpacity(0.8),
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600),
-                  ),
-                  const SizedBox(height: 4),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(4),
-                    child: LinearProgressIndicator(
-                      value: progress,
-                      backgroundColor: Colors.black12,
-                      color: Colors.black87,
-                      minHeight: 4,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    '${(progress * 100).toInt()}% of ${AppFormatters.formatCurrency(context, targetAmount)}',
-                    style: TextStyle(
-                        color: textColor.withOpacity(0.8), fontSize: 8),
-                  ),
-                ],
+
               ],
             ),
           ),

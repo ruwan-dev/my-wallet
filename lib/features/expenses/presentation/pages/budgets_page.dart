@@ -76,6 +76,7 @@ class BudgetsPage extends StatelessWidget {
           showModalBottomSheet(
             context: context,
             isScrollControlled: true,
+                        useRootNavigator: true,
             backgroundColor: Colors.transparent,
             builder: (_) => const SetBudgetBottomSheet(),
           );

@@ -24,14 +24,23 @@ class BudgetsMainPage extends StatelessWidget {
     return DefaultTabController(
       length: 2,
       child: Scaffold(
-        backgroundColor: Colors.transparent,
+        backgroundColor: const Color(0xFFF7F9FA), // Light background matching design
         appBar: AppBar(
-          title: const Text('My Budgets'),
-          backgroundColor: Colors.transparent,
+          title: const Text(
+            'My Budgets',
+            style: TextStyle(
+              color: Color(0xFF1E293B),
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          centerTitle: true,
+          backgroundColor: const Color(0xFFF7F9FA),
           elevation: 0,
+          iconTheme: const IconThemeData(color: Color(0xFF1E293B)), // For back button
           actions: [
             IconButton(
-              icon: const Icon(Icons.add, color: Color(0xFF26C6DA), size: 28),
+              icon: const Icon(Icons.add, color: Color(0xFF38B2AC), size: 28),
               onPressed: () {
                 Navigator.push(
                   context,
@@ -43,10 +52,15 @@ class BudgetsMainPage extends StatelessWidget {
             ),
           ],
           bottom: TabBar(
+            overlayColor: WidgetStateProperty.all(Colors.transparent),
             indicatorSize: TabBarIndicatorSize.label,
-            indicatorColor: const Color(0xFF6D28D9), // Deep Purple
-            labelColor: const Color(0xFF6D28D9), // Deep Purple
-            unselectedLabelColor: theme.colorScheme.onSurfaceVariant,
+            indicatorColor: const Color(0xFF38B2AC), // Cyan
+            labelColor: const Color(0xFF38B2AC), // Cyan
+            unselectedLabelColor: const Color(0xFF718096),
+            labelStyle: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w500,
+            ),
             tabs: const [
               Tab(text: 'Active'),
               Tab(text: 'History'),
@@ -113,7 +127,7 @@ class BudgetsMainPage extends StatelessWidget {
           : 0.0;
         final isWarning = progress > 0.9;
 
-        return GlassListTile(
+        return GestureDetector(
           onTap: () {
             Navigator.push(
               context,
@@ -122,133 +136,140 @@ class BudgetsMainPage extends StatelessWidget {
               ),
             );
           },
-          tileColor: Colors.white.withOpacity(isHistory ? 0.05 : 0.15),
-          contentPadding: const EdgeInsets.all(20),
-          title: Opacity(
+          child: Opacity(
             opacity: isHistory ? 0.6 : 1.0,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Row(
-                        children: [
-                          Builder(
-                            builder: (context) {
-                              IconData icon = Icons.circle;
-                              Color color = Colors.white;
-                              String bucketName = 'Blow';
-                              switch (budget.bucketType) {
-                                case BucketType.dailyExpenses: bucketName = 'Blow'; icon = Icons.work_outline; color = Colors.white; break;
-                                case BucketType.smile: bucketName = 'Smile'; icon = Icons.flight_takeoff; color = const Color(0xFF34D399); break;
-                                case BucketType.fire: bucketName = 'Fire'; icon = Icons.local_fire_department; color = const Color(0xFFF87171); break;
-                                case BucketType.mojo: bucketName = 'Mojo'; icon = Icons.security; color = const Color(0xFFEAB308); break;
-                                case BucketType.grow: bucketName = 'Grow'; icon = Icons.eco; color = const Color(0xFF60A5FA); break;
-                                default: break;
-                              }
-                              return Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: color.withValues(alpha: 0.15),
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(color: color.withValues(alpha: 0.3)),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(icon, color: Colors.black, size: 14),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      bucketName,
-                                      style: const TextStyle(
-                                        color: Colors.black,
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.bold,
+            child: Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.04),
+                    blurRadius: 20,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Row(
+                          children: [
+                            Builder(
+                              builder: (context) {
+                                IconData icon = Icons.circle;
+                                String bucketName = 'Blow';
+                                switch (budget.bucketType) {
+                                  case BucketType.dailyExpenses: bucketName = 'Blow'; icon = Icons.shopping_bag_outlined; break;
+                                  case BucketType.smile: bucketName = 'Smile'; icon = Icons.flight_takeoff; break;
+                                  case BucketType.fire: bucketName = 'Fire'; icon = Icons.local_fire_department; break;
+                                  case BucketType.mojo: bucketName = 'Mojo'; icon = Icons.security; break;
+                                  case BucketType.grow: bucketName = 'Grow'; icon = Icons.eco; break;
+                                  default: break;
+                                }
+                                return Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFF3F4F6),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(icon, color: Colors.black87, size: 16),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        bucketName,
+                                        style: const TextStyle(
+                                          color: Colors.black87,
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w500,
+                                        ),
                                       ),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            }
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              budget.title,
-                              style: const TextStyle(
-                                color: Colors.black,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w700,
-                                decoration: null,
-                              ).copyWith(
-                                decoration: isHistory ? TextDecoration.lineThrough : null,
-                              ),
-                              overflow: TextOverflow.ellipsis,
+                                    ],
+                                  ),
+                                );
+                              }
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Text(
+                                budget.title,
+                                style: const TextStyle(
+                                  color: Colors.black87,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  decoration: null,
+                                ).copyWith(
+                                  decoration: isHistory ? TextDecoration.lineThrough : null,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      AppFormatters.formatCurrency(context, budget.totalBudgetLimit),
-                      style: const TextStyle(
-                        color: Colors.black,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
+                      const SizedBox(width: 8),
+                      Text(
+                        AppFormatters.formatCurrency(context, budget.totalBudgetLimit),
+                        style: const TextStyle(
+                          color: Colors.black,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Builder(
-                  builder: (context) {
-                    final txState = context.watch<TransactionCubit>().state;
-                    final transactions = txState is TransactionLoaded ? txState.transactions : <TransactionEntity>[];
-                    
-                    int completedCount = 0;
-                    for (final item in budget.items) {
-                      final spent = budget.calculateItemSpent(item, transactions);
-                      if ((item.allocatedAmount > 0 && spent >= item.allocatedAmount) || item.isCompleted) {
-                        completedCount++;
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Builder(
+                    builder: (context) {
+                      final txState = context.watch<TransactionCubit>().state;
+                      final transactions = txState is TransactionLoaded ? txState.transactions : <TransactionEntity>[];
+                      
+                      int completedCount = 0;
+                      for (final item in budget.items) {
+                        final spent = budget.calculateItemSpent(item, transactions);
+                        if ((item.allocatedAmount > 0 && spent >= item.allocatedAmount) || item.isCompleted) {
+                          completedCount++;
+                        }
                       }
-                    }
-                    
-                    return Text(
-                      '$completedCount / ${budget.items.length} completed',
-                      style: const TextStyle(
-                        color: Colors.black,
-                        fontSize: 12,
-                      ),
-                    );
-                  },
-                ),
-                const SizedBox(height: 12),
-                Stack(
-                  children: [
-                    Container(
-                      height: 8,
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
+                      
+                      return Text(
+                        '$completedCount / ${budget.items.length} completed',
+                        style: const TextStyle(
+                          color: Colors.black87,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    height: 6,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF3F4F6),
+                      borderRadius: BorderRadius.circular(10),
                     ),
-                    FractionallySizedBox(
+                    alignment: Alignment.centerLeft,
+                    child: FractionallySizedBox(
                       widthFactor: progress,
                       child: Container(
-                        height: 8,
                         decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(4),
+                          color: const Color(0xFF8B5CF6), // Purple
+                          borderRadius: BorderRadius.circular(10),
                         ),
                       ),
                     ),
-                  ],
-                ),
-              ],
+                  ),
+                ],
+              ),
             ),
           ),
         );

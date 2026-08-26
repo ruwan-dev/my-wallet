@@ -10,6 +10,7 @@ class BudgetChecklistItem extends Equatable {
   final String? categoryId;
   final String? categoryIcon;
   final String? subcategory;
+  final bool isMonthlyFixed;
 
   const BudgetChecklistItem({
     required this.id,
@@ -19,6 +20,7 @@ class BudgetChecklistItem extends Equatable {
     this.categoryId,
     this.categoryIcon,
     this.subcategory,
+    this.isMonthlyFixed = false,
   });
 
   BudgetChecklistItem copyWith({
@@ -29,6 +31,7 @@ class BudgetChecklistItem extends Equatable {
     String? categoryId,
     String? categoryIcon,
     String? subcategory,
+    bool? isMonthlyFixed,
   }) {
     return BudgetChecklistItem(
       id: id ?? this.id,
@@ -38,11 +41,12 @@ class BudgetChecklistItem extends Equatable {
       categoryId: categoryId ?? this.categoryId,
       categoryIcon: categoryIcon ?? this.categoryIcon,
       subcategory: subcategory ?? this.subcategory,
+      isMonthlyFixed: isMonthlyFixed ?? this.isMonthlyFixed,
     );
   }
 
   @override
-  List<Object?> get props => [id, title, allocatedAmount, isCompleted, categoryId, categoryIcon, subcategory];
+  List<Object?> get props => [id, title, allocatedAmount, isCompleted, categoryId, categoryIcon, subcategory, isMonthlyFixed];
 }
 
 class CustomBudgetEntity extends Equatable {
@@ -54,6 +58,7 @@ class CustomBudgetEntity extends Equatable {
   final DateTime createdAt;
   final bool isCompleted;
   final BucketType bucketType;
+  final bool isRecurring;
 
   const CustomBudgetEntity({
     required this.id,
@@ -64,6 +69,7 @@ class CustomBudgetEntity extends Equatable {
     required this.createdAt,
     this.isCompleted = false,
     this.bucketType = BucketType.dailyExpenses,
+    this.isRecurring = false,
   });
 
   CustomBudgetEntity copyWith({
@@ -75,6 +81,7 @@ class CustomBudgetEntity extends Equatable {
     DateTime? createdAt,
     bool? isCompleted,
     BucketType? bucketType,
+    bool? isRecurring,
   }) {
     return CustomBudgetEntity(
       id: id ?? this.id,
@@ -85,6 +92,7 @@ class CustomBudgetEntity extends Equatable {
       createdAt: createdAt ?? this.createdAt,
       isCompleted: isCompleted ?? this.isCompleted,
       bucketType: bucketType ?? this.bucketType,
+      isRecurring: isRecurring ?? this.isRecurring,
     );
   }
 
@@ -125,5 +133,5 @@ class CustomBudgetEntity extends Equatable {
   }
 
   @override
-  List<Object?> get props => [id, userId, title, totalBudgetLimit, items, createdAt, isCompleted, bucketType];
+  List<Object?> get props => [id, userId, title, totalBudgetLimit, items, createdAt, isCompleted, bucketType, isRecurring];
 }

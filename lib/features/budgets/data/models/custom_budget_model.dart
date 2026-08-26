@@ -12,6 +12,7 @@ class CustomBudgetModel extends CustomBudgetEntity {
     required super.createdAt,
     super.isCompleted,
     super.bucketType,
+    super.isRecurring,
   });
 
   factory CustomBudgetModel.fromEntity(CustomBudgetEntity entity) {
@@ -24,6 +25,7 @@ class CustomBudgetModel extends CustomBudgetEntity {
       createdAt: entity.createdAt,
       isCompleted: entity.isCompleted,
       bucketType: entity.bucketType,
+      isRecurring: entity.isRecurring,
     );
   }
 
@@ -41,6 +43,7 @@ class CustomBudgetModel extends CustomBudgetEntity {
         categoryId: map['categoryId'] as String?,
         categoryIcon: map['categoryIcon'] as String?,
         subcategory: map['subcategory'] as String?,
+        isMonthlyFixed: map['isMonthlyFixed'] ?? false,
       );
     }).toList();
 
@@ -56,6 +59,7 @@ class CustomBudgetModel extends CustomBudgetEntity {
         (e) => e.toString() == data['bucketType'],
         orElse: () => BucketType.dailyExpenses,
       ),
+      isRecurring: data['isRecurring'] ?? false,
     );
   }
 
@@ -67,6 +71,7 @@ class CustomBudgetModel extends CustomBudgetEntity {
       'createdAt': Timestamp.fromDate(createdAt),
       'isCompleted': isCompleted,
       'bucketType': bucketType.toString(),
+      'isRecurring': isRecurring,
       'items': items.map((i) => {
         'id': i.id,
         'title': i.title,
@@ -75,6 +80,7 @@ class CustomBudgetModel extends CustomBudgetEntity {
         'categoryId': i.categoryId,
         'categoryIcon': i.categoryIcon,
         'subcategory': i.subcategory,
+        'isMonthlyFixed': i.isMonthlyFixed,
       }).toList(),
     };
   }

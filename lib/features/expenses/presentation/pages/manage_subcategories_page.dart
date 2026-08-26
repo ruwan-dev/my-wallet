@@ -59,11 +59,25 @@ class _ManageSubcategoriesPageState extends State<ManageSubcategoriesPage> {
           builder: (context, state) {
             if (state is CategoryLoaded) {
               final cat = state.categories.firstWhere((c) => c.id == widget.categoryId, orElse: () => Category(id: '', name: 'Unknown', icon: '', color: Colors.grey, isIncome: false, subcategories: []));
-              return Text('${cat.name} Subcategories');
+              return Text('${cat.name} Subcategories', style: const TextStyle(color: Color(0xFF1E293B), fontSize: 20, fontWeight: FontWeight.bold));
             }
-            return const Text('Subcategories');
+            return const Text('Subcategories', style: TextStyle(color: Color(0xFF1E293B), fontSize: 20, fontWeight: FontWeight.bold));
           },
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.add, color: Color(0xFF38B2AC), size: 28),
+            tooltip: 'Add Subcategory',
+            onPressed: () {
+              setState(() {
+                _isAdding = true;
+                _editingSubcategory = null;
+                _schedulingSubcategory = null;
+              });
+            },
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
       body: BlocBuilder<CategoryCubit, CategoryState>(
         builder: (context, state) {
@@ -157,15 +171,15 @@ class _ManageSubcategoriesPageState extends State<ManageSubcategoriesPage> {
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 8),
                   child: GlassListTile(
-                    leading: const Icon(Icons.subdirectory_arrow_right),
-                    title: Text(sub),
+                    leading: const Icon(Icons.subdirectory_arrow_right, color: Color(0xFF38B2AC)),
+                    title: Text(sub, style: const TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF38B2AC))),
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         IconButton(
                           icon: Icon(
                             category.recurringConfigs.containsKey(sub) ? Icons.event_repeat : Icons.event_available,
-                            color: Colors.black,
+                            color: const Color(0xFF38B2AC),
                           ),
                           onPressed: () {
                             setState(() {
@@ -176,7 +190,7 @@ class _ManageSubcategoriesPageState extends State<ManageSubcategoriesPage> {
                           },
                         ),
                         IconButton(
-                          icon: const Icon(Icons.edit, color: Colors.black),
+                          icon: const Icon(Icons.edit, color: Color(0xFF38B2AC)),
                           onPressed: () {
                             setState(() {
                               _editingSubcategory = sub;
@@ -186,7 +200,7 @@ class _ManageSubcategoriesPageState extends State<ManageSubcategoriesPage> {
                           },
                         ),
                         IconButton(
-                          icon: const Icon(Icons.delete_outline, color: Colors.black),
+                          icon: const Icon(Icons.delete_outline, color: Color(0xFF38B2AC)),
                           onPressed: () => _deleteSubcategory(context, category, sub),
                         ),
                       ],
@@ -194,27 +208,6 @@ class _ManageSubcategoriesPageState extends State<ManageSubcategoriesPage> {
                   ),
                 );
               },
-            );
-          }
-          return const SizedBox();
-        },
-      ),
-      floatingActionButton: BlocBuilder<CategoryCubit, CategoryState>(
-        builder: (context, state) {
-          if (state is CategoryLoaded) {
-            return FloatingActionButton.extended(
-              onPressed: () {
-                setState(() {
-                  _isAdding = true;
-                  _editingSubcategory = null;
-                  _schedulingSubcategory = null;
-                });
-              },
-              backgroundColor: const Color(0xFF7C3AED),
-              foregroundColor: Colors.white,
-              elevation: 4,
-              icon: const Icon(Icons.add),
-              label: const Text('Add Subcategory'),
             );
           }
           return const SizedBox();
@@ -314,130 +307,117 @@ class _InlineSubcategoryFormState extends State<_InlineSubcategoryForm> {
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(32),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-        child: Container(
-          padding: const EdgeInsets.only(
-            top: 24,
-            left: 20,
-            right: 20,
-            bottom: 24,
+    return Container(
+      padding: const EdgeInsets.only(
+        top: 24,
+        left: 20,
+        right: 20,
+        bottom: 24,
+      ),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF2F8F7), // Light cyan-ish background
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0xFF38B2AC).withOpacity(0.3), width: 1.5),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            widget.isAdding ? 'Add Subcategory' : 'Edit Subcategory', 
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: const Color(0xFF1E293B))
           ),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.15),
-            borderRadius: BorderRadius.circular(32),
-            border: Border.all(color: Colors.white.withOpacity(0.2), width: 1.5),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _ctrl,
+            style: const TextStyle(color: Colors.black87),
+            decoration: InputDecoration(
+              labelText: 'Subcategory Name',
+              labelStyle: const TextStyle(color: Colors.black54),
+              filled: true,
+              fillColor: Colors.white,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide(color: Colors.grey[300]!),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide(color: Colors.grey[300]!),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: const BorderSide(color: Color(0xFF38B2AC)),
+              ),
+            ),
+            textCapitalization: TextCapitalization.words,
+            autofocus: true,
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                widget.isAdding ? 'Add Subcategory' : 'Edit Subcategory', 
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: Colors.white)
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _ctrl,
-                style: const TextStyle(color: Colors.white),
-                decoration: InputDecoration(
-                  labelText: 'Subcategory Name',
-                  labelStyle: const TextStyle(color: Colors.white70),
-                  filled: true,
-                  fillColor: Colors.white.withOpacity(0.1),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide(color: Colors.white.withOpacity(0.2)),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide(color: Colors.white.withOpacity(0.2)),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: const BorderSide(color: Color(0xFF6D28D9)),
-                  ),
-                ),
-                textCapitalization: TextCapitalization.words,
-                autofocus: true,
-              ),
-              const SizedBox(height: 20),
-              const Text('Assign to Bucket', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white)),
-              const SizedBox(height: 12),
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: BucketType.values.where((b) => b != BucketType.none).map((bucket) {
-                    final isSelected = _selectedBucket == bucket;
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 8.0),
-                      child: GestureDetector(
-                        onTap: () => setState(() => _selectedBucket = bucket),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                          decoration: BoxDecoration(
-                            color: isSelected ? const Color(0xFF6D28D9) : Colors.white.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: isSelected ? const Color(0xFF6D28D9) : Colors.white.withOpacity(0.2),
-                            ),
-                          ),
-                          child: Text(
-                            bucket.displayName,
-                            style: TextStyle(
-                              color: isSelected ? Colors.white : Colors.white70,
-                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                            ),
-                          ),
+          const SizedBox(height: 20),
+          const Text('Assign to Bucket', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.black87)),
+          const SizedBox(height: 12),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: BucketType.values.where((b) => b != BucketType.none).map((bucket) {
+                final isSelected = _selectedBucket == bucket;
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8.0),
+                  child: GestureDetector(
+                    onTap: () => setState(() => _selectedBucket = isSelected ? BucketType.none : bucket),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: isSelected ? const Color(0xFF38B2AC) : Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: isSelected ? const Color(0xFF38B2AC) : Colors.grey[300]!,
                         ),
                       ),
-                    );
-                  }).toList(),
+                      child: Text(
+                        bucket.displayName,
+                        style: TextStyle(
+                          color: isSelected ? Colors.white : Colors.black54,
+                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+          const SizedBox(height: 24),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              InkWell(
+                onTap: widget.onCancel,
+                borderRadius: BorderRadius.circular(24),
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[200],
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.close, color: Colors.black54, size: 24),
                 ),
               ),
-              const SizedBox(height: 24),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  InkWell(
-                    onTap: widget.onCancel,
-                    borderRadius: BorderRadius.circular(24),
-                    child: Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.1),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(Icons.close, color: Colors.white70, size: 24),
-                    ),
+              const SizedBox(width: 16),
+              InkWell(
+                onTap: _handleSave,
+                borderRadius: BorderRadius.circular(24),
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: const BoxDecoration(
+                    color: Color(0xFF38B2AC),
+                    shape: BoxShape.circle,
                   ),
-                  const SizedBox(width: 16),
-                  InkWell(
-                    onTap: _handleSave,
-                    borderRadius: BorderRadius.circular(24),
-                    child: Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF6D28D9),
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFF6D28D9).withOpacity(0.3),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: const Icon(Icons.check, color: Colors.white, size: 24),
-                    ),
-                  ),
-                ],
+                  child: const Icon(Icons.check, color: Colors.white, size: 24),
+                ),
               ),
             ],
           ),
-        ),
+        ],
       ),
     );
   }
@@ -493,110 +473,97 @@ class _InlineRecurringSetupFormState extends State<_InlineRecurringSetupForm> {
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(32),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-        child: Container(
-          padding: const EdgeInsets.only(
-            top: 24,
-            left: 20,
-            right: 20,
-            bottom: 24,
-          ),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.15),
-            borderRadius: BorderRadius.circular(32),
-            border: Border.all(color: Colors.white.withOpacity(0.2), width: 1.5),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
+    return Container(
+      padding: const EdgeInsets.only(
+        top: 24,
+        left: 20,
+        right: 20,
+        bottom: 24,
+      ),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF2F8F7), // Light cyan-ish background
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0xFF38B2AC).withOpacity(0.3), width: 1.5),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Recurring Schedule', 
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: Colors.white)
-                  ),
-                  if (_hasExisting)
-                    IconButton(
-                      icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
-                      onPressed: _handleRemove,
-                      tooltip: 'Remove Schedule',
-                    ),
-                ],
+              Text(
+                'Recurring Schedule', 
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: const Color(0xFF1E293B))
               ),
-              const SizedBox(height: 8),
-              Text('Set up a recurring schedule for ${widget.subcategory}.', style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.white70)),
-              const SizedBox(height: 24),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.white.withOpacity(0.2)),
+              if (_hasExisting)
+                IconButton(
+                  icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                  onPressed: _handleRemove,
+                  tooltip: 'Remove Schedule',
                 ),
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<String>(
-                    value: _frequency,
-                    isExpanded: true,
-                    dropdownColor: const Color(0xFF2E2A4F),
-                    icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Colors.white70),
-                    items: ['Daily', 'Weekly', 'Monthly', 'Yearly'].map((String val) {
-                      return DropdownMenuItem(
-                        value: val, 
-                        child: Text(val, style: const TextStyle(color: Colors.white))
-                      );
-                    }).toList(),
-                    onChanged: (val) {
-                      if (val != null) setState(() => _frequency = val);
-                    },
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text('Set up a recurring schedule for ${widget.subcategory}.', style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.black54)),
+          const SizedBox(height: 24),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.grey[300]!),
+            ),
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                value: _frequency,
+                isExpanded: true,
+                dropdownColor: Colors.white,
+                icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Colors.black54),
+                items: ['Daily', 'Weekly', 'Monthly', 'Yearly'].map((String val) {
+                  return DropdownMenuItem(
+                    value: val, 
+                    child: Text(val, style: const TextStyle(color: Colors.black87))
+                  );
+                }).toList(),
+                onChanged: (val) {
+                  if (val != null) setState(() => _frequency = val);
+                },
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              InkWell(
+                onTap: widget.onCancel,
+                borderRadius: BorderRadius.circular(24),
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[200],
+                    shape: BoxShape.circle,
                   ),
+                  child: const Icon(Icons.close, color: Colors.black54, size: 24),
                 ),
               ),
-              const SizedBox(height: 24),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  InkWell(
-                    onTap: widget.onCancel,
-                    borderRadius: BorderRadius.circular(24),
-                    child: Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.1),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(Icons.close, color: Colors.white70, size: 24),
-                    ),
+              const SizedBox(width: 16),
+              InkWell(
+                onTap: _handleSave,
+                borderRadius: BorderRadius.circular(24),
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: const BoxDecoration(
+                    color: Color(0xFF38B2AC),
+                    shape: BoxShape.circle,
                   ),
-                  const SizedBox(width: 16),
-                  InkWell(
-                    onTap: _handleSave,
-                    borderRadius: BorderRadius.circular(24),
-                    child: Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF6D28D9),
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFF6D28D9).withOpacity(0.3),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: const Icon(Icons.check, color: Colors.white, size: 24),
-                    ),
-                  ),
-                ],
+                  child: const Icon(Icons.check, color: Colors.white, size: 24),
+                ),
               ),
             ],
           ),
-        ),
+        ],
       ),
     );
   }

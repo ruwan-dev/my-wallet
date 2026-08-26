@@ -55,6 +55,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                     context: context,
                     backgroundColor: Colors.transparent,
                     isScrollControlled: true,
+                        useRootNavigator: true,
                     builder: (ctx) {
                       return SafeArea(
                         child: Container(

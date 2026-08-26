@@ -140,6 +140,45 @@ class _DebtCardState extends State<DebtCard>
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
+                            PopupMenuButton<String>(
+                              icon: const Icon(Icons.more_horiz, color: Colors.black54, size: 20),
+                              padding: EdgeInsets.zero,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              onSelected: (value) {
+                                switch (value) {
+                                  case 'pay':
+                                    widget.onPayTap();
+                                    break;
+                                  case 'edit':
+                                    widget.onEditTap();
+                                    break;
+                                  case 'complete':
+                                    widget.onCompleteTap();
+                                    break;
+                                  case 'delete':
+                                    widget.onDeleteTap();
+                                    break;
+                                }
+                              },
+                              itemBuilder: (context) => [
+                                const PopupMenuItem(
+                                  value: 'pay',
+                                  child: Row(children: [Icon(Icons.payment_outlined, size: 18, color: Color(0xFF00ACC1)), SizedBox(width: 8), Text('Pay')]),
+                                ),
+                                const PopupMenuItem(
+                                  value: 'edit',
+                                  child: Row(children: [Icon(Icons.edit_outlined, size: 18), SizedBox(width: 8), Text('Edit')]),
+                                ),
+                                const PopupMenuItem(
+                                  value: 'complete',
+                                  child: Row(children: [Icon(Icons.check_circle_outline, size: 18, color: Colors.green), SizedBox(width: 8), Text('Complete')]),
+                                ),
+                                const PopupMenuItem(
+                                  value: 'delete',
+                                  child: Row(children: [Icon(Icons.delete_outline, size: 18, color: Colors.red), SizedBox(width: 8), Text('Delete', style: TextStyle(color: Colors.red))]),
+                                ),
+                              ],
+                            ),
                           ],
                         ),
                         const SizedBox(height: 8),
@@ -162,7 +201,7 @@ class _DebtCardState extends State<DebtCard>
                           borderRadius: BorderRadius.circular(4),
                           child: LinearProgressIndicator(
                             value: progress,
-                            backgroundColor: Colors.grey.shade200,
+                            backgroundColor: const Color(0xFF00ACC1).withOpacity(0.2),
                             valueColor: const AlwaysStoppedAnimation<Color>(
                                 Color(0xFF00ACC1)),
                             minHeight: 4,
@@ -200,36 +239,6 @@ class _DebtCardState extends State<DebtCard>
                                     style: TextStyle(
                                         fontSize: 12, fontWeight: FontWeight.bold)),
                               ),
-                            ),
-                          ],
-                        ),
-                      ],
-                      if (widget.debt.currentBalance > 0) ...[
-                        const SizedBox(height: 12),
-                        Wrap(
-                          alignment: WrapAlignment.end,
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: [
-                            _buildActionButton(
-                              icon: Icons.delete_outline,
-                              label: 'Delete',
-                              onPressed: widget.onDeleteTap,
-                            ),
-                            _buildActionButton(
-                              icon: Icons.edit_outlined,
-                              label: 'Edit',
-                              onPressed: widget.onEditTap,
-                            ),
-                            _buildActionButton(
-                              icon: Icons.check_circle_outline,
-                              label: 'Complete',
-                              onPressed: widget.onCompleteTap,
-                            ),
-                            _buildActionButton(
-                              icon: Icons.payment_outlined,
-                              label: 'Pay',
-                              onPressed: widget.onPayTap,
                             ),
                           ],
                         ),

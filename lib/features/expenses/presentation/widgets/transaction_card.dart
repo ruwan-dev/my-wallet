@@ -86,14 +86,17 @@ class TransactionCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 14),
 
-                    // ── Middle: title + subtitle ───────────────────────────────────
+                    // ── Middle: amount + subtitle ───────────────────────────────────
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            transaction.title,
-                            style: theme.textTheme.bodyLarge,
+                            amountText,
+                            style: theme.textTheme.bodyLarge?.copyWith(
+                              color: amountColor,
+                              fontWeight: FontWeight.w700,
+                            ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -113,31 +116,35 @@ class TransactionCard extends StatelessWidget {
                       ),
                     ),
 
-                    // ── Trailing: amount ───────────────────────────────────────────
+                    // ── Trailing: title + account ───────────────────────────────────────────
                     Padding(
                       padding: const EdgeInsets.only(right: 8.0),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Text(
-                                amountText,
-                                style: theme.textTheme.bodyLarge?.copyWith(
-                                  color: amountColor,
-                                  fontWeight: FontWeight.w700,
+                          ConstrainedBox(
+                            constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.35),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Text(
+                                  transaction.title,
+                                  style: theme.textTheme.bodyLarge?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
-                              ),
-                              const SizedBox(height: 3),
-                              Text(
-                                accountName,
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: theme.colorScheme.onSurfaceVariant,
-                                  fontWeight: FontWeight.w400,
+                                const SizedBox(height: 3),
+                                Text(
+                                  accountName,
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: theme.colorScheme.onSurfaceVariant,
+                                    fontWeight: FontWeight.w400,
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                           const SizedBox(width: 4),
                           IconButton(

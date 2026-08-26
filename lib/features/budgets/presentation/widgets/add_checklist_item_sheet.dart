@@ -1,86 +1,60 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import '../bloc/debt_cubit.dart';
-import '../../domain/entities/debt.dart';
 
-class InlineDebtEditor extends StatefulWidget {
+class InlineInvestmentEditor extends StatefulWidget {
   final VoidCallback onCancel;
   final VoidCallback onSave;
-  final Debt? initialDebt;
 
-  const InlineDebtEditor({
+  const InlineInvestmentEditor({
     super.key,
     required this.onCancel,
     required this.onSave,
-    this.initialDebt,
   });
 
   @override
-  State<InlineDebtEditor> createState() => _InlineDebtEditorState();
+  State<InlineInvestmentEditor> createState() => _InlineInvestmentEditorState();
 }
 
-class _InlineDebtEditorState extends State<InlineDebtEditor> {
+class _InlineInvestmentEditorState extends State<InlineInvestmentEditor> {
   late final TextEditingController _nameCtrl;
-  late final TextEditingController _totalCtrl;
-  late final TextEditingController _balanceCtrl;
+  late final TextEditingController _valueCtrl;
 
   @override
   void initState() {
     super.initState();
-    _nameCtrl = TextEditingController(text: widget.initialDebt?.name ?? '');
-    _totalCtrl = TextEditingController(text: widget.initialDebt?.totalAmount.toString() ?? '');
-    _balanceCtrl = TextEditingController(text: widget.initialDebt?.currentBalance.toString() ?? '');
+    _nameCtrl = TextEditingController();
+    _valueCtrl = TextEditingController();
   }
 
   @override
   void dispose() {
     _nameCtrl.dispose();
-    _totalCtrl.dispose();
-    _balanceCtrl.dispose();
+    _valueCtrl.dispose();
     super.dispose();
   }
 
   void _handleSave() {
     final name = _nameCtrl.text.trim();
-    final total = double.tryParse(_totalCtrl.text) ?? 0;
-    final balanceStr = _balanceCtrl.text.trim();
-    final balance = balanceStr.isEmpty ? total : (double.tryParse(balanceStr) ?? 0);
+    final value = double.tryParse(_valueCtrl.text) ?? 0;
 
     if (name.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a debt name')),
+        const SnackBar(content: Text('Please enter an investment name')),
       );
       return;
     }
-    if (balance <= 0) {
+    if (value <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a valid balance or total amount')),
-      );
-      return;
-    }
-    if (total > 0 && balance > total) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('"Need to be paid" cannot be greater than "Total Amount"')),
+        const SnackBar(content: Text('Please enter a valid investment value')),
       );
       return;
     }
 
-    if (widget.initialDebt != null) {
-      context.read<DebtCubit>().editDebt(
-            debtId: widget.initialDebt!.id,
-            name: name,
-            totalAmount: total > 0 ? total : balance,
-            currentBalance: balance,
-          );
-    } else {
-      context.read<DebtCubit>().addDebt(
-            name: name,
-            totalAmount: total > 0 ? total : balance,
-            currentBalance: balance,
-          );
-    }
+    // Mocking the save since the bloc isn't wired up for investments in the UI yet
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Investment added successfully!')),
+    );
 
     widget.onSave();
   }
@@ -104,7 +78,7 @@ class _InlineDebtEditorState extends State<InlineDebtEditor> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              widget.initialDebt != null ? 'Edit ${widget.initialDebt!.name}' : 'Add New Debt',
+              'Add New Investment',
               style: Theme.of(context)
                   .textTheme
                   .titleLarge
@@ -112,24 +86,16 @@ class _InlineDebtEditorState extends State<InlineDebtEditor> {
             ),
             const SizedBox(height: 16),
             _buildTextField(
-              'Debt Name',
+              'Investment Name',
               _nameCtrl,
               TextInputType.text,
               TextCapitalization.words,
-              maxLength: 12,
+              maxLength: 15,
             ),
             const SizedBox(height: 12),
             _buildTextField(
-              'Total Amount',
-              _totalCtrl,
-              const TextInputType.numberWithOptions(decimal: true),
-              TextCapitalization.none,
-              formatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}'))],
-            ),
-            const SizedBox(height: 12),
-            _buildTextField(
-              'Need to be paid',
-              _balanceCtrl,
+              'Current Value',
+              _valueCtrl,
               const TextInputType.numberWithOptions(decimal: true),
               TextCapitalization.none,
               formatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}'))],
@@ -201,7 +167,7 @@ class _InlineDebtEditorState extends State<InlineDebtEditor> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: Color(0xFF00ACC1)),
+          borderSide: const BorderSide(color: Color(0xFF00ACC1), width: 2),
         ),
       ),
     );

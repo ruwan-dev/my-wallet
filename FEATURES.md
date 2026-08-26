@@ -21,6 +21,11 @@ Below is a comprehensive breakdown of the features and capabilities built into t
 - **Categorization:** Assign transactions to specific categories (e.g., Food, Transport, Entertainment) complete with distinct colors and icons.
 - **Account/Wallet Tracking:** Manage balances across multiple accounts or wallets seamlessly.
 
+## 🪣 Bucket Planner (Barefoot Investor System)
+- **Visual Bucket Segregation:** Divide funds into Daily Expenses, Splurge, Smile, Fire, Mojo, and Grow using an interactive Segmented Control system.
+- **3D Card UI:** Buckets are rendered as large, beautiful cards with custom 3D background imagery.
+- **Exclusive Account Syncing:** Link specific bank accounts to distinct buckets (e.g., link a High-Yield Savings Account to Mojo). **Rule: A single bank account can only be linked to ONE bucket at a time.** If an account is already synced to a bucket, it is intentionally hidden from the available options for other buckets.
+
 ## 📊 Budgeting & Analytics
 - **Category Budgets:** Set spending limits on individual categories. The app visually tracks your spending against these budgets to help you stay disciplined.
 - **Visual Insights:** View your financial health at a glance. Identify trends, track weekly/monthly spending patterns, and see exactly where your money goes.

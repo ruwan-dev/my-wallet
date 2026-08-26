@@ -229,6 +229,8 @@ Future<void> configureDependencies() async {
     () => CustomBudgetCubit(
       repository: sl(),
       authCubit: sl(),
+      getTransactions: sl(),
+      addTransaction: sl(),
     ),
   );
 
