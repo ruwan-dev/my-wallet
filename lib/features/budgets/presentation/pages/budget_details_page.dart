@@ -182,12 +182,16 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
                       );
 
                       final settingsState = context.read<SettingsCubit>().state;
-                      final widgetToCapture = MaterialApp(
-                        debugShowCheckedModeBanner: false,
-                        home: Scaffold(
-                          backgroundColor: Colors.white,
-                          body: SingleChildScrollView(
-                            child: _buildShareWidget(budget, dynamicTotalSpent, fixedTotal, transactions, settingsState),
+                      final widgetToCapture = MediaQuery(
+                        data: const MediaQueryData(size: Size(800, 1600)),
+                        child: Directionality(
+                          textDirection: TextDirection.ltr,
+                          child: Theme(
+                            data: ThemeData.light(),
+                            child: Material(
+                              color: Colors.white,
+                              child: _buildShareWidget(budget, dynamicTotalSpent, fixedTotal, transactions, settingsState),
+                            ),
                           ),
                         ),
                       );
