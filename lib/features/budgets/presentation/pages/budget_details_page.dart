@@ -172,28 +172,43 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
                 ),
                 IconButton(
                   icon: const Icon(Icons.share_outlined, color: Colors.black87),
-                  tooltip: 'Share Budget',
+                  tooltip: 'Share Budget Report',
                   onPressed: () async {
                     try {
-                      final Uint8List? imageBytes = await _screenshotController.capture(
-                        pixelRatio: 2.0,
-                        delay: const Duration(milliseconds: 100),
+                      // Show loading snackbar
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Generating budget report...')),
                       );
-                      if (imageBytes != null) {
-                        final xFile = XFile.fromData(
-                          imageBytes, 
-                          mimeType: 'image/png', 
-                          name: '${budget.title.replaceAll(' ', '_')}_budget.png'
-                        );
-                        await Share.shareXFiles(
-                          [xFile],
-                          text: 'Check out my budget: ${budget.title}',
-                        );
-                      }
+
+                      final widgetToCapture = MaterialApp(
+                        debugShowCheckedModeBanner: false,
+                        home: Scaffold(
+                          backgroundColor: Colors.white,
+                          body: SingleChildScrollView(
+                            child: _buildShareWidget(context, budget, dynamicTotalSpent, fixedTotal, transactions),
+                          ),
+                        ),
+                      );
+
+                      final Uint8List imageBytes = await _screenshotController.captureFromWidget(
+                        widgetToCapture,
+                        delay: const Duration(milliseconds: 200),
+                        pixelRatio: 2.0,
+                      );
+                      
+                      final xFile = XFile.fromData(
+                        imageBytes, 
+                        mimeType: 'image/png', 
+                        name: '${budget.title.replaceAll(' ', '_')}_report.png'
+                      );
+                      await Share.shareXFiles(
+                        [xFile],
+                        text: 'Budget Report: ${budget.title}',
+                      );
                     } catch (e) {
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Failed to share budget.')),
+                          SnackBar(content: Text('Failed to share budget: $e')),
                         );
                       }
                     }
@@ -201,12 +216,8 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
                 ),
               ],
             ),
-            body: Screenshot(
-              controller: _screenshotController,
-              child: ColoredBox(
-                color: theme.scaffoldBackgroundColor,
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(24),
+            body: SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -393,8 +404,6 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
                 ],
               ),
             ),
-          ),
-        ),
           );
         }
 
@@ -419,6 +428,138 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
             style: TextStyle(
               fontWeight: isBold ? FontWeight.bold : FontWeight.w500,
               color: color ?? (isBold ? Colors.black87 : Colors.grey.shade900),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildShareWidget(BuildContext context, CustomBudgetEntity budget, double dynamicTotalSpent, double fixedTotal, List<TransactionEntity> transactions) {
+    return Container(
+      width: 800,
+      color: Colors.white,
+      padding: const EdgeInsets.all(40),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '${budget.title} Report',
+                style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Color(0xFF6B8E23)),
+              ),
+              const Text(
+                'Generated via Wallet App',
+                style: TextStyle(fontSize: 16, color: Colors.grey),
+              ),
+            ],
+          ),
+          const SizedBox(height: 30),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Left Summary Box
+              Container(
+                width: 250,
+                padding: const EdgeInsets.all(20),
+                color: const Color(0xFF7A9B3E),
+                child: Column(
+                  children: [
+                    const Text('Total Budget', style: TextStyle(color: Colors.white70, fontSize: 16)),
+                    Text(AppFormatters.formatCurrency(context, budget.totalAllocated), style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 16),
+                    const Text('Total Expenses', style: TextStyle(color: Colors.white70, fontSize: 16)),
+                    Text(AppFormatters.formatCurrency(context, dynamicTotalSpent), style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 16),
+                    const Text('Remaining', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                    Container(
+                      margin: const EdgeInsets.only(top: 8),
+                      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                      color: const Color(0xFF556B2F),
+                      child: Text(AppFormatters.formatCurrency(context, budget.totalAllocated - dynamicTotalSpent), style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 30),
+              // Right side items (Overview)
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Progress Overview', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87)),
+                    const SizedBox(height: 16),
+                    LinearProgressIndicator(
+                      value: budget.totalAllocated > 0 ? (dynamicTotalSpent / budget.totalAllocated).clamp(0.0, 1.0) : 0,
+                      backgroundColor: Colors.grey.shade300,
+                      color: const Color(0xFF38B2AC),
+                      minHeight: 12,
+                    ),
+                    const SizedBox(height: 20),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Fixed Bills Total', style: TextStyle(fontSize: 16)),
+                        Text(AppFormatters.formatCurrency(context, fixedTotal), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 40),
+          // Expenses Table Header
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+            color: const Color(0xFF4682B4),
+            child: const Text('Checklist Items & Expenses', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+            color: Colors.blue.shade50,
+            child: Row(
+              children: const [
+                Expanded(flex: 3, child: Text('Description', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF4682B4)))),
+                Expanded(flex: 1, child: Text('Allocated', textAlign: TextAlign.right, style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF4682B4)))),
+                Expanded(flex: 1, child: Text('Spent', textAlign: TextAlign.right, style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF4682B4)))),
+              ],
+            ),
+          ),
+          // Rows
+          ...budget.items.map((item) {
+            final itemSpent = budget.calculateItemSpent(item, transactions);
+            return Container(
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              decoration: const BoxDecoration(
+                border: Border(bottom: BorderSide(color: Colors.black12, style: BorderStyle.solid)),
+              ),
+              child: Row(
+                children: [
+                  Expanded(flex: 3, child: Text(item.title, style: const TextStyle(fontSize: 16))),
+                  Expanded(flex: 1, child: Text(AppFormatters.formatCurrency(context, item.allocatedAmount), textAlign: TextAlign.right, style: const TextStyle(fontSize: 16))),
+                  Expanded(flex: 1, child: Text(AppFormatters.formatCurrency(context, itemSpent), textAlign: TextAlign.right, style: const TextStyle(fontSize: 16))),
+                ],
+              ),
+            );
+          }).toList(),
+          const SizedBox(height: 20),
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+            decoration: const BoxDecoration(
+              border: Border(top: BorderSide(color: Color(0xFF4682B4), width: 2), bottom: BorderSide(color: Color(0xFF4682B4), width: 4)),
+            ),
+            child: Row(
+              children: [
+                const Expanded(flex: 3, child: Text('Total', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF4682B4)))),
+                Expanded(flex: 1, child: Text(AppFormatters.formatCurrency(context, budget.totalAllocated), textAlign: TextAlign.right, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF4682B4)))),
+                Expanded(flex: 1, child: Text(AppFormatters.formatCurrency(context, dynamicTotalSpent), textAlign: TextAlign.right, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF4682B4)))),
+              ],
             ),
           ),
         ],
