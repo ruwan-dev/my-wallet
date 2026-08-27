@@ -104,15 +104,22 @@ class FinancialForecastPage extends StatelessWidget {
                     }
                   }
 
-                  // 4. Calculate Deficits and Sweep
-                  double overBudgetDeficit = 0;
-                  if (customBlowBudget > actualBlowAllocation) {
-                    overBudgetDeficit = customBlowBudget - actualBlowAllocation;
+                  // 4. Calculate Month 1 Actuals (Sweep / Deficit)
+                  double remainingCash = actualBlowAllocation - currentBlowSpent;
+                  double month1Sweep = 0;
+                  double month1Deficit = 0;
+                  
+                  if (remainingCash > 0) {
+                    month1Sweep = remainingCash;
+                  } else {
+                    month1Deficit = remainingCash.abs();
                   }
 
-                  // The sweep is ALWAYS based on the ACTUAL money available, not the inflated custom budget.
-                  double currentMonthBlowSweep = actualBlowAllocation - currentBlowSpent;
-                  if (currentMonthBlowSweep < 0) currentMonthBlowSweep = 0;
+                  // Budget configuration warning (UI only, does not deduct from Month 1 if unspent)
+                  double budgetConfigDeficit = 0;
+                  if (customBlowBudget > actualBlowAllocation) {
+                    budgetConfigDeficit = customBlowBudget - actualBlowAllocation;
+                  }
 
                   return SingleChildScrollView(
                     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
@@ -147,30 +154,37 @@ class FinancialForecastPage extends StatelessWidget {
                               _buildBreakdownRow(context, 'Actual 60% Allocation', actualBlowAllocation, const Color(0xFF1E293B)),
                               const SizedBox(height: 8),
                               _buildBreakdownRow(context, 'Custom Budget Limit', customBlowBudget, const Color(0xFF1E293B)),
-                              if (overBudgetDeficit > 0) ...[
+                              if (budgetConfigDeficit > 0) ...[
                                 const SizedBox(height: 8),
-                                _buildBreakdownRow(context, 'Over-budgeted Deficit', overBudgetDeficit, const Color(0xFFB91C1C)),
+                                _buildBreakdownRow(context, 'Budget Config Warning', budgetConfigDeficit, Colors.orange),
                               ],
                               const SizedBox(height: 8),
                               _buildBreakdownRow(context, 'Spent So Far', currentBlowSpent, const Color(0xFFB91C1C)),
                               const SizedBox(height: 12),
                               const Divider(endIndent: 120),
                               const SizedBox(height: 12),
-                              Text(
-                                'Available to Sweep: ${AppFormatters.formatCurrency(context, currentMonthBlowSweep)}',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  color: Color(0xFF166534),
+                              if (month1Sweep > 0)
+                                Text(
+                                  'Available to Sweep: ${AppFormatters.formatCurrency(context, month1Sweep)}',
+                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF166534)),
+                                )
+                              else if (month1Deficit > 0)
+                                Text(
+                                  'Actual Overspend: -${AppFormatters.formatCurrency(context, month1Deficit)}',
+                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFFB91C1C)),
+                                )
+                              else
+                                Text(
+                                  'Available to Sweep: ${AppFormatters.formatCurrency(context, 0)}',
+                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF166534)),
                                 ),
-                              ),
                             ],
                           ),
                         ),
                         const SizedBox(height: 32),
                         Text('6-Month Bucket Projection', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: const Color(0xFF1E293B))),
                         const SizedBox(height: 16),
-                        _buildTimeline(context, fireBalance, mojoBalance, currentMonthBlowSweep, fireBudget, actualBlowAllocation, customBlowBudget, overBudgetDeficit),
+                        _buildTimeline(context, fireBalance, mojoBalance, month1Sweep, month1Deficit, fireBudget, actualBlowAllocation, customBlowBudget),
                       ],
                     ),
                   );
@@ -199,7 +213,7 @@ class FinancialForecastPage extends StatelessWidget {
     );
   }
 
-  Widget _buildTimeline(BuildContext context, double startingFire, double startingMojo, double initialSweep, double monthlyFireAllocation, double actualBlowAllocation, double customBlowBudget, double overBudgetDeficit) {
+  Widget _buildTimeline(BuildContext context, double startingFire, double startingMojo, double month1Sweep, double month1Deficit, double monthlyFireAllocation, double actualBlowAllocation, double customBlowBudget) {
     List<Widget> nodes = [];
     double projectedFire = startingFire;
     double projectedMojo = startingMojo;
@@ -214,9 +228,10 @@ class FinancialForecastPage extends StatelessWidget {
       double deficitAmount = 0;
       
       if (i == 0) {
-        sweepAmount = initialSweep;
+        // Month 1 strictly uses current actuals
+        sweepAmount = month1Sweep;
         allocationAmount = 0; // Already handled by actuals inside the month
-        deficitAmount = overBudgetDeficit;
+        deficitAmount = month1Deficit;
       } else {
         // Future months base their sweep on the difference between actual income and planned budget
         double futureSweep = actualBlowAllocation - customBlowBudget;
