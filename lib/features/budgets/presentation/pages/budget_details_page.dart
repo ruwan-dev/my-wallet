@@ -12,13 +12,24 @@ import 'package:expense_tracker/features/expenses/presentation/widgets/shimmer_t
 import '../../../../features/expenses/domain/entities/category.dart';
 import 'package:expense_tracker/features/expenses/presentation/widgets/category_icon.dart';
 import '../../../../core/bloc/settings_cubit.dart';
+import 'dart:typed_data';
+import 'package:screenshot/screenshot.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../../expenses/presentation/bloc/account_cubit.dart';
 import '../../../expenses/presentation/bloc/account_state.dart';
 import '../../../expenses/domain/entities/account.dart';
-class BudgetDetailsPage extends StatelessWidget {
+
+class BudgetDetailsPage extends StatefulWidget {
   final String budgetId;
 
   const BudgetDetailsPage({super.key, required this.budgetId});
+
+  @override
+  State<BudgetDetailsPage> createState() => _BudgetDetailsPageState();
+}
+
+class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
+  final ScreenshotController _screenshotController = ScreenshotController();
 
   @override
   Widget build(BuildContext context) {
@@ -27,7 +38,7 @@ class BudgetDetailsPage extends StatelessWidget {
     return BlocBuilder<CustomBudgetCubit, CustomBudgetState>(
       builder: (context, state) {
         if (state is CustomBudgetLoaded) {
-          final budgetIndex = state.budgets.indexWhere((b) => b.id == budgetId);
+          final budgetIndex = state.budgets.indexWhere((b) => b.id == widget.budgetId);
           if (budgetIndex == -1) {
             return Scaffold(
               backgroundColor: Colors.transparent,
@@ -125,7 +136,7 @@ class BudgetDetailsPage extends StatelessWidget {
                       
                       if (confirm == true) {
                         if (context.mounted) {
-                          context.read<CustomBudgetCubit>().markBudgetAsCompleted(budgetId);
+                          context.read<CustomBudgetCubit>().markBudgetAsCompleted(widget.budgetId);
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(content: Text('Budget marked as completed!')),
                           );
@@ -153,16 +164,49 @@ class BudgetDetailsPage extends StatelessWidget {
                     
                     if (confirm == true) {
                       if (context.mounted) {
-                        context.read<CustomBudgetCubit>().deleteBudget(budgetId);
+                        context.read<CustomBudgetCubit>().deleteBudget(widget.budgetId);
                         Navigator.pop(context);
                       }
                     }
                   },
-                )
+                ),
+                IconButton(
+                  icon: const Icon(Icons.share_outlined, color: Colors.black87),
+                  tooltip: 'Share Budget',
+                  onPressed: () async {
+                    try {
+                      final Uint8List? imageBytes = await _screenshotController.capture(
+                        pixelRatio: 2.0,
+                        delay: const Duration(milliseconds: 100),
+                      );
+                      if (imageBytes != null) {
+                        final xFile = XFile.fromData(
+                          imageBytes, 
+                          mimeType: 'image/png', 
+                          name: '${budget.title.replaceAll(' ', '_')}_budget.png'
+                        );
+                        await Share.shareXFiles(
+                          [xFile],
+                          text: 'Check out my budget: ${budget.title}',
+                        );
+                      }
+                    } catch (e) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Failed to share budget.')),
+                        );
+                      }
+                    }
+                  },
+                ),
               ],
             ),
-            body: SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
+            body: Screenshot(
+              controller: _screenshotController,
+              child: ColoredBox(
+                color: theme.scaffoldBackgroundColor,
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -349,6 +393,8 @@ class BudgetDetailsPage extends StatelessWidget {
                 ],
               ),
             ),
+          ),
+        ),
           );
         }
 
