@@ -96,32 +96,62 @@ class CustomBudgetEntity extends Equatable {
     );
   }
 
-  double calculateItemSpent(BudgetChecklistItem item, List<TransactionEntity> transactions) {
-    if (item.categoryId == null) return item.isCompleted ? item.allocatedAmount : 0.0;
-    
-    // Filter transactions to the same month as this budget
+  Map<String, double> calculateAllItemSpents(List<TransactionEntity> transactions) {
     final monthTxs = transactions.where((tx) {
       return tx.date.year == createdAt.year && tx.date.month == createdAt.month;
-    });
+    }).toList();
 
-    // Sum transactions that match the item's category (and aren't income)
-    final spent = monthTxs
-        .where((tx) {
-          if (tx.isIncome) return false;
-          if (tx.categoryId != item.categoryId) return false;
-          
-          // If the transaction was explicitly logged under a different bucket, don't count it!
-          if (tx.bucketType != null && tx.bucketType != this.bucketType) return false;
-          
-          return true;
-        })
-        .fold(0.0, (sum, tx) => sum + tx.amount);
-        
-    return spent > 0 ? spent : (item.isCompleted ? item.allocatedAmount : 0.0);
+    final Map<String, double> spents = {};
+    final Set<String> allocatedTxIds = {};
+
+    for (final item in items) {
+      if (item.categoryId == null) {
+        spents[item.id] = item.isCompleted ? item.allocatedAmount : 0.0;
+        continue;
+      }
+
+      double itemSpent = 0.0;
+      for (final tx in monthTxs) {
+        if (!allocatedTxIds.contains(tx.id) && _matchesItem(tx, item)) {
+          itemSpent += tx.amount;
+          allocatedTxIds.add(tx.id);
+        }
+      }
+
+      spents[item.id] = itemSpent > 0 ? itemSpent : (item.isCompleted ? item.allocatedAmount : 0.0);
+    }
+    return spents;
+  }
+
+  double calculateItemSpent(BudgetChecklistItem item, List<TransactionEntity> transactions) {
+    return calculateAllItemSpents(transactions)[item.id] ?? 0.0;
+  }
+
+  bool _matchesItem(TransactionEntity tx, BudgetChecklistItem item) {
+    if (tx.isIncome) return false;
+    
+    // 1. Explicit Link check (highest priority)
+    if (tx.linkedChecklistItemId != null) {
+      return tx.linkedChecklistItemId == item.id;
+    }
+    
+    // 2. Category & Subcategory check
+    if (tx.categoryId != item.categoryId) return false;
+    
+    if (item.subcategory != null && item.subcategory!.isNotEmpty) {
+      // If the item specifies a subcategory, the transaction must match it exactly
+      if (tx.subCategory != item.subcategory) return false;
+    }
+    
+    // 3. Bucket check
+    if (tx.bucketType != null && tx.bucketType != this.bucketType) return false;
+    
+    return true;
   }
 
   double calculateDynamicTotalSpent(List<TransactionEntity> transactions) {
-    return items.fold(0.0, (sum, item) => sum + calculateItemSpent(item, transactions));
+    final spents = calculateAllItemSpents(transactions);
+    return spents.values.fold(0.0, (sum, spent) => sum + spent);
   }
 
   double get totalAllocated {
