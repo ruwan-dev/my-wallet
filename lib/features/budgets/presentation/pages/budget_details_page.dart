@@ -166,47 +166,6 @@ class BudgetDetailsPage extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Bucket Tag
-                  Builder(
-                    builder: (context) {
-                      IconData icon = Icons.circle;
-                      Color color = const Color(0xFF38B2AC);
-                      String bucketName = 'Blow';
-                      switch (budget.bucketType) {
-                        case BucketType.dailyExpenses: bucketName = 'Blow'; icon = Icons.work_outline; color = const Color(0xFF38B2AC); break;
-                        case BucketType.smile: bucketName = 'Smile'; icon = Icons.flight_takeoff; color = const Color(0xFF34D399); break;
-                        case BucketType.fire: bucketName = 'Fire'; icon = Icons.local_fire_department; color = const Color(0xFFF87171); break;
-                        case BucketType.mojo: bucketName = 'Mojo'; icon = Icons.security; color = const Color(0xFFEAB308); break;
-                        case BucketType.grow: bucketName = 'Grow'; icon = Icons.eco; color = const Color(0xFF60A5FA); break;
-                        default: break;
-                      }
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 16),
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: color.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: color.withValues(alpha: 0.3)),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(icon, color: color, size: 16),
-                            const SizedBox(width: 6),
-                            Text(
-                              bucketName,
-                              style: TextStyle(
-                                color: color,
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    }
-                  ),
-                  
                   // Overview Card
                   Container(
                     padding: const EdgeInsets.all(20),
@@ -217,7 +176,52 @@ class BudgetDetailsPage extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Budget Overview', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text('Budget Overview', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+                            Builder(
+                              builder: (context) {
+                                IconData icon = Icons.circle;
+                                Color color = const Color(0xFF38B2AC);
+                                String bucketName = 'Blow';
+                                switch (budget.bucketType) {
+                                  case BucketType.dailyExpenses: bucketName = 'Blow'; icon = Icons.work_outline; color = const Color(0xFF38B2AC); break;
+                                  case BucketType.smile: bucketName = 'Smile'; icon = Icons.flight_takeoff; color = const Color(0xFF34D399); break;
+                                  case BucketType.fire: bucketName = 'Fire'; icon = Icons.local_fire_department; color = const Color(0xFFF87171); break;
+                                  case BucketType.mojo: bucketName = 'Mojo'; icon = Icons.security; color = const Color(0xFFEAB308); break;
+                                  case BucketType.grow: bucketName = 'Grow'; icon = Icons.eco; color = const Color(0xFF60A5FA); break;
+                                  default: break;
+                                }
+                                if (budget.bucketType == BucketType.none) return const SizedBox.shrink();
+
+                                return Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: color.withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(color: color.withValues(alpha: 0.3)),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(icon, color: color, size: 14),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        bucketName,
+                                        style: TextStyle(
+                                          color: color,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }
+                            ),
+                          ],
+                        ),
                         const SizedBox(height: 16),
                         
                         _buildRow('Total Budget', AppFormatters.formatCurrency(context, budget.totalAllocated)),
