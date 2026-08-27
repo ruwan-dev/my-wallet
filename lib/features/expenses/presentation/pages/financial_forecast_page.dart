@@ -13,6 +13,7 @@ import '../../../budgets/presentation/bloc/custom_budget_state.dart';
 import '../../domain/entities/transaction.dart';
 import '../../domain/entities/category.dart';
 import '../widgets/shimmer_tile.dart';
+import '../widgets/forecast_git_graph.dart';
 
 class FinancialForecastPage extends StatelessWidget {
   const FinancialForecastPage({super.key});
@@ -213,8 +214,8 @@ class FinancialForecastPage extends StatelessWidget {
     );
   }
 
-  Widget _buildTimeline(BuildContext context, double startingFire, double startingMojo, double month1Sweep, double month1Deficit, double monthlyFireAllocation, double actualBlowAllocation, double customBlowBudget) {
-    List<Widget> nodes = [];
+  Widget _buildGitGraph(BuildContext context, double startingFire, double startingMojo, double month1Sweep, double month1Deficit, double monthlyFireAllocation, double actualBlowAllocation, double customBlowBudget) {
+    List<ForecastNode> graphNodes = [];
     double projectedFire = startingFire;
     double projectedMojo = startingMojo;
     double projectedDebt = 0;
@@ -245,135 +246,42 @@ class FinancialForecastPage extends StatelessWidget {
         allocationAmount = monthlyFireAllocation;
       }
       
+      List<ForecastTransfer> transfers = [];
+
+      if (sweepAmount > 0) {
+        transfers.add(ForecastTransfer(TrackType.blow, TrackType.fire, sweepAmount, '+${AppFormatters.formatCurrency(context, sweepAmount)}', TrackColors.blow));
+      }
+      
+      if (deficitAmount > 0) {
+        // Pulling money FROM fire TO blow
+        transfers.add(ForecastTransfer(TrackType.fire, TrackType.blow, deficitAmount, '-${AppFormatters.formatCurrency(context, deficitAmount)}', TrackColors.fire));
+      }
+
       double totalFireAddition = sweepAmount + allocationAmount - deficitAmount;
       projectedFire += totalFireAddition;
       
       if (projectedFire < 0) {
+        double fireDrain = projectedFire.abs();
+        transfers.add(ForecastTransfer(TrackType.mojo, TrackType.fire, fireDrain, 'Cover: ${AppFormatters.formatCurrency(context, fireDrain)}', TrackColors.mojo));
         projectedMojo += projectedFire; // Drain Mojo
         projectedFire = 0;
       }
       if (projectedMojo < 0) {
+        double mojoDrain = projectedMojo.abs();
+        transfers.add(ForecastTransfer(TrackType.debt, TrackType.mojo, mojoDrain, 'Borrow: ${AppFormatters.formatCurrency(context, mojoDrain)}', TrackColors.debt));
         projectedDebt += projectedMojo;
         projectedMojo = 0;
       }
 
-      Color statusColor;
-      IconData statusIcon;
-      if (totalFireAddition < 0 || projectedDebt < 0) {
-        statusColor = const Color(0xFFE05263); // Danger
-        statusIcon = Icons.warning_amber_rounded;
-      } else if (totalFireAddition == 0) {
-        statusColor = Colors.orange; // Warning/Stagnant
-        statusIcon = Icons.trending_flat;
-      } else {
-        statusColor = const Color(0xFF4CAF82); // On Track / Growing
-        statusIcon = Icons.local_fire_department;
-      }
-
-      nodes.add(_buildTimelineNode(
-        context: context,
-        monthLabel: i == 0 ? 'End of ${DateFormat('MMMM yyyy').format(targetDate)}' : DateFormat('MMMM yyyy').format(targetDate),
+      graphNodes.add(ForecastNode(
+        monthLabel: i == 0 ? 'End of ${DateFormat('MMM yyyy').format(targetDate)}' : DateFormat('MMMM yyyy').format(targetDate),
         fireBalance: projectedFire,
         mojoBalance: projectedMojo,
         debtBalance: projectedDebt,
-        sweepAmount: sweepAmount,
         allocationAmount: allocationAmount,
-        deficitAmount: deficitAmount,
-        statusColor: statusColor,
-        statusIcon: statusIcon,
-        isLast: i == 5,
+        transfers: transfers,
       ));
     }
-    return Column(children: nodes);
-  }
-
-  Widget _buildTimelineNode({
-    required BuildContext context,
-    required String monthLabel,
-    required double fireBalance,
-    required double mojoBalance,
-    required double debtBalance,
-    required double sweepAmount,
-    required double allocationAmount,
-    required double deficitAmount,
-    required Color statusColor,
-    required IconData statusIcon,
-    required bool isLast,
-  }) {
-    return IntrinsicHeight(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Column(
-            children: [
-              Container(
-                width: 32, height: 32,
-                decoration: BoxDecoration(color: statusColor.withOpacity(0.15), shape: BoxShape.circle),
-                child: Icon(statusIcon, size: 16, color: statusColor),
-              ),
-              if (!isLast)
-                Expanded(child: Container(width: 2, color: const Color(0xFFE2E8F0), margin: const EdgeInsets.symmetric(vertical: 4))),
-            ],
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.only(bottom: 32.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(monthLabel, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF1E293B))),
-                  const SizedBox(height: 8),
-                  if (sweepAmount > 0)
-                    Text('Blow Sweep: +${AppFormatters.formatCurrency(context, sweepAmount)}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF166534))),
-                  if (deficitAmount > 0)
-                    Text('Over-Budget Deficit: -${AppFormatters.formatCurrency(context, deficitAmount)}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFFB91C1C))),
-                  if (allocationAmount > 0)
-                    Text('Monthly Fire Allocation: +${AppFormatters.formatCurrency(context, allocationAmount)}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.blue)),
-                  const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF8FAFC),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: const Color(0xFFE2E8F0)),
-                    ),
-                    child: Column(
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Row(children: [Icon(Icons.local_fire_department, size: 14, color: Colors.pinkAccent), SizedBox(width: 4), Text('Fire', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13))]),
-                            Text(AppFormatters.formatCurrency(context, fireBalance), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Row(children: [Icon(Icons.security, size: 14, color: Colors.indigo), SizedBox(width: 4), Text('Mojo', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13))]),
-                            Text(AppFormatters.formatCurrency(context, mojoBalance), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                          ],
-                        ),
-                        if (debtBalance < 0) ...[
-                          const SizedBox(height: 4),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              const Row(children: [Icon(Icons.warning_rounded, size: 14, color: Colors.red), SizedBox(width: 4), Text('Debt', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: Colors.red))]),
-                              Text('-${AppFormatters.formatCurrency(context, debtBalance.abs())}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.red)),
-                            ],
-                          ),
-                        ]
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
+    return ForecastGitGraph(nodes: graphNodes);
   }
 }
