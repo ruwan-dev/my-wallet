@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../bloc/settings_cubit.dart';
+import '../bloc/settings_state.dart';
 
 /// Currency and date formatting utilities.
 class AppFormatters {
@@ -13,6 +14,11 @@ class AppFormatters {
     double amount,
   ) {
     final state = context.watch<SettingsCubit>().state;
+    return formatCurrencyWithSettings(amount, state);
+  }
+
+  /// Format [amount] as currency using an explicit [SettingsState].
+  static String formatCurrencyWithSettings(double amount, SettingsState state) {
     final symbol = state.currencySymbol;
 
     if (amount.abs() >= 1000000) {

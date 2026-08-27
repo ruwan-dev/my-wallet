@@ -12,6 +12,7 @@ import 'package:expense_tracker/features/expenses/presentation/widgets/shimmer_t
 import '../../../../features/expenses/domain/entities/category.dart';
 import 'package:expense_tracker/features/expenses/presentation/widgets/category_icon.dart';
 import '../../../../core/bloc/settings_cubit.dart';
+import '../../../../core/bloc/settings_state.dart';
 import 'dart:typed_data';
 import 'package:screenshot/screenshot.dart';
 import 'package:share_plus/share_plus.dart';
@@ -180,12 +181,13 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
                         const SnackBar(content: Text('Generating budget report...')),
                       );
 
+                      final settingsState = context.read<SettingsCubit>().state;
                       final widgetToCapture = MaterialApp(
                         debugShowCheckedModeBanner: false,
                         home: Scaffold(
                           backgroundColor: Colors.white,
                           body: SingleChildScrollView(
-                            child: _buildShareWidget(context, budget, dynamicTotalSpent, fixedTotal, transactions),
+                            child: _buildShareWidget(budget, dynamicTotalSpent, fixedTotal, transactions, settingsState),
                           ),
                         ),
                       );
@@ -435,7 +437,7 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
     );
   }
 
-  Widget _buildShareWidget(BuildContext context, CustomBudgetEntity budget, double dynamicTotalSpent, double fixedTotal, List<TransactionEntity> transactions) {
+  Widget _buildShareWidget(CustomBudgetEntity budget, double dynamicTotalSpent, double fixedTotal, List<TransactionEntity> transactions, SettingsState settingsState) {
     return Container(
       width: 800,
       color: Colors.white,
@@ -470,17 +472,17 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
                 child: Column(
                   children: [
                     const Text('Total Budget', style: TextStyle(color: Colors.white70, fontSize: 16)),
-                    Text(AppFormatters.formatCurrency(context, budget.totalAllocated), style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+                    Text(AppFormatters.formatCurrencyWithSettings(budget.totalAllocated), style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 16),
                     const Text('Total Expenses', style: TextStyle(color: Colors.white70, fontSize: 16)),
-                    Text(AppFormatters.formatCurrency(context, dynamicTotalSpent), style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+                    Text(AppFormatters.formatCurrencyWithSettings(dynamicTotalSpent), style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 16),
                     const Text('Remaining', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
                     Container(
                       margin: const EdgeInsets.only(top: 8),
                       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
                       color: const Color(0xFF556B2F),
-                      child: Text(AppFormatters.formatCurrency(context, budget.totalAllocated - dynamicTotalSpent), style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+                      child: Text(AppFormatters.formatCurrencyWithSettings(budget.totalAllocated - dynamicTotalSpent), style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
                     ),
                   ],
                 ),
@@ -504,7 +506,7 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         const Text('Fixed Bills Total', style: TextStyle(fontSize: 16)),
-                        Text(AppFormatters.formatCurrency(context, fixedTotal), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                        Text(AppFormatters.formatCurrencyWithSettings(fixedTotal), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                       ],
                     ),
                   ],
@@ -542,8 +544,8 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
               child: Row(
                 children: [
                   Expanded(flex: 3, child: Text(item.title, style: const TextStyle(fontSize: 16))),
-                  Expanded(flex: 1, child: Text(AppFormatters.formatCurrency(context, item.allocatedAmount), textAlign: TextAlign.right, style: const TextStyle(fontSize: 16))),
-                  Expanded(flex: 1, child: Text(AppFormatters.formatCurrency(context, itemSpent), textAlign: TextAlign.right, style: const TextStyle(fontSize: 16))),
+                  Expanded(flex: 1, child: Text(AppFormatters.formatCurrencyWithSettings(item.allocatedAmount), textAlign: TextAlign.right, style: const TextStyle(fontSize: 16))),
+                  Expanded(flex: 1, child: Text(AppFormatters.formatCurrencyWithSettings(itemSpent), textAlign: TextAlign.right, style: const TextStyle(fontSize: 16))),
                 ],
               ),
             );
@@ -557,8 +559,8 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
             child: Row(
               children: [
                 const Expanded(flex: 3, child: Text('Total', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF4682B4)))),
-                Expanded(flex: 1, child: Text(AppFormatters.formatCurrency(context, budget.totalAllocated), textAlign: TextAlign.right, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF4682B4)))),
-                Expanded(flex: 1, child: Text(AppFormatters.formatCurrency(context, dynamicTotalSpent), textAlign: TextAlign.right, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF4682B4)))),
+                Expanded(flex: 1, child: Text(AppFormatters.formatCurrencyWithSettings(budget.totalAllocated), textAlign: TextAlign.right, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF4682B4)))),
+                Expanded(flex: 1, child: Text(AppFormatters.formatCurrencyWithSettings(dynamicTotalSpent), textAlign: TextAlign.right, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF4682B4)))),
               ],
             ),
           ),
