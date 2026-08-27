@@ -276,9 +276,13 @@ class FinancialForecastPage extends StatelessWidget {
       graphNodes.add(ForecastNode(
         monthLabel: i == 0 ? 'End of ${DateFormat('MMM yyyy').format(targetDate)}' : DateFormat('MMMM yyyy').format(targetDate),
         fireBalance: projectedFire,
+        fireBalanceStr: AppFormatters.formatCurrency(context, projectedFire),
         mojoBalance: projectedMojo,
+        mojoBalanceStr: AppFormatters.formatCurrency(context, projectedMojo),
         debtBalance: projectedDebt,
+        debtBalanceStr: AppFormatters.formatCurrency(context, projectedDebt),
         allocationAmount: allocationAmount,
+        allocationAmountStr: '+${AppFormatters.formatCurrency(context, allocationAmount)}',
         transfers: transfers,
       ));
     }

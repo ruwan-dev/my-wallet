@@ -22,17 +22,25 @@ class ForecastTransfer {
 class ForecastNode {
   final String monthLabel;
   final double fireBalance;
+  final String fireBalanceStr;
   final double mojoBalance;
+  final String mojoBalanceStr;
   final double debtBalance;
+  final String debtBalanceStr;
   final double allocationAmount; // Direct to fire
+  final String allocationAmountStr;
   final List<ForecastTransfer> transfers;
 
   ForecastNode({
     required this.monthLabel,
     required this.fireBalance,
+    required this.fireBalanceStr,
     required this.mojoBalance,
+    required this.mojoBalanceStr,
     required this.debtBalance,
+    required this.debtBalanceStr,
     required this.allocationAmount,
+    required this.allocationAmountStr,
     required this.transfers,
   });
 }
@@ -44,10 +52,10 @@ class ForecastGitGraph extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 140 height per node + 60 padding at top/bottom
+    // 140 height per node
     return SizedBox(
       width: double.infinity,
-      height: (nodes.length * 150.0) + 40.0,
+      height: (nodes.length * 140.0) + 20.0,
       child: CustomPaint(
         painter: GitGraphPainter(nodes),
       ),
@@ -57,7 +65,7 @@ class ForecastGitGraph extends StatelessWidget {
 
 class GitGraphPainter extends CustomPainter {
   final List<ForecastNode> nodes;
-  final double rowHeight = 150.0;
+  final double rowHeight = 140.0;
   final double trackSpacing = 40.0;
   final double startX = 30.0;
 
@@ -117,8 +125,8 @@ class GitGraphPainter extends CustomPainter {
 
     for (int i = 0; i < nodes.length; i++) {
       final node = nodes[i];
-      final double y = i * rowHeight + 100.0; // Y center of the current node
-      final double prevY = i == 0 ? y - rowHeight / 1.5 : (i - 1) * rowHeight + 100.0;
+      final double y = (i * rowHeight) + (rowHeight / 2); // Exact vertical center of this row
+      final double prevY = i == 0 ? y - (rowHeight / 1.5) : ((i - 1) * rowHeight) + (rowHeight / 2);
 
       // 1. Draw vertical track lines
       for (final track in allTracks) {
@@ -132,8 +140,8 @@ class GitGraphPainter extends CustomPainter {
             ..strokeWidth = 3
             ..style = PaintingStyle.stroke;
             
-          double lineStartY = isActivePrev ? prevY : y - rowHeight / 1.5;
-          double lineEndY = isActiveCurr ? y : y - rowHeight / 1.5; // End early if it stops
+          double lineStartY = isActivePrev ? prevY : y - (rowHeight / 1.5);
+          double lineEndY = isActiveCurr ? y : y - (rowHeight / 1.5); // End early if it stops
           
           if (lineStartY != lineEndY) {
             canvas.drawLine(Offset(x, lineStartY), Offset(x, lineEndY), paint);
@@ -192,28 +200,38 @@ class GitGraphPainter extends CustomPainter {
       // 4. Draw Texts & Balances
       final textStartX = startX + (trackSpacing * 4) + 10;
       
-      // Month Label
-      _drawText(canvas, node.monthLabel, textStartX, y - 24, const Color(0xFF1E293B), fontSize: 14, bold: true);
+      // Calculate total block height to vertically center it around y
+      int lineCount = 1; // Month Label
+      if (node.allocationAmount > 0) lineCount++;
+      if (_isTrackActive(TrackType.fire, node)) lineCount++;
+      if (_isTrackActive(TrackType.mojo, node)) lineCount++;
+      if (_isTrackActive(TrackType.debt, node)) lineCount++;
       
-      double currentTextY = y;
+      // month label is 14pt (takes ~16px height), other lines are 12pt (take ~14px height), plus spacing
+      double totalHeight = 16.0 + ((lineCount - 1) * 18.0);
+      double currentTextY = y - (totalHeight / 2);
+      
+      // Month Label
+      _drawText(canvas, node.monthLabel, textStartX, currentTextY, const Color(0xFF1E293B), fontSize: 14, bold: true);
+      currentTextY += 18;
       
       // Allocation if exists
       if (node.allocationAmount > 0) {
-         _drawText(canvas, '+ Income Alloc: ${node.allocationAmount.toStringAsFixed(0)}', textStartX, currentTextY, Colors.blue, fontSize: 11);
-         currentTextY += 16;
+         _drawText(canvas, '+ Income Alloc: ${node.allocationAmountStr}', textStartX, currentTextY, Colors.blue, fontSize: 11);
+         currentTextY += 18;
       }
       
       // Bucket Balances
       if (_isTrackActive(TrackType.fire, node)) {
-        _drawText(canvas, 'Fire: ${node.fireBalance.toStringAsFixed(2)}', textStartX, currentTextY, TrackColors.fire, fontSize: 12, bold: true);
+        _drawText(canvas, 'Fire: ${node.fireBalanceStr}', textStartX, currentTextY, TrackColors.fire, fontSize: 12, bold: true);
         currentTextY += 18;
       }
       if (_isTrackActive(TrackType.mojo, node)) {
-        _drawText(canvas, 'Mojo: ${node.mojoBalance.toStringAsFixed(2)}', textStartX, currentTextY, TrackColors.mojo, fontSize: 12, bold: true);
+        _drawText(canvas, 'Mojo: ${node.mojoBalanceStr}', textStartX, currentTextY, TrackColors.mojo, fontSize: 12, bold: true);
         currentTextY += 18;
       }
       if (_isTrackActive(TrackType.debt, node)) {
-        _drawText(canvas, 'Debt: ${node.debtBalance.toStringAsFixed(2)}', textStartX, currentTextY, TrackColors.debt, fontSize: 12, bold: true);
+        _drawText(canvas, 'Debt: ${node.debtBalanceStr}', textStartX, currentTextY, TrackColors.debt, fontSize: 12, bold: true);
         currentTextY += 18;
       }
     }
