@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 
-enum TrackType { blow, fire, mojo, debt }
+enum TrackType { blow, smile, fire, mojo, grow, debt }
 
 class TrackColors {
   static const Color blow = Color(0xFF38B2AC); // Pastel Cyan
+  static const Color smile = Color(0xFFD946EF); // Fuchsia/Pink
   static const Color fire = Color(0xFFE05263); // Soft Red/Orange
   static const Color mojo = Color(0xFF3949AB); // Deep Blue
+  static const Color grow = Color(0xFF10B981); // Emerald Green
   static const Color debt = Color(0xFFB91C1C); // Dark Red
 }
 
@@ -66,36 +68,41 @@ class ForecastGitGraph extends StatelessWidget {
 class GitGraphPainter extends CustomPainter {
   final List<ForecastNode> nodes;
   final double rowHeight = 140.0;
-  final double trackSpacing = 40.0;
+  final double trackSpacing = 35.0; // Squeeze slightly to fit more tracks
   final double startX = 30.0;
 
   GitGraphPainter(this.nodes);
 
-  bool _isTrackActive(TrackType track, ForecastNode node) {
-    if (track == TrackType.blow) return true;
-    if (track == TrackType.fire) return true;
-    if (track == TrackType.mojo && node.mojoBalance != 0) return true;
-    if (track == TrackType.debt && node.debtBalance != 0) return true;
-    for (var t in node.transfers) {
-      if (t.from == track || t.to == track) return true;
+  List<TrackType> _getGloballyActiveTracks() {
+    Set<TrackType> active = {TrackType.blow, TrackType.fire}; // Base tracks always active
+    
+    for (final node in nodes) {
+      if (node.mojoBalance != 0) active.add(TrackType.mojo);
+      if (node.debtBalance != 0) active.add(TrackType.debt);
+      for (final t in node.transfers) {
+        active.add(t.from);
+        active.add(t.to);
+      }
     }
-    return false;
+    
+    // Sort them in the standard order
+    final all = [TrackType.blow, TrackType.smile, TrackType.fire, TrackType.mojo, TrackType.grow, TrackType.debt];
+    return all.where((t) => active.contains(t)).toList();
   }
 
-  double _getTrackX(TrackType track) {
-    switch (track) {
-      case TrackType.blow: return startX;
-      case TrackType.fire: return startX + trackSpacing;
-      case TrackType.mojo: return startX + trackSpacing * 2;
-      case TrackType.debt: return startX + trackSpacing * 3;
-    }
+  double _getTrackX(TrackType track, List<TrackType> activeTracks) {
+    int index = activeTracks.indexOf(track);
+    if (index == -1) return startX;
+    return startX + (index * trackSpacing);
   }
 
   Color _getTrackColor(TrackType track) {
     switch (track) {
       case TrackType.blow: return TrackColors.blow;
+      case TrackType.smile: return TrackColors.smile;
       case TrackType.fire: return TrackColors.fire;
       case TrackType.mojo: return TrackColors.mojo;
+      case TrackType.grow: return TrackColors.grow;
       case TrackType.debt: return TrackColors.debt;
     }
   }
@@ -121,50 +128,44 @@ class GitGraphPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final List<TrackType> allTracks = [TrackType.blow, TrackType.fire, TrackType.mojo, TrackType.debt];
+    final List<TrackType> activeTracks = _getGloballyActiveTracks();
 
     for (int i = 0; i < nodes.length; i++) {
       final node = nodes[i];
       final double y = (i * rowHeight) + (rowHeight / 2); // Exact vertical center of this row
       final double prevY = i == 0 ? y - (rowHeight / 1.5) : ((i - 1) * rowHeight) + (rowHeight / 2);
 
-      // 1. Draw vertical track lines
-      for (final track in allTracks) {
-        bool isActiveCurr = _isTrackActive(track, node);
-        bool isActivePrev = i == 0 ? false : _isTrackActive(track, nodes[i - 1]);
-        
-        if (isActiveCurr || isActivePrev) {
-          final x = _getTrackX(track);
-          final paint = Paint()
-            ..color = _getTrackColor(track).withOpacity(0.3)
-            ..strokeWidth = 3
-            ..style = PaintingStyle.stroke;
-            
-          double lineStartY = isActivePrev ? prevY : y - (rowHeight / 1.5);
-          double lineEndY = isActiveCurr ? y : y - (rowHeight / 1.5); // End early if it stops
+      // 1. Draw continuous vertical track lines
+      for (final track in activeTracks) {
+        final x = _getTrackX(track, activeTracks);
+        final paint = Paint()
+          ..color = _getTrackColor(track).withOpacity(0.3)
+          ..strokeWidth = 3
+          ..style = PaintingStyle.stroke;
           
-          if (lineStartY != lineEndY) {
-            canvas.drawLine(Offset(x, lineStartY), Offset(x, lineEndY), paint);
-          }
-        }
+        double lineStartY = prevY;
+        double lineEndY = y;
+        
+        // Draw continuously from top to bottom
+        canvas.drawLine(Offset(x, lineStartY), Offset(x, lineEndY), paint);
       }
 
       // 2. Draw Transfer Curves
       for (final transfer in node.transfers) {
-        final fromX = _getTrackX(transfer.from);
-        final toX = _getTrackX(transfer.to);
+        final fromX = _getTrackX(transfer.from, activeTracks);
+        final toX = _getTrackX(transfer.to, activeTracks);
         
         final path = Path();
         path.moveTo(fromX, prevY);
         
-        // Bezier curve for merging/branching
+        // Single thick Bezier curve branching OUT and merging INTO the target track
         path.cubicTo(
           fromX, prevY + (y - prevY) / 2, 
           toX, prevY + (y - prevY) / 2, 
           toX, y
         );
 
-        // Gradient or colored stroke for the transfer line
+        // Colored stroke for the transfer line
         final paint = Paint()
           ..color = transfer.color.withOpacity(0.8)
           ..style = PaintingStyle.stroke
@@ -185,27 +186,25 @@ class GitGraphPainter extends CustomPainter {
       }
 
       // 3. Draw Nodes (Dots)
-      for (final track in allTracks) {
-        if (_isTrackActive(track, node)) {
-          final x = _getTrackX(track);
-          final color = _getTrackColor(track);
-          
-          // Outer circle
-          canvas.drawCircle(Offset(x, y), 8, Paint()..color = color.withOpacity(0.3));
-          // Inner solid circle
-          canvas.drawCircle(Offset(x, y), 4, Paint()..color = color);
-        }
+      for (final track in activeTracks) {
+        final x = _getTrackX(track, activeTracks);
+        final color = _getTrackColor(track);
+        
+        // Outer circle
+        canvas.drawCircle(Offset(x, y), 8, Paint()..color = color.withOpacity(0.3));
+        // Inner solid circle
+        canvas.drawCircle(Offset(x, y), 4, Paint()..color = color);
       }
 
       // 4. Draw Texts & Balances
-      final textStartX = startX + (trackSpacing * 4) + 10;
+      final textStartX = startX + (activeTracks.length * trackSpacing) + 10;
       
       // Calculate total block height to vertically center it around y
       int lineCount = 1; // Month Label
       if (node.allocationAmount > 0) lineCount++;
-      if (_isTrackActive(TrackType.fire, node)) lineCount++;
-      if (_isTrackActive(TrackType.mojo, node)) lineCount++;
-      if (_isTrackActive(TrackType.debt, node)) lineCount++;
+      if (activeTracks.contains(TrackType.fire)) lineCount++;
+      if (activeTracks.contains(TrackType.mojo)) lineCount++;
+      if (activeTracks.contains(TrackType.debt)) lineCount++;
       
       // month label is 14pt (takes ~16px height), other lines are 12pt (take ~14px height), plus spacing
       double totalHeight = 16.0 + ((lineCount - 1) * 18.0);
@@ -222,15 +221,15 @@ class GitGraphPainter extends CustomPainter {
       }
       
       // Bucket Balances
-      if (_isTrackActive(TrackType.fire, node)) {
+      if (activeTracks.contains(TrackType.fire)) {
         _drawText(canvas, 'Fire: ${node.fireBalanceStr}', textStartX, currentTextY, TrackColors.fire, fontSize: 12, bold: true);
         currentTextY += 18;
       }
-      if (_isTrackActive(TrackType.mojo, node)) {
+      if (activeTracks.contains(TrackType.mojo)) {
         _drawText(canvas, 'Mojo: ${node.mojoBalanceStr}', textStartX, currentTextY, TrackColors.mojo, fontSize: 12, bold: true);
         currentTextY += 18;
       }
-      if (_isTrackActive(TrackType.debt, node)) {
+      if (activeTracks.contains(TrackType.debt)) {
         _drawText(canvas, 'Debt: ${node.debtBalanceStr}', textStartX, currentTextY, TrackColors.debt, fontSize: 12, bold: true);
         currentTextY += 18;
       }
