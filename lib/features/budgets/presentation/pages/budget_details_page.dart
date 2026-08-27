@@ -11,7 +11,10 @@ import 'create_custom_budget_page.dart';
 import 'package:expense_tracker/features/expenses/presentation/widgets/shimmer_tile.dart';
 import '../../../../features/expenses/domain/entities/category.dart';
 import 'package:expense_tracker/features/expenses/presentation/widgets/category_icon.dart';
-
+import '../../../../core/bloc/settings_cubit.dart';
+import '../../../expenses/presentation/bloc/account_cubit.dart';
+import '../../../expenses/presentation/bloc/account_state.dart';
+import '../../../expenses/domain/entities/account.dart';
 class BudgetDetailsPage extends StatelessWidget {
   final String budgetId;
 
@@ -43,6 +46,33 @@ class BudgetDetailsPage extends StatelessWidget {
               ? (dynamicTotalSpent / budget.totalAllocated).clamp(0.0, 1.0) 
               : 0.0;
           final isTotalOverBudget = budget.totalAllocated > 0 && dynamicTotalSpent > budget.totalAllocated;
+
+          // 1. Fixed Expenses Total
+          final fixedTotal = budget.items.where((i) => i.isMonthlyFixed).fold(0.0, (sum, i) => sum + i.allocatedAmount);
+
+          // 2. Bucket Account Balance
+          final settings = context.watch<SettingsCubit>().state;
+          final accState = context.watch<AccountCubit>().state;
+          final accounts = accState is AccountLoaded ? accState.accounts : <AccountEntity>[];
+
+          String bucketKey = 'blow';
+          switch (budget.bucketType) {
+            case BucketType.dailyExpenses: bucketKey = 'blow'; break;
+            case BucketType.smile: bucketKey = 'smile'; break;
+            case BucketType.fire: bucketKey = 'fire'; break;
+            case BucketType.mojo: bucketKey = 'mojo'; break;
+            case BucketType.grow: bucketKey = 'grow'; break;
+            default: break;
+          }
+
+          final linkedAccountId = settings.bucketAccountLinks[bucketKey];
+          double linkedAccountBalance = 0.0;
+          if (linkedAccountId != null) {
+            try {
+              final acc = accounts.firstWhere((a) => a.id == linkedAccountId);
+              linkedAccountBalance = acc.balance;
+            } catch (_) {}
+          }
 
             return Scaffold(
               backgroundColor: Colors.transparent,
@@ -181,32 +211,52 @@ class BudgetDetailsPage extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                      color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-
-                        Text('Checklist Completion', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
-                        const SizedBox(height: 8),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'Spent: ${AppFormatters.formatCurrency(context, dynamicTotalSpent)}',
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                color: isTotalOverBudget ? Colors.cyan.shade700 : null,
-                                fontWeight: isTotalOverBudget ? FontWeight.bold : null,
-                              ),
-                            ),
-                          ],
+                        Text('Budget Overview', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+                        const SizedBox(height: 16),
+                        
+                        _buildRow('Total Budget', AppFormatters.formatCurrency(context, budget.totalAllocated)),
+                        _buildRow('Total Spent', AppFormatters.formatCurrency(context, dynamicTotalSpent)),
+                        _buildRow(
+                          'Remaining', 
+                          AppFormatters.formatCurrency(context, budget.totalAllocated - dynamicTotalSpent), 
+                          isBold: true,
+                          color: isTotalOverBudget ? Colors.red.shade700 : Colors.green.shade700,
                         ),
-                        const SizedBox(height: 12),
+                        
+                        if (fixedTotal > 0 || linkedAccountId != null) ...[
+                          const SizedBox(height: 12),
+                          const Divider(),
+                          const SizedBox(height: 12),
+                          if (fixedTotal > 0)
+                            _buildRow('Fixed Bills', AppFormatters.formatCurrency(context, fixedTotal)),
+                          if (linkedAccountId != null)
+                            Builder(
+                              builder: (context) {
+                                String bucketName = 'Blow';
+                                switch (budget.bucketType) {
+                                  case BucketType.dailyExpenses: bucketName = 'Blow'; break;
+                                  case BucketType.smile: bucketName = 'Smile'; break;
+                                  case BucketType.fire: bucketName = 'Fire'; break;
+                                  case BucketType.mojo: bucketName = 'Mojo'; break;
+                                  case BucketType.grow: bucketName = 'Grow'; break;
+                                  default: break;
+                                }
+                                return _buildRow('$bucketName Account Balance', AppFormatters.formatCurrency(context, linkedAccountBalance));
+                              }
+                            ),
+                        ],
+
+                        const SizedBox(height: 16),
                         LinearProgressIndicator(
                           value: spentProgress,
                           backgroundColor: theme.colorScheme.surfaceContainerHighest,
-                          color: isTotalOverBudget ? Colors.cyan.shade700 : theme.colorScheme.primary,
+                          color: isTotalOverBudget ? Colors.red.shade700 : theme.colorScheme.primary,
                           minHeight: 8,
                           borderRadius: BorderRadius.circular(4),
                         ),
@@ -304,6 +354,25 @@ class BudgetDetailsPage extends StatelessWidget {
           body: const ShimmerTile(),
         );
       },
+    );
+  }
+
+  Widget _buildRow(String title, String value, {bool isBold = false, Color? color}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(title, style: TextStyle(color: Colors.grey.shade700)),
+          Text(
+            value,
+            style: TextStyle(
+              fontWeight: isBold ? FontWeight.bold : FontWeight.w500,
+              color: color ?? (isBold ? Colors.black87 : Colors.grey.shade900),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
