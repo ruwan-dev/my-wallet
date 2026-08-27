@@ -92,19 +92,27 @@ class FinancialForecastPage extends StatelessWidget {
                   }
 
                   // 3. Get Budgets
-                  double blowBudget = monthlyIncome * 0.60;
+                  double actualBlowAllocation = monthlyIncome * 0.60;
+                  double customBlowBudget = actualBlowAllocation;
                   double fireBudget = monthlyIncome * 0.20;
                   if (budgetState is CustomBudgetLoaded) {
                     for (final b in budgetState.budgets) {
                       if (!b.isCompleted) {
-                        if (b.bucketType == BucketType.dailyExpenses && b.totalAllocated > 0) blowBudget = b.totalAllocated;
+                        if (b.bucketType == BucketType.dailyExpenses && b.totalAllocated > 0) customBlowBudget = b.totalAllocated;
                         if (b.bucketType == BucketType.fire && b.totalAllocated > 0) fireBudget = b.totalAllocated;
                       }
                     }
                   }
 
-                  // 4. Calculate Current Month Sweep
-                  double currentMonthBlowSweep = blowBudget - currentBlowSpent;
+                  // 4. Calculate Deficits and Sweep
+                  double overBudgetDeficit = 0;
+                  if (customBlowBudget > actualBlowAllocation) {
+                    overBudgetDeficit = customBlowBudget - actualBlowAllocation;
+                  }
+
+                  // The sweep is ALWAYS based on the ACTUAL money available, not the inflated custom budget.
+                  double currentMonthBlowSweep = actualBlowAllocation - currentBlowSpent;
+                  if (currentMonthBlowSweep < 0) currentMonthBlowSweep = 0;
 
                   return SingleChildScrollView(
                     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
@@ -136,18 +144,24 @@ class FinancialForecastPage extends StatelessWidget {
                                 ],
                               ),
                               const SizedBox(height: 16),
-                              _buildBreakdownRow(context, 'Blow Budget Limit', blowBudget, const Color(0xFF1E293B)),
+                              _buildBreakdownRow(context, 'Actual 60% Allocation', actualBlowAllocation, const Color(0xFF1E293B)),
+                              const SizedBox(height: 8),
+                              _buildBreakdownRow(context, 'Custom Budget Limit', customBlowBudget, const Color(0xFF1E293B)),
+                              if (overBudgetDeficit > 0) ...[
+                                const SizedBox(height: 8),
+                                _buildBreakdownRow(context, 'Over-budgeted Deficit', overBudgetDeficit, const Color(0xFFB91C1C)),
+                              ],
                               const SizedBox(height: 8),
                               _buildBreakdownRow(context, 'Spent So Far', currentBlowSpent, const Color(0xFFB91C1C)),
                               const SizedBox(height: 12),
                               const Divider(endIndent: 120),
                               const SizedBox(height: 12),
                               Text(
-                                '${currentMonthBlowSweep >= 0 ? '+' : '-'}${AppFormatters.formatCurrency(context, currentMonthBlowSweep.abs())}',
-                                style: TextStyle(
+                                'Available to Sweep: ${AppFormatters.formatCurrency(context, currentMonthBlowSweep)}',
+                                style: const TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 16,
-                                  color: currentMonthBlowSweep >= 0 ? const Color(0xFF166534) : const Color(0xFFB91C1C),
+                                  color: Color(0xFF166534),
                                 ),
                               ),
                             ],
@@ -156,7 +170,7 @@ class FinancialForecastPage extends StatelessWidget {
                         const SizedBox(height: 32),
                         Text('6-Month Bucket Projection', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: const Color(0xFF1E293B))),
                         const SizedBox(height: 16),
-                        _buildTimeline(context, fireBalance, mojoBalance, currentMonthBlowSweep, fireBudget),
+                        _buildTimeline(context, fireBalance, mojoBalance, currentMonthBlowSweep, fireBudget, actualBlowAllocation, customBlowBudget, overBudgetDeficit),
                       ],
                     ),
                   );
@@ -185,7 +199,7 @@ class FinancialForecastPage extends StatelessWidget {
     );
   }
 
-  Widget _buildTimeline(BuildContext context, double startingFire, double startingMojo, double initialSweep, double monthlyFireAllocation) {
+  Widget _buildTimeline(BuildContext context, double startingFire, double startingMojo, double initialSweep, double monthlyFireAllocation, double actualBlowAllocation, double customBlowBudget, double overBudgetDeficit) {
     List<Widget> nodes = [];
     double projectedFire = startingFire;
     double projectedMojo = startingMojo;
@@ -197,16 +211,26 @@ class FinancialForecastPage extends StatelessWidget {
       
       double sweepAmount = 0;
       double allocationAmount = 0;
+      double deficitAmount = 0;
       
       if (i == 0) {
         sweepAmount = initialSweep;
         allocationAmount = 0; // Already handled by actuals inside the month
+        deficitAmount = overBudgetDeficit;
       } else {
-        sweepAmount = 0; // Assuming exact budget matching in future
+        // Future months base their sweep on the difference between actual income and planned budget
+        double futureSweep = actualBlowAllocation - customBlowBudget;
+        if (futureSweep < 0) {
+          deficitAmount = futureSweep.abs();
+          sweepAmount = 0;
+        } else {
+          sweepAmount = futureSweep;
+          deficitAmount = 0;
+        }
         allocationAmount = monthlyFireAllocation;
       }
       
-      double totalFireAddition = sweepAmount + allocationAmount;
+      double totalFireAddition = sweepAmount + allocationAmount - deficitAmount;
       projectedFire += totalFireAddition;
       
       if (projectedFire < 0) {
@@ -239,6 +263,7 @@ class FinancialForecastPage extends StatelessWidget {
         debtBalance: projectedDebt,
         sweepAmount: sweepAmount,
         allocationAmount: allocationAmount,
+        deficitAmount: deficitAmount,
         statusColor: statusColor,
         statusIcon: statusIcon,
         isLast: i == 5,
@@ -255,6 +280,7 @@ class FinancialForecastPage extends StatelessWidget {
     required double debtBalance,
     required double sweepAmount,
     required double allocationAmount,
+    required double deficitAmount,
     required Color statusColor,
     required IconData statusIcon,
     required bool isLast,
@@ -283,11 +309,10 @@ class FinancialForecastPage extends StatelessWidget {
                 children: [
                   Text(monthLabel, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF1E293B))),
                   const SizedBox(height: 8),
-                  if (sweepAmount != 0)
-                    Text(
-                      sweepAmount > 0 ? 'Blow Sweep: +${AppFormatters.formatCurrency(context, sweepAmount)}' : 'Blow Deficit: -${AppFormatters.formatCurrency(context, sweepAmount.abs())}',
-                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: sweepAmount > 0 ? const Color(0xFF166534) : const Color(0xFFB91C1C)),
-                    ),
+                  if (sweepAmount > 0)
+                    Text('Blow Sweep: +${AppFormatters.formatCurrency(context, sweepAmount)}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF166534))),
+                  if (deficitAmount > 0)
+                    Text('Over-Budget Deficit: -${AppFormatters.formatCurrency(context, deficitAmount)}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFFB91C1C))),
                   if (allocationAmount > 0)
                     Text('Monthly Fire Allocation: +${AppFormatters.formatCurrency(context, allocationAmount)}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.blue)),
                   const SizedBox(height: 8),
