@@ -185,7 +185,7 @@ class FinancialForecastPage extends StatelessWidget {
                         const SizedBox(height: 32),
                         Text('6-Month Bucket Projection', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: const Color(0xFF1E293B))),
                         const SizedBox(height: 16),
-                        _buildTimeline(context, fireBalance, mojoBalance, month1Sweep, month1Deficit, fireBudget, actualBlowAllocation, customBlowBudget),
+                        _buildGitGraph(context, fireBalance, mojoBalance, month1Sweep, month1Deficit, fireBudget, actualBlowAllocation, customBlowBudget),
                       ],
                     ),
                   );
