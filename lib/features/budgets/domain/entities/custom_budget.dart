@@ -137,14 +137,16 @@ class CustomBudgetEntity extends Equatable {
       }
     }
 
-    // Pass 3: Title matches Subcategory (User forgot to select subcategory but typed it in title)
+    // Pass 3: Fuzzy Title match (User forgot to select subcategory but typed a similar name in title)
     for (final item in items) {
       if (item.categoryId == null || (item.subcategory != null && item.subcategory!.isNotEmpty)) continue;
       for (final tx in monthTxs) {
         if (allocatedTxIds.contains(tx.id)) continue;
         if (tx.isIncome) continue;
-        if (tx.categoryId == item.categoryId && tx.subCategory != null) {
-          if (tx.subCategory!.toLowerCase() == item.title.toLowerCase()) {
+        if (tx.categoryId == item.categoryId && tx.subCategory != null && tx.subCategory!.isNotEmpty) {
+          final txSub = tx.subCategory!.toLowerCase();
+          final itemTitle = item.title.toLowerCase();
+          if (txSub == itemTitle || txSub.contains(itemTitle) || itemTitle.contains(txSub)) {
             if (tx.bucketType != null && tx.bucketType != this.bucketType) continue;
             allocate(tx, item);
           }
@@ -165,18 +167,9 @@ class CustomBudgetEntity extends Equatable {
       }
     }
 
-    // Pass 5: Catch-all Fallback (Budget item has no subcategory, gobbles up any remaining transactions in that category)
-    for (final item in items) {
-      if (item.categoryId == null || (item.subcategory != null && item.subcategory!.isNotEmpty)) continue;
-      for (final tx in monthTxs) {
-        if (allocatedTxIds.contains(tx.id)) continue;
-        if (tx.isIncome) continue;
-        if (tx.categoryId == item.categoryId) {
-          if (tx.bucketType != null && tx.bucketType != this.bucketType) continue;
-          allocate(tx, item);
-        }
-      }
-    }
+    // Notice: Pass 5 (Catch-all Fallback) has been intentionally removed.
+    // If a transaction has a subcategory (e.g. Dialog TV) and the user didn't create a budget item for it,
+    // it should NOT be randomly swallowed by another unrelated generic item (like "Gas").
 
     // Apply completion fallback and finalize
     for (final item in items) {
