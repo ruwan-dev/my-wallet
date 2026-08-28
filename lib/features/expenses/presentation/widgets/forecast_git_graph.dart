@@ -157,6 +157,20 @@ class GitGraphPainter extends CustomPainter {
       final double x = (i * colWidth) + (colWidth / 2); // Exact horizontal center of this col
       final double prevX = i == 0 ? x - (colWidth / 1.5) : ((i - 1) * colWidth) + (colWidth / 2);
 
+      // 0. If it's the very first column, draw the "Today" starting dots so initial curves have an origin
+      if (i == 0) {
+        for (final track in activeTracks) {
+          final y = _getTrackY(track, activeTracks);
+          final color = _getTrackColor(track);
+          // Outer circle
+          canvas.drawCircle(Offset(prevX, y), 8, Paint()..color = color.withValues(alpha: 0.3));
+          // Inner solid circle
+          canvas.drawCircle(Offset(prevX, y), 4, Paint()..color = color);
+        }
+        double textStartY = startY + (activeTracks.length * trackSpacing) + 20;
+        _drawText(canvas, 'Today', prevX, textStartY, const Color(0xFF1E293B), fontSize: 13, bold: true, align: TextAlign.center);
+      }
+
       // 1. Draw continuous horizontal track lines
       for (final track in activeTracks) {
         final y = _getTrackY(track, activeTracks);
