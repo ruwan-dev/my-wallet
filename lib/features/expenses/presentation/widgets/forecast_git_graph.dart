@@ -124,14 +124,15 @@ class ForecastGitGraph extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final double screenWidth = MediaQuery.of(context).size.width;
-    final double fixedLeftWidth = 95.0;
+    final double fixedLeftWidth = 85.0;
     final double scrollableWidth = screenWidth - fixedLeftWidth;
     final double colWidth = scrollableWidth / 1.8; // show nearly 2 columns
     
     final activeTracks = _getGloballyActiveTracks();
     final activeRows = ActiveTableRows.fromNodes(nodes);
 
-    final double totalWidth = (colWidth / 2) + (nodes.length * colWidth) + (colWidth / 2);
+    final double startPadding = 15.0;
+    final double totalWidth = startPadding + (nodes.length * colWidth) + (colWidth / 2);
     final double totalHeight = 550.0; // Plenty of room for dynamic table
 
     return Row(
@@ -298,8 +299,9 @@ class GitGraphPainter extends CustomPainter {
     for (int i = 0; i < nodes.length; i++) {
       final node = nodes[i];
       
-      final double prevX = i == 0 ? (colWidth / 2) : (colWidth / 2) + (i * colWidth);
-      final double x = (colWidth / 2) + ((i + 1) * colWidth);
+      final double startPadding = 15.0;
+      final double prevX = i == 0 ? startPadding : startPadding + (i * colWidth);
+      final double x = startPadding + ((i + 1) * colWidth);
 
       // 0. Draw the "Today" starting dots
       if (i == 0) {
