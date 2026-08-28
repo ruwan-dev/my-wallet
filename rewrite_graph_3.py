@@ -1,4 +1,6 @@
-import 'package:flutter/material.dart';
+import os
+
+content = """import 'package:flutter/material.dart';
 
 enum TrackType { blow, splurge, smile, fire, mojo, grow, debt }
 
@@ -437,3 +439,9 @@ class GitGraphPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }
+"""
+
+with open("lib/features/expenses/presentation/widgets/forecast_git_graph.dart", "w") as f:
+    f.write(content)
+
+print("Done")
