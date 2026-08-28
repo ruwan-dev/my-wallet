@@ -105,48 +105,91 @@ class CustomBudgetEntity extends Equatable {
     final Set<String> allocatedTxIds = {};
 
     for (final item in items) {
-      if (item.categoryId == null) {
-        spents[item.id] = item.isCompleted ? item.allocatedAmount : 0.0;
-        continue;
-      }
+      spents[item.id] = 0.0;
+    }
 
-      double itemSpent = 0.0;
+    void allocate(TransactionEntity tx, BudgetChecklistItem item) {
+      spents[item.id] = spents[item.id]! + tx.amount;
+      allocatedTxIds.add(tx.id);
+    }
+
+    // Pass 1: Explicit Links
+    for (final item in items) {
       for (final tx in monthTxs) {
-        if (!allocatedTxIds.contains(tx.id) && _matchesItem(tx, item)) {
-          itemSpent += tx.amount;
-          allocatedTxIds.add(tx.id);
+        if (allocatedTxIds.contains(tx.id)) continue;
+        if (tx.isIncome) continue;
+        if (tx.linkedChecklistItemId == item.id) {
+          allocate(tx, item);
         }
       }
-
-      spents[item.id] = itemSpent > 0 ? itemSpent : (item.isCompleted ? item.allocatedAmount : 0.0);
     }
+
+    // Pass 2: Exact Category + Subcategory Match
+    for (final item in items) {
+      if (item.categoryId == null || item.subcategory == null || item.subcategory!.isEmpty) continue;
+      for (final tx in monthTxs) {
+        if (allocatedTxIds.contains(tx.id)) continue;
+        if (tx.isIncome) continue;
+        if (tx.categoryId == item.categoryId && tx.subCategory == item.subcategory) {
+          if (tx.bucketType != null && tx.bucketType != this.bucketType) continue;
+          allocate(tx, item);
+        }
+      }
+    }
+
+    // Pass 3: Title matches Subcategory (User forgot to select subcategory but typed it in title)
+    for (final item in items) {
+      if (item.categoryId == null || (item.subcategory != null && item.subcategory!.isNotEmpty)) continue;
+      for (final tx in monthTxs) {
+        if (allocatedTxIds.contains(tx.id)) continue;
+        if (tx.isIncome) continue;
+        if (tx.categoryId == item.categoryId && tx.subCategory != null) {
+          if (tx.subCategory!.toLowerCase() == item.title.toLowerCase()) {
+            if (tx.bucketType != null && tx.bucketType != this.bucketType) continue;
+            allocate(tx, item);
+          }
+        }
+      }
+    }
+
+    // Pass 4: Generic Category match (Budget item has no subcategory, transaction ALSO has no subcategory)
+    for (final item in items) {
+      if (item.categoryId == null || (item.subcategory != null && item.subcategory!.isNotEmpty)) continue;
+      for (final tx in monthTxs) {
+        if (allocatedTxIds.contains(tx.id)) continue;
+        if (tx.isIncome) continue;
+        if (tx.categoryId == item.categoryId && (tx.subCategory == null || tx.subCategory!.isEmpty)) {
+          if (tx.bucketType != null && tx.bucketType != this.bucketType) continue;
+          allocate(tx, item);
+        }
+      }
+    }
+
+    // Pass 5: Catch-all Fallback (Budget item has no subcategory, gobbles up any remaining transactions in that category)
+    for (final item in items) {
+      if (item.categoryId == null || (item.subcategory != null && item.subcategory!.isNotEmpty)) continue;
+      for (final tx in monthTxs) {
+        if (allocatedTxIds.contains(tx.id)) continue;
+        if (tx.isIncome) continue;
+        if (tx.categoryId == item.categoryId) {
+          if (tx.bucketType != null && tx.bucketType != this.bucketType) continue;
+          allocate(tx, item);
+        }
+      }
+    }
+
+    // Apply completion fallback and finalize
+    for (final item in items) {
+      if (item.categoryId == null || (spents[item.id]! == 0.0 && item.isCompleted)) {
+        spents[item.id] = item.isCompleted ? item.allocatedAmount : 0.0;
+      }
+    }
+    
     return spents;
   }
 
   double calculateItemSpent(BudgetChecklistItem item, List<TransactionEntity> transactions) {
     return calculateAllItemSpents(transactions)[item.id] ?? 0.0;
-  }
-
-  bool _matchesItem(TransactionEntity tx, BudgetChecklistItem item) {
-    if (tx.isIncome) return false;
-    
-    // 1. Explicit Link check (highest priority)
-    if (tx.linkedChecklistItemId != null) {
-      return tx.linkedChecklistItemId == item.id;
-    }
-    
-    // 2. Category & Subcategory check
-    if (tx.categoryId != item.categoryId) return false;
-    
-    if (item.subcategory != null && item.subcategory!.isNotEmpty) {
-      // If the item specifies a subcategory, the transaction must match it exactly
-      if (tx.subCategory != item.subcategory) return false;
-    }
-    
-    // 3. Bucket check
-    if (tx.bucketType != null && tx.bucketType != this.bucketType) return false;
-    
-    return true;
   }
 
   double calculateDynamicTotalSpent(List<TransactionEntity> transactions) {
