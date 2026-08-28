@@ -82,7 +82,7 @@ class GitGraphPainter extends CustomPainter {
   GitGraphPainter(this.nodes, this.colWidth);
 
   List<TrackType> _getGloballyActiveTracks() {
-    Set<TrackType> active = {TrackType.blow, TrackType.fire}; // Base tracks always active
+    Set<TrackType> active = {TrackType.blow, TrackType.fire, TrackType.mojo}; // Base tracks always active
     
     for (final node in nodes) {
       if (node.mojoBalance != 0) active.add(TrackType.mojo);
