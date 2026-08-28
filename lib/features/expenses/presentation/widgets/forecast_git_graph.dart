@@ -54,12 +54,19 @@ class ForecastGitGraph extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 140 height per node
-    return SizedBox(
-      width: double.infinity,
-      height: (nodes.length * 140.0) + 20.0,
-      child: CustomPaint(
-        painter: GitGraphPainter(nodes),
+    // Show precisely two months on the screen at a time
+    final double screenWidth = MediaQuery.of(context).size.width;
+    final double colWidth = screenWidth / 2.0;
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      physics: const BouncingScrollPhysics(),
+      child: SizedBox(
+        width: (nodes.length * colWidth),
+        height: 280.0,
+        child: CustomPaint(
+          painter: GitGraphPainter(nodes, colWidth),
+        ),
       ),
     );
   }
@@ -67,11 +74,12 @@ class ForecastGitGraph extends StatelessWidget {
 
 class GitGraphPainter extends CustomPainter {
   final List<ForecastNode> nodes;
-  final double rowHeight = 140.0;
-  final double trackSpacing = 35.0; // Squeeze slightly to fit more tracks
-  final double startX = 30.0;
+  final double colWidth;
+  
+  final double trackSpacing = 28.0; 
+  final double startY = 30.0;
 
-  GitGraphPainter(this.nodes);
+  GitGraphPainter(this.nodes, this.colWidth);
 
   List<TrackType> _getGloballyActiveTracks() {
     Set<TrackType> active = {TrackType.blow, TrackType.fire}; // Base tracks always active
@@ -90,10 +98,10 @@ class GitGraphPainter extends CustomPainter {
     return all.where((t) => active.contains(t)).toList();
   }
 
-  double _getTrackX(TrackType track, List<TrackType> activeTracks) {
+  double _getTrackY(TrackType track, List<TrackType> activeTracks) {
     int index = activeTracks.indexOf(track);
-    if (index == -1) return startX;
-    return startX + (index * trackSpacing);
+    if (index == -1) return startY;
+    return startY + (index * trackSpacing);
   }
 
   Color _getTrackColor(TrackType track) {
@@ -132,53 +140,51 @@ class GitGraphPainter extends CustomPainter {
 
     for (int i = 0; i < nodes.length; i++) {
       final node = nodes[i];
-      final double y = (i * rowHeight) + (rowHeight / 2); // Exact vertical center of this row
-      final double prevY = i == 0 ? y - (rowHeight / 1.5) : ((i - 1) * rowHeight) + (rowHeight / 2);
+      
+      final double x = (i * colWidth) + (colWidth / 2); // Exact horizontal center of this col
+      final double prevX = i == 0 ? x - (colWidth / 1.5) : ((i - 1) * colWidth) + (colWidth / 2);
 
-      // 1. Draw continuous vertical track lines
+      // 1. Draw continuous horizontal track lines
       for (final track in activeTracks) {
-        final x = _getTrackX(track, activeTracks);
+        final y = _getTrackY(track, activeTracks);
         final paint = Paint()
-          ..color = _getTrackColor(track).withOpacity(0.3)
+          ..color = _getTrackColor(track).withValues(alpha: 0.3)
           ..strokeWidth = 3
           ..style = PaintingStyle.stroke;
           
-        double lineStartY = prevY;
-        double lineEndY = y;
-        
-        // Draw continuously from top to bottom
-        canvas.drawLine(Offset(x, lineStartY), Offset(x, lineEndY), paint);
+        // Draw continuously from left to right
+        canvas.drawLine(Offset(prevX, y), Offset(x, y), paint);
       }
 
       // 2. Draw Transfer Curves
       for (final transfer in node.transfers) {
-        final fromX = _getTrackX(transfer.from, activeTracks);
-        final toX = _getTrackX(transfer.to, activeTracks);
+        final fromY = _getTrackY(transfer.from, activeTracks);
+        final toY = _getTrackY(transfer.to, activeTracks);
         
         final path = Path();
-        path.moveTo(fromX, prevY);
+        path.moveTo(prevX, fromY);
         
-        // Single thick Bezier curve branching OUT and merging INTO the target track
+        // Single thick Bezier curve branching OUT and merging INTO the target track horizontally
         path.cubicTo(
-          fromX, prevY + (y - prevY) / 2, 
-          toX, prevY + (y - prevY) / 2, 
-          toX, y
+          prevX + (x - prevX) / 2, fromY, 
+          prevX + (x - prevX) / 2, toY, 
+          x, toY
         );
 
         // Colored stroke for the transfer line
         final paint = Paint()
-          ..color = transfer.color.withOpacity(0.8)
+          ..color = transfer.color.withValues(alpha: 0.8)
           ..style = PaintingStyle.stroke
           ..strokeWidth = 2.5;
           
         canvas.drawPath(path, paint);
 
         // Transfer label at the apex
-        final midX = (fromX + toX) / 2;
-        final midY = (prevY + y) / 2;
+        final midX = (prevX + x) / 2;
+        final midY = (fromY + toY) / 2;
         
         // Draw tiny pill background for label readability
-        final labelPaint = Paint()..color = Colors.white.withOpacity(0.9);
+        final labelPaint = Paint()..color = Colors.white.withValues(alpha: 0.9);
         final labelRect = Rect.fromCenter(center: Offset(midX, midY), width: 70, height: 18);
         canvas.drawRRect(RRect.fromRectAndRadius(labelRect, const Radius.circular(8)), labelPaint);
         
@@ -187,50 +193,40 @@ class GitGraphPainter extends CustomPainter {
 
       // 3. Draw Nodes (Dots)
       for (final track in activeTracks) {
-        final x = _getTrackX(track, activeTracks);
+        final y = _getTrackY(track, activeTracks);
         final color = _getTrackColor(track);
         
         // Outer circle
-        canvas.drawCircle(Offset(x, y), 8, Paint()..color = color.withOpacity(0.3));
+        canvas.drawCircle(Offset(x, y), 8, Paint()..color = color.withValues(alpha: 0.3));
         // Inner solid circle
         canvas.drawCircle(Offset(x, y), 4, Paint()..color = color);
       }
 
-      // 4. Draw Texts & Balances
-      final textStartX = startX + (activeTracks.length * trackSpacing) + 10;
-      
-      // Calculate total block height to vertically center it around y
-      int lineCount = 1; // Month Label
-      if (node.allocationAmount > 0) lineCount++;
-      if (activeTracks.contains(TrackType.fire)) lineCount++;
-      if (activeTracks.contains(TrackType.mojo)) lineCount++;
-      if (activeTracks.contains(TrackType.debt)) lineCount++;
-      
-      // month label is 14pt (takes ~16px height), other lines are 12pt (take ~14px height), plus spacing
-      double totalHeight = 16.0 + ((lineCount - 1) * 18.0);
-      double currentTextY = y - (totalHeight / 2);
+      // 4. Draw Texts & Balances BELOW the tracks
+      double textStartY = startY + (activeTracks.length * trackSpacing) + 20;
+      double currentTextY = textStartY;
       
       // Month Label
-      _drawText(canvas, node.monthLabel, textStartX, currentTextY, const Color(0xFF1E293B), fontSize: 14, bold: true);
-      currentTextY += 18;
+      _drawText(canvas, node.monthLabel, x, currentTextY, const Color(0xFF1E293B), fontSize: 13, bold: true, align: TextAlign.center);
+      currentTextY += 20;
       
       // Allocation if exists
       if (node.allocationAmount > 0) {
-         _drawText(canvas, '+ Income Alloc: ${node.allocationAmountStr}', textStartX, currentTextY, Colors.blue, fontSize: 11);
+         _drawText(canvas, '+ Income Alloc: ${node.allocationAmountStr}', x, currentTextY, Colors.blue, fontSize: 11, align: TextAlign.center);
          currentTextY += 18;
       }
       
       // Bucket Balances
       if (activeTracks.contains(TrackType.fire)) {
-        _drawText(canvas, 'Fire: ${node.fireBalanceStr}', textStartX, currentTextY, TrackColors.fire, fontSize: 12, bold: true);
+        _drawText(canvas, 'Fire: ${node.fireBalanceStr}', x, currentTextY, TrackColors.fire, fontSize: 12, bold: true, align: TextAlign.center);
         currentTextY += 18;
       }
       if (activeTracks.contains(TrackType.mojo)) {
-        _drawText(canvas, 'Mojo: ${node.mojoBalanceStr}', textStartX, currentTextY, TrackColors.mojo, fontSize: 12, bold: true);
+        _drawText(canvas, 'Mojo: ${node.mojoBalanceStr}', x, currentTextY, TrackColors.mojo, fontSize: 12, bold: true, align: TextAlign.center);
         currentTextY += 18;
       }
       if (activeTracks.contains(TrackType.debt)) {
-        _drawText(canvas, 'Debt: ${node.debtBalanceStr}', textStartX, currentTextY, TrackColors.debt, fontSize: 12, bold: true);
+        _drawText(canvas, 'Debt: ${node.debtBalanceStr}', x, currentTextY, TrackColors.debt, fontSize: 12, bold: true, align: TextAlign.center);
         currentTextY += 18;
       }
     }
