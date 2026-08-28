@@ -63,7 +63,7 @@ class ForecastGitGraph extends StatelessWidget {
       physics: const BouncingScrollPhysics(),
       child: SizedBox(
         width: (nodes.length * colWidth),
-        height: 280.0,
+        height: 330.0,
         child: CustomPaint(
           painter: GitGraphPainter(nodes, colWidth),
         ),
@@ -179,16 +179,7 @@ class GitGraphPainter extends CustomPainter {
           
         canvas.drawPath(path, paint);
 
-        // Transfer label at the apex
-        final midX = (prevX + x) / 2;
-        final midY = (fromY + toY) / 2;
-        
-        // Draw tiny pill background for label readability
-        final labelPaint = Paint()..color = Colors.white.withValues(alpha: 0.9);
-        final labelRect = Rect.fromCenter(center: Offset(midX, midY), width: 70, height: 18);
-        canvas.drawRRect(RRect.fromRectAndRadius(labelRect, const Radius.circular(8)), labelPaint);
-        
-        _drawText(canvas, transfer.label, midX, midY - 7, transfer.color, fontSize: 10, bold: true, align: TextAlign.center);
+        // Transfer label at the apex (REMOVED - moved to text block below for better visibility)
       }
 
       // 3. Draw Nodes (Dots)
@@ -212,8 +203,21 @@ class GitGraphPainter extends CustomPainter {
       
       // Allocation if exists
       if (node.allocationAmount > 0) {
-         _drawText(canvas, '+ Income Alloc: ${node.allocationAmountStr}', x, currentTextY, Colors.blue, fontSize: 11, align: TextAlign.center);
+         _drawText(canvas, 'Income Alloc: ${node.allocationAmountStr}', x, currentTextY, Colors.blue, fontSize: 11, align: TextAlign.center);
          currentTextY += 18;
+      }
+      
+      // Transfers (Sweeps, Deficits, etc.)
+      for (final transfer in node.transfers) {
+        String transferText = transfer.label;
+        if (transfer.from == TrackType.blow && transfer.to == TrackType.fire) {
+           transferText = 'Sweep to Fire: $transferText';
+        } else if (transfer.from == TrackType.fire && transfer.to == TrackType.blow) {
+           transferText = 'Deficit (from Fire): $transferText';
+        }
+        
+        _drawText(canvas, transferText, x, currentTextY, transfer.color, fontSize: 11, bold: true, align: TextAlign.center);
+        currentTextY += 18;
       }
       
       // Bucket Balances
