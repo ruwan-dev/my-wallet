@@ -124,7 +124,7 @@ class ForecastGitGraph extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final double screenWidth = MediaQuery.of(context).size.width;
-    final double fixedLeftWidth = 90.0;
+    final double fixedLeftWidth = 95.0;
     final double scrollableWidth = screenWidth - fixedLeftWidth;
     final double colWidth = scrollableWidth / 1.8; // show nearly 2 columns
     
@@ -218,7 +218,7 @@ class FixedLabelsPainter extends CustomPainter {
     for (final track in activeTracks) {
       final y = _getTrackY(track, activeTracks);
       final color = _getTrackColor(track);
-      _drawText(canvas, track.name.toUpperCase(), size.width - 8, y - 6, color, fontSize: 10, bold: true, align: TextAlign.right);
+      _drawText(canvas, track.name.toUpperCase(), 0, y - 6, color, fontSize: 10, bold: true, align: TextAlign.left);
     }
     
     // 2. Draw Table Rows
@@ -227,31 +227,31 @@ class FixedLabelsPainter extends CustomPainter {
 
     // Transactions
     if (activeRows.hasAllocation) {
-      _drawText(canvas, 'Alloc:', size.width - 8, currentTextY, Colors.blue, fontSize: 11, bold: true, align: TextAlign.right);
+      _drawText(canvas, 'Alloc:', 0, currentTextY, Colors.blue, fontSize: 11, bold: true, align: TextAlign.left);
       currentTextY += 18;
     }
     if (activeRows.hasSweep) {
-      _drawText(canvas, 'Sweep:', size.width - 8, currentTextY, TrackColors.blow, fontSize: 11, bold: true, align: TextAlign.right);
+      _drawText(canvas, 'Sweep:', 0, currentTextY, TrackColors.blow, fontSize: 11, bold: true, align: TextAlign.left);
       currentTextY += 18;
     }
     if (activeRows.hasDeficit) {
-      _drawText(canvas, 'Deficit:', size.width - 8, currentTextY, TrackColors.fire, fontSize: 11, bold: true, align: TextAlign.right);
+      _drawText(canvas, 'Deficit:', 0, currentTextY, TrackColors.fire, fontSize: 11, bold: true, align: TextAlign.left);
       currentTextY += 18;
     }
     if (activeRows.hasSmileRescue) {
-      _drawText(canvas, 'Smile Cover:', size.width - 8, currentTextY, TrackColors.smile, fontSize: 11, bold: true, align: TextAlign.right);
+      _drawText(canvas, 'Smile Cover:', 0, currentTextY, TrackColors.smile, fontSize: 11, bold: true, align: TextAlign.left);
       currentTextY += 18;
     }
     if (activeRows.hasSplurgeRescue) {
-      _drawText(canvas, 'Splurge Cover:', size.width - 8, currentTextY, TrackColors.splurge, fontSize: 11, bold: true, align: TextAlign.right);
+      _drawText(canvas, 'Splurge Cover:', 0, currentTextY, TrackColors.splurge, fontSize: 11, bold: true, align: TextAlign.left);
       currentTextY += 18;
     }
     if (activeRows.hasMojoCover) {
-      _drawText(canvas, 'Mojo Cover:', size.width - 8, currentTextY, TrackColors.mojo, fontSize: 11, bold: true, align: TextAlign.right);
+      _drawText(canvas, 'Mojo Cover:', 0, currentTextY, TrackColors.mojo, fontSize: 11, bold: true, align: TextAlign.left);
       currentTextY += 18;
     }
     if (activeRows.hasDebtBorrow) {
-      _drawText(canvas, 'Debt Borrow:', size.width - 8, currentTextY, TrackColors.debt, fontSize: 11, bold: true, align: TextAlign.right);
+      _drawText(canvas, 'Debt Borrow:', 0, currentTextY, TrackColors.debt, fontSize: 11, bold: true, align: TextAlign.left);
       currentTextY += 18;
     }
 
@@ -259,23 +259,23 @@ class FixedLabelsPainter extends CustomPainter {
 
     // Balances
     if (activeTracks.contains(TrackType.smile)) {
-      _drawText(canvas, 'Smile Bal:', size.width - 8, currentTextY, TrackColors.smile, fontSize: 12, bold: true, align: TextAlign.right);
+      _drawText(canvas, 'Smile Bal:', 0, currentTextY, TrackColors.smile, fontSize: 12, bold: true, align: TextAlign.left);
       currentTextY += 18;
     }
     if (activeTracks.contains(TrackType.splurge)) {
-      _drawText(canvas, 'Splurge Bal:', size.width - 8, currentTextY, TrackColors.splurge, fontSize: 12, bold: true, align: TextAlign.right);
+      _drawText(canvas, 'Splurge Bal:', 0, currentTextY, TrackColors.splurge, fontSize: 12, bold: true, align: TextAlign.left);
       currentTextY += 18;
     }
     if (activeTracks.contains(TrackType.fire)) {
-      _drawText(canvas, 'Fire Bal:', size.width - 8, currentTextY, TrackColors.fire, fontSize: 12, bold: true, align: TextAlign.right);
+      _drawText(canvas, 'Fire Bal:', 0, currentTextY, TrackColors.fire, fontSize: 12, bold: true, align: TextAlign.left);
       currentTextY += 18;
     }
     if (activeTracks.contains(TrackType.mojo)) {
-      _drawText(canvas, 'Mojo Bal:', size.width - 8, currentTextY, TrackColors.mojo, fontSize: 12, bold: true, align: TextAlign.right);
+      _drawText(canvas, 'Mojo Bal:', 0, currentTextY, TrackColors.mojo, fontSize: 12, bold: true, align: TextAlign.left);
       currentTextY += 18;
     }
     if (activeTracks.contains(TrackType.debt)) {
-      _drawText(canvas, 'Debt Bal:', size.width - 8, currentTextY, TrackColors.debt, fontSize: 12, bold: true, align: TextAlign.right);
+      _drawText(canvas, 'Debt Bal:', 0, currentTextY, TrackColors.debt, fontSize: 12, bold: true, align: TextAlign.left);
       currentTextY += 18;
     }
   }
