@@ -63,12 +63,18 @@ class FinancialForecastPage extends StatelessWidget {
                   // 1. Calculate All-Time Fire & Mojo Balances
                   double fireBalance = 0;
                   double mojoBalance = 0;
+                  double smileBalance = 0;
+                  double splurgeBalance = 0;
                   for (final tx in txState.transactions) {
                     final bucket = _getBucketForTx(tx, catState.categories);
                     if (bucket == BucketType.fire) {
                       fireBalance += tx.isIncome ? tx.amount : -tx.amount;
                     } else if (bucket == BucketType.mojo) {
                       mojoBalance += tx.isIncome ? tx.amount : -tx.amount;
+                    } else if (bucket == BucketType.smile) {
+                      smileBalance += tx.isIncome ? tx.amount : -tx.amount;
+                    } else if (bucket == BucketType.splurge) {
+                      splurgeBalance += tx.isIncome ? tx.amount : -tx.amount;
                     }
                   }
 
@@ -96,6 +102,8 @@ class FinancialForecastPage extends StatelessWidget {
                   double actualBlowAllocation = monthlyIncome * 0.60;
                   double customBlowBudget = actualBlowAllocation;
                   double fireBudget = monthlyIncome * 0.20;
+                  double smileBudget = monthlyIncome * 0.10;
+                  double splurgeBudget = monthlyIncome * 0.10;
                   if (budgetState is CustomBudgetLoaded) {
                     for (final b in budgetState.budgets) {
                       if (!b.isCompleted) {
@@ -185,7 +193,7 @@ class FinancialForecastPage extends StatelessWidget {
                         const SizedBox(height: 32),
                         Text('6-Month Bucket Projection', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: const Color(0xFF1E293B))),
                         const SizedBox(height: 16),
-                        _buildGitGraph(context, fireBalance, mojoBalance, month1Sweep, month1Deficit, fireBudget, actualBlowAllocation, customBlowBudget),
+                        _buildGitGraph(context, fireBalance, mojoBalance, smileBalance, splurgeBalance, month1Sweep, month1Deficit, fireBudget, smileBudget, splurgeBudget, actualBlowAllocation, customBlowBudget),
                       ],
                     ),
                   );
@@ -214,10 +222,25 @@ class FinancialForecastPage extends StatelessWidget {
     );
   }
 
-  Widget _buildGitGraph(BuildContext context, double startingFire, double startingMojo, double month1Sweep, double month1Deficit, double monthlyFireAllocation, double actualBlowAllocation, double customBlowBudget) {
+  Widget _buildGitGraph(
+    BuildContext context, 
+    double startingFire, 
+    double startingMojo, 
+    double startingSmile,
+    double startingSplurge,
+    double month1Sweep, 
+    double month1Deficit, 
+    double monthlyFireAllocation, 
+    double monthlySmileAllocation,
+    double monthlySplurgeAllocation,
+    double actualBlowAllocation, 
+    double customBlowBudget
+  ) {
     List<ForecastNode> graphNodes = [];
     double projectedFire = startingFire;
     double projectedMojo = startingMojo;
+    double projectedSmile = startingSmile;
+    double projectedSplurge = startingSplurge;
     double projectedDebt = 0;
     final now = DateTime.now();
 
@@ -226,15 +249,17 @@ class FinancialForecastPage extends StatelessWidget {
       
       double sweepAmount = 0;
       double allocationAmount = 0;
+      double smileAllocAmount = 0;
+      double splurgeAllocAmount = 0;
       double deficitAmount = 0;
       
       if (i == 0) {
-        // Month 1 strictly uses current actuals
         sweepAmount = month1Sweep;
-        allocationAmount = 0; // Already handled by actuals inside the month
+        allocationAmount = 0; 
+        smileAllocAmount = 0;
+        splurgeAllocAmount = 0;
         deficitAmount = month1Deficit;
       } else {
-        // Future months base their sweep on the difference between actual income and planned budget
         double futureSweep = actualBlowAllocation - customBlowBudget;
         if (futureSweep < 0) {
           deficitAmount = futureSweep.abs();
@@ -244,6 +269,8 @@ class FinancialForecastPage extends StatelessWidget {
           deficitAmount = 0;
         }
         allocationAmount = monthlyFireAllocation;
+        smileAllocAmount = monthlySmileAllocation;
+        splurgeAllocAmount = monthlySplurgeAllocation;
       }
       
       List<ForecastTransfer> transfers = [];
@@ -253,28 +280,51 @@ class FinancialForecastPage extends StatelessWidget {
       }
       
       if (deficitAmount > 0) {
-        // Pulling money FROM fire TO blow
         transfers.add(ForecastTransfer(TrackType.fire, TrackType.blow, deficitAmount, '-${AppFormatters.formatCurrency(context, deficitAmount)}', TrackColors.fire));
       }
 
-      double totalFireAddition = sweepAmount + allocationAmount - deficitAmount;
-      projectedFire += totalFireAddition;
+      projectedFire += sweepAmount + allocationAmount - deficitAmount;
+      projectedSmile += smileAllocAmount;
+      projectedSplurge += splurgeAllocAmount;
       
       if (projectedFire < 0) {
-        double fireDrain = projectedFire.abs();
-        transfers.add(ForecastTransfer(TrackType.mojo, TrackType.fire, fireDrain, 'Cover: ${AppFormatters.formatCurrency(context, fireDrain)}', TrackColors.mojo));
-        projectedMojo += projectedFire; // Drain Mojo
+        double missing = projectedFire.abs();
+        
+        if (projectedSmile > 0) {
+          double pull = projectedSmile >= missing ? missing : projectedSmile;
+          transfers.add(ForecastTransfer(TrackType.smile, TrackType.fire, pull, 'Rescue: ${AppFormatters.formatCurrency(context, pull)}', TrackColors.smile));
+          projectedSmile -= pull;
+          missing -= pull;
+        }
+        
+        if (missing > 0 && projectedSplurge > 0) {
+          double pull = projectedSplurge >= missing ? missing : projectedSplurge;
+          transfers.add(ForecastTransfer(TrackType.splurge, TrackType.fire, pull, 'Rescue: ${AppFormatters.formatCurrency(context, pull)}', TrackColors.splurge));
+          projectedSplurge -= pull;
+          missing -= pull;
+        }
+
+        if (missing > 0) {
+          transfers.add(ForecastTransfer(TrackType.mojo, TrackType.fire, missing, 'Cover: ${AppFormatters.formatCurrency(context, missing)}', TrackColors.mojo));
+          projectedMojo -= missing;
+          missing = 0;
+        }
         projectedFire = 0;
       }
+      
       if (projectedMojo < 0) {
         double mojoDrain = projectedMojo.abs();
         transfers.add(ForecastTransfer(TrackType.debt, TrackType.mojo, mojoDrain, 'Borrow: ${AppFormatters.formatCurrency(context, mojoDrain)}', TrackColors.debt));
-        projectedDebt += projectedMojo;
+        projectedDebt += mojoDrain;
         projectedMojo = 0;
       }
 
       graphNodes.add(ForecastNode(
         monthLabel: i == 0 ? 'End of ${DateFormat('MMM yyyy').format(targetDate)}' : DateFormat('MMMM yyyy').format(targetDate),
+        smileBalance: projectedSmile,
+        smileBalanceStr: AppFormatters.formatCurrency(context, projectedSmile),
+        splurgeBalance: projectedSplurge,
+        splurgeBalanceStr: AppFormatters.formatCurrency(context, projectedSplurge),
         fireBalance: projectedFire,
         fireBalanceStr: AppFormatters.formatCurrency(context, projectedFire),
         mojoBalance: projectedMojo,

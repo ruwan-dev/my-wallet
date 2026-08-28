@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 
-enum TrackType { blow, smile, fire, mojo, grow, debt }
+enum TrackType { blow, splurge, smile, fire, mojo, grow, debt }
 
 class TrackColors {
   static const Color blow = Color(0xFF38B2AC); // Pastel Cyan
+  static const Color splurge = Color(0xFFF59E0B); // Amber
   static const Color smile = Color(0xFFD946EF); // Fuchsia/Pink
   static const Color fire = Color(0xFFE05263); // Soft Red/Orange
   static const Color mojo = Color(0xFF3949AB); // Deep Blue
@@ -24,6 +25,11 @@ class ForecastTransfer {
 class ForecastNode {
   final String monthLabel;
   final double fireBalance;
+  final double smileBalance;
+  final String smileBalanceStr;
+  final double splurgeBalance;
+  final String splurgeBalanceStr;
+  final double fireBalance;
   final String fireBalanceStr;
   final double mojoBalance;
   final String mojoBalanceStr;
@@ -35,6 +41,10 @@ class ForecastNode {
 
   ForecastNode({
     required this.monthLabel,
+    required this.smileBalance,
+    required this.smileBalanceStr,
+    required this.splurgeBalance,
+    required this.splurgeBalanceStr,
     required this.fireBalance,
     required this.fireBalanceStr,
     required this.mojoBalance,
@@ -63,7 +73,7 @@ class ForecastGitGraph extends StatelessWidget {
       physics: const BouncingScrollPhysics(),
       child: SizedBox(
         width: (nodes.length * colWidth),
-        height: 330.0,
+        height: 400.0,
         child: CustomPaint(
           painter: GitGraphPainter(nodes, colWidth),
         ),
@@ -85,6 +95,8 @@ class GitGraphPainter extends CustomPainter {
     Set<TrackType> active = {TrackType.blow, TrackType.fire, TrackType.mojo}; // Base tracks always active
     
     for (final node in nodes) {
+      if (node.smileBalance != 0) active.add(TrackType.smile);
+      if (node.splurgeBalance != 0) active.add(TrackType.splurge);
       if (node.mojoBalance != 0) active.add(TrackType.mojo);
       if (node.debtBalance != 0) active.add(TrackType.debt);
       for (final t in node.transfers) {
@@ -94,7 +106,7 @@ class GitGraphPainter extends CustomPainter {
     }
     
     // Sort them in the standard order
-    final all = [TrackType.blow, TrackType.smile, TrackType.fire, TrackType.mojo, TrackType.grow, TrackType.debt];
+    final all = [TrackType.blow, TrackType.splurge, TrackType.smile, TrackType.fire, TrackType.mojo, TrackType.grow, TrackType.debt];
     return all.where((t) => active.contains(t)).toList();
   }
 
@@ -107,6 +119,7 @@ class GitGraphPainter extends CustomPainter {
   Color _getTrackColor(TrackType track) {
     switch (track) {
       case TrackType.blow: return TrackColors.blow;
+      case TrackType.splurge: return TrackColors.splurge;
       case TrackType.smile: return TrackColors.smile;
       case TrackType.fire: return TrackColors.fire;
       case TrackType.mojo: return TrackColors.mojo;
@@ -221,6 +234,14 @@ class GitGraphPainter extends CustomPainter {
       }
       
       // Bucket Balances
+      if (activeTracks.contains(TrackType.smile)) {
+        _drawText(canvas, 'Smile: ${node.smileBalanceStr}', x, currentTextY, TrackColors.smile, fontSize: 12, bold: true, align: TextAlign.center);
+        currentTextY += 18;
+      }
+      if (activeTracks.contains(TrackType.splurge)) {
+        _drawText(canvas, 'Splurge: ${node.splurgeBalanceStr}', x, currentTextY, TrackColors.splurge, fontSize: 12, bold: true, align: TextAlign.center);
+        currentTextY += 18;
+      }
       if (activeTracks.contains(TrackType.fire)) {
         _drawText(canvas, 'Fire: ${node.fireBalanceStr}', x, currentTextY, TrackColors.fire, fontSize: 12, bold: true, align: TextAlign.center);
         currentTextY += 18;
@@ -239,3 +260,4 @@ class GitGraphPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }
+
