@@ -111,7 +111,7 @@ class _MonthCard extends StatelessWidget {
     };
 
     return Container(
-      width: 270,
+      width: 230,
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
@@ -310,6 +310,11 @@ class _BucketRow extends StatelessWidget {
               ),
             ),
           ),
+
+          if (b.balance > 0)
+            Icon(Icons.arrow_forward_rounded, size: 14, color: Colors.grey.shade400)
+          else
+            const SizedBox(width: 14),
         ],
         ),
       ),
