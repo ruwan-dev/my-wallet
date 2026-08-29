@@ -194,9 +194,9 @@ class _SweepArrowsPainter extends CustomPainter {
   // Canvas geometry (all X values are in canvas coordinates):
   //   canvas left (x=0)  = bleed px INSIDE the left card's right region
   //   right card starts  = bleed + gap
-  // Left card amounts end ~14px from its right edge. We start at 18px from its right edge.
+  // Left card amounts end ~14px from its right edge. We start at 40px from its right edge (further left).
   // Right card Heal dot is ~22px from its left edge. We end at 18px from its left edge (just touching the dot).
-  double get _startX => bleed - 18;          // near right edge of left card's amounts
+  double get _startX => bleed - 40;          // deeper inside the left card
   double get _tipX   => bleed + gap + 18;    // touching the Heal dot in right card
 
   @override
