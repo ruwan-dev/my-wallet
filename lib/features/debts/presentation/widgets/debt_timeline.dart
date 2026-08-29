@@ -45,17 +45,107 @@ class _DebtTimelineState extends State<DebtTimeline> {
       maxDebt = sortedDebts.map((d) => d.currentBalance).reduce((a, b) => a > b ? a : b);
     }
 
-    return ListView.builder(
-      shrinkWrap: true, // Allow it to take only necessary space vertically
-      physics:
-          const NeverScrollableScrollPhysics(), // Since it's inside a SingleChildScrollView already
-      reverse: false, // Builds from top to bottom
-      itemCount: sortedDebts.length,
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      itemBuilder: (context, index) {
-        return _buildTimelineNode(
-            context, index, sortedDebts, maxDebt, widget.fireBalance);
-      },
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          reverse: false,
+          itemCount: sortedDebts.length,
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          itemBuilder: (context, index) {
+            return _buildTimelineNode(
+                context, index, sortedDebts, maxDebt, widget.fireBalance);
+          },
+        ),
+        const SizedBox(height: 16),
+        _buildSummaryCard(sortedDebts),
+      ],
+    );
+  }
+
+  Widget _buildSummaryCard(List<Debt> debts) {
+    final activeDebts = debts.where((d) => d.currentBalance > 0).toList();
+    if (activeDebts.isEmpty) return const SizedBox.shrink();
+
+    final totalDebt = activeDebts.fold(0.0, (sum, item) => sum + item.currentBalance);
+    
+    // Sort active debts by due date ascending, placing nulls at the end
+    final sortedByDate = List<Debt>.from(activeDebts)
+      ..sort((a, b) {
+        if (a.dueDate == null && b.dueDate == null) return 0;
+        if (a.dueDate == null) return 1;
+        if (b.dueDate == null) return -1;
+        return a.dueDate!.compareTo(b.dueDate!);
+      });
+
+    return Container(
+      margin: const EdgeInsets.only(left: 16, right: 16, bottom: 32),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Debt Summary', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87)),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Total Outstanding', style: TextStyle(fontSize: 14, color: Colors.black54)),
+              Text('Rs ${totalDebt.toStringAsFixed(0)}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFFE05263))),
+            ],
+          ),
+          if (sortedByDate.any((d) => d.dueDate != null)) ...[
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 16),
+              child: Divider(height: 1, color: Colors.black12),
+            ),
+            const Text('Timeline (Months Remaining)', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.black87)),
+            const SizedBox(height: 12),
+            ...sortedByDate.where((d) => d.dueDate != null).map((debt) {
+              final now = DateTime.now();
+              int monthsDiff = (debt.dueDate!.year - now.year) * 12 + debt.dueDate!.month - now.month;
+              // If it's earlier in the month, we might technically have a partial month. Let's just use raw difference.
+              final isOverdue = debt.dueDate!.isBefore(now);
+              
+              String monthText;
+              if (isOverdue) {
+                monthText = 'Overdue';
+              } else if (monthsDiff == 0) {
+                monthText = 'This month';
+              } else if (monthsDiff == 1) {
+                monthText = '1 month';
+              } else {
+                monthText = '$monthsDiff months';
+              }
+
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 8.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(debt.name, style: const TextStyle(fontSize: 14, color: Colors.black54)),
+                    ),
+                    Text(monthText, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: isOverdue ? Colors.red : const Color(0xFF00ACC1))),
+                  ],
+                ),
+              );
+            }),
+          ]
+        ],
+      ),
     );
   }
 
@@ -272,10 +362,20 @@ class _DebtTimelineState extends State<DebtTimeline> {
               ),
 
               // The Node / Checkpoint
-              Icon(
-                isCompleted ? Icons.check_circle : Icons.circle,
-                color: nodeColor,
-                size: 16,
+              Container(
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Theme.of(context).scaffoldBackgroundColor,
+                ),
+                child: Center(
+                  child: Icon(
+                    isCompleted ? Icons.check_circle : Icons.circle,
+                    color: nodeColor,
+                    size: 16,
+                  ),
+                ),
               ),
             ],
           ),
