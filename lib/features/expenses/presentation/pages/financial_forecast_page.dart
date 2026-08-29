@@ -342,6 +342,16 @@ class FinancialForecastPage extends StatelessWidget {
       prevSmile   = projSmile;
       prevSplurge = projSplurge;
       prevDebt    = projDebt;
+
+      // Aggressively sweep remaining Smile and Splurge into Heal for next month
+      if (projSmile > 0) {
+        projHeal += projSmile;
+        projSmile = 0;
+      }
+      if (projSplurge > 0) {
+        projHeal += projSplurge;
+        projSplurge = 0;
+      }
     }
 
     return ForecastCardList(cards: cards, fmt: fmt);

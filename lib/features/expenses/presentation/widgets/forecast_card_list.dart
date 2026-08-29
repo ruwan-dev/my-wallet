@@ -77,11 +77,76 @@ class ForecastCardList extends StatelessWidget {
         padding: const EdgeInsets.only(bottom: 30, top: 8, left: 4, right: 4),
         physics: const BouncingScrollPhysics(),
         itemCount: cards.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 12),
+        separatorBuilder: (_, index) {
+          return SizedBox(
+            width: 32,
+            child: CustomPaint(
+              painter: _SweepArrowsPainter(leftCard: cards[index], rightCard: cards[index + 1]),
+            ),
+          );
+        },
         itemBuilder: (context, i) => _MonthCard(card: cards[i], fmt: fmt, fmtShort: _fmtShort),
       ),
     );
   }
+}
+
+class _SweepArrowsPainter extends CustomPainter {
+  final ForecastMonthCard leftCard;
+  final ForecastMonthCard rightCard;
+
+  _SweepArrowsPainter({required this.leftCard, required this.rightCard});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = const Color(0xFFE05263).withValues(alpha: 0.6) // Heal red
+      ..strokeWidth = 2
+      ..style = PaintingStyle.stroke;
+
+    final rightHealIndex = rightCard.buckets.indexWhere((b) => b.bucketType == BucketType.heal);
+    if (rightHealIndex == -1) return;
+
+    // Estimated vertical offset based on UI layout
+    double getY(int index) => 134.0 + (index * 24.0);
+
+    final double destY = getY(rightHealIndex);
+
+    for (int i = 0; i < leftCard.buckets.length; i++) {
+      final b = leftCard.buckets[i];
+      if (b.balance > 0 && 
+         (b.bucketType == BucketType.dailyExpenses || 
+          b.bucketType == BucketType.smile || 
+          b.bucketType == BucketType.splurge || 
+          b.bucketType == BucketType.heal)) {
+        
+        final startY = getY(i);
+        
+        final path = Path();
+        path.moveTo(0, startY);
+        path.cubicTo(
+          size.width * 0.6, startY, 
+          size.width * 0.4, destY,  
+          size.width, destY         
+        );
+        
+        canvas.drawPath(path, paint);
+
+        // Draw arrow head at destination
+        final arrowSize = 4.0;
+        final arrowPath = Path();
+        arrowPath.moveTo(size.width, destY);
+        arrowPath.lineTo(size.width - arrowSize - 2, destY - arrowSize);
+        arrowPath.lineTo(size.width - arrowSize - 2, destY + arrowSize);
+        arrowPath.close();
+
+        canvas.drawPath(arrowPath, Paint()..color = paint.color..style = PaintingStyle.fill);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _SweepArrowsPainter oldDelegate) => true;
 }
 
 /// Abbreviates large numbers: 38552 → "38.6k", 1200000 → "1.2M"
