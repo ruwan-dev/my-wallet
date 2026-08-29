@@ -139,64 +139,7 @@ class FinancialForecastPage extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        // Summary Card
-                        Container(
-                          padding: const EdgeInsets.all(20),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(24),
-                            image: const DecorationImage(
-                              image: AssetImage('assets/images/forecast_bg.png'),
-                              fit: BoxFit.cover,
-                            ),
-                            boxShadow: [
-                              BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 24, offset: const Offset(0, 8)),
-                            ],
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  const Icon(Icons.work_outline, color: Color(0xFF1E293B), size: 20),
-                                  const SizedBox(width: 8),
-                                  Text('Current Blow (Daily) Status', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
-                                ],
-                              ),
-                              const SizedBox(height: 16),
-                              _buildBreakdownRow(context, 'Actual 60% Allocation', actualBlowAllocation, const Color(0xFF1E293B)),
-                              const SizedBox(height: 8),
-                              _buildBreakdownRow(context, 'Custom Budget Limit', customBlowBudget, const Color(0xFF1E293B)),
-                              if (budgetConfigDeficit > 0) ...[
-                                const SizedBox(height: 8),
-                                _buildBreakdownRow(context, 'Budget Config Warning', budgetConfigDeficit, Colors.orange),
-                              ],
-                              const SizedBox(height: 8),
-                              _buildBreakdownRow(context, 'Spent So Far', currentBlowSpent, const Color(0xFFB91C1C)),
-                              const SizedBox(height: 12),
-                              const Divider(endIndent: 120),
-                              const SizedBox(height: 12),
-                              if (month1Sweep > 0)
-                                Text(
-                                  'Available to Sweep: ${AppFormatters.formatCurrency(context, month1Sweep)}',
-                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF166534)),
-                                )
-                              else if (month1Deficit > 0)
-                                Text(
-                                  'Actual Overspend: -${AppFormatters.formatCurrency(context, month1Deficit)}',
-                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFFB91C1C)),
-                                )
-                              else
-                                Text(
-                                  'Available to Sweep: ${AppFormatters.formatCurrency(context, 0)}',
-                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF166534)),
-                                ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 32),
-                        Text('6-Month Bucket Projection', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: const Color(0xFF1E293B))),
-                        const SizedBox(height: 16),
+                        // Forecast Cards only
                         _buildForecastCards(context, fireBalance, mojoBalance, smileBalance, splurgeBalance, month1Sweep, month1Deficit, fireBudget, smileBudget, splurgeBudget, actualBlowAllocation, customBlowBudget),
                       ],
                     ),
@@ -206,22 +149,6 @@ class FinancialForecastPage extends StatelessWidget {
             },
           );
         },
-      ),
-    );
-  }
-
-  Widget _buildBreakdownRow(BuildContext context, String label, double amount, Color amountColor) {
-    return SizedBox(
-      width: 310,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: const TextStyle(color: Color(0xFF64748B), fontWeight: FontWeight.w500)),
-          Text(
-            AppFormatters.formatCurrency(context, amount),
-            style: TextStyle(fontWeight: FontWeight.bold, color: amountColor),
-          ),
-        ],
       ),
     );
   }
