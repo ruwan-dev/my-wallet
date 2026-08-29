@@ -164,11 +164,30 @@ class _SweepArrowsPainter extends CustomPainter {
     this.totalW = 80.0,
   });
 
-  // ── Layout constants that mirror the card's Flutter layout ──
-  static const double _headerH = 116.0;
-  static const double _rowH    = 28.0;
+  // ── Precise layout constants derived from the card's Flutter padding/font values ──
+  //  ListView top padding: 8
+  //  Header container padding(v:12): 12 + title(~16) + gap(6) + desc(~24) + gap(8) + badge(~21) + 12 = 99
+  //  Bucket section padding(v:8, top only): +8
+  //  Total Y to first bucket row top: 8 + 99 + 8 = 115
+  //  Each BucketRow padding(v:5) + content max(dot8, text14) = 24px per row
+  static const double _listTopPad  = 8.0;
+  static const double _headerH     = 99.0;
+  static const double _bucketTopPad = 8.0;
+  static const double _rowH        = 24.0;
 
-  double _rowCY(int index) => _headerH + index * _rowH + _rowH / 2;
+  double _rowCY(int index) {
+    final sectionTop = _listTopPad + _headerH + _bucketTopPad;
+    return sectionTop + index * _rowH + _rowH / 2;
+  }
+
+  // The dot in each BucketRow is 14px from the card's left edge:
+  //   card horizontal padding 14  + row horizontal padding 4 → dot centre = 14+4+4 = 22px from card edge
+  // Start X:  left edge of canvas (0) = bleed px inside left card
+  //           dot is at (bleed - 22) from canvas left
+  // End X:    right card left edge = bleed + gap  from canvas left
+  //           dot centre at right card = bleed + gap + 22
+  double get _startX => bleed - 22;        // origin dot on left card
+  double get _tipX   => bleed + (totalW - bleed * 2) + 22;  // heal dot on right card
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -198,12 +217,11 @@ class _SweepArrowsPainter extends CustomPainter {
 
   void _drawAnimatedArrow(
       Canvas canvas, Size size, double startY, double destY, Color color) {
-    // x0 = inside left card (starts at bleed px from left = 0 of canvas)
-    final x0 = 4.0;              // well inside left card
-    final x3 = size.width - 4;  // well inside right card
-
-    // Control points: curve bends in the middle (the gap between cards)
+    final x0 = _startX;
+    final x3 = _tipX;
+    // Bezier bends through the gap in the middle of the canvas
     final mid = size.width / 2;
+
     final fullPath = Path()
       ..moveTo(x0, startY)
       ..cubicTo(mid, startY, mid, destY, x3, destY);
@@ -222,8 +240,13 @@ class _SweepArrowsPainter extends CustomPainter {
 
     canvas.drawPath(partial, linePaint);
 
-    // Filled arrowhead at destination once complete
+    // Show dot and arrowhead when fully drawn
     if (progress >= 0.97) {
+      // Origin dot on left card (same colour as bucket dot)
+      canvas.drawCircle(Offset(x0, startY), 3.5,
+          Paint()..color = color..style = PaintingStyle.fill);
+
+      // Arrowhead pointing right at the Heal dot on the right card
       const double as = 5.0;
       final tip = Offset(x3, destY);
       final head = Path()
@@ -232,10 +255,6 @@ class _SweepArrowsPainter extends CustomPainter {
         ..lineTo(tip.dx - as - 2, tip.dy + as * 0.65)
         ..close();
       canvas.drawPath(head, Paint()..color = color..style = PaintingStyle.fill);
-
-      // Small start dot inside left card
-      canvas.drawCircle(Offset(x0, startY), 3.0,
-          Paint()..color = color..style = PaintingStyle.fill);
     }
   }
 
