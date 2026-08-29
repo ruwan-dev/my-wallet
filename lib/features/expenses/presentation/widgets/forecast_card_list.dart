@@ -81,11 +81,18 @@ class _ForecastCardListState extends State<ForecastCardList>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1200),
+      duration: const Duration(milliseconds: 1400),
     );
     _progress = CurvedAnimation(parent: _controller, curve: Curves.easeInOut);
-    // Small delay so cards paint first, then lines animate in
-    Future.delayed(const Duration(milliseconds: 300), () {
+    // Draw arrows, pause 800ms, reset and repeat forever
+    _controller.addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        Future.delayed(const Duration(milliseconds: 800), () {
+          if (mounted) _controller.forward(from: 0);
+        });
+      }
+    });
+    Future.delayed(const Duration(milliseconds: 400), () {
       if (mounted) _controller.forward();
     });
   }
