@@ -68636,64 +68636,58 @@ return r}return s.x},
 E(a){var s=null,r=A.Q(a).ok.w
 r=A.T("Bucket Forecast",s,s,s,s,s,r==null?s:r.dq(B.aQ,B.v),s,s,s)
 return A.ef(A.f_(s,B.p,s,!0,0,s,A.cB(s,s,s,B.q1,s,s,new A.avr(a),s,s,s,s),s,r),B.p,A.dP(s,s,new A.avs(this),t.kq,t.Bb),s,!1,!1,s,s,s,s)},
-aof(c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0){var s,r,q,p,o,n,m,l,k,j,i,h,g,f,e,d,c,b,a,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,c2,c3,c4,c5="MMM yyyy",c6=new A.bo(Date.now(),0,!1),c7=A.b([],t.N3)
-for(s=t.cj,r=d9>0,q=t.s,p=d8-d9,o=d2,n=d1,m=d0,l=c9,k=o,j=n,i=m,h=l,g=0,f=0,e=0;e<6;++e,f=g,o=k,k=c4,n=j,j=c3,m=i,l=h,h=c2){d=A.ck(A.b_(c6),A.b3(c6)+e,1,0,0,0,0)
-c=e===0
-if(c){b=d4
-a=d3
-a0=0
-a1=0
-a2=0}else{if(p>=0){a=p
-b=0}else{b=Math.abs(p)
-a=0}a2=d7
-a1=d6
-a0=d5}a3=A.b([],q)
-for(a4=e0.length,a5=0,a6=0;a6<e0.length;e0.length===a4||(0,A.N)(e0),++a6){a7=e0[a6]
-if(a7.gh2()!=null){if(c){a8=a7.gh2()
-a8.toString
-a9=A.ck(A.b_(c6),A.b3(c6)+1,1,0,0,0,0)
-b0=a8.a
-b1=a9.a
-if(b0>=b1)b2=b0===b1&&a8.b<a9.b
-else b2=!0}else{a8=a7.gh2()
-a8.toString
-if(A.b_(a8)===A.b_(d)){a8=a7.gh2()
-a8.toString
-b2=A.b3(a8)===A.b3(d)}else b2=!1}if(b2){a5+=a7.geK()
-a3.push(a7.gaT(a7))}}}h+=a+a0-b-a5
-j+=a1
-k+=a2
-if(h<0){b3=Math.abs(h)
-b4=j>0
-if(b4){b5=j>=b3?b3:j
-j-=b5
-b3-=b5}b6=b3>0&&k>0
-if(b6){b5=k>=b3?b3:k
-k-=b5
-b3-=b5}b7=b3>0
-if(b7)i-=b3
-h=0}else{b4=!1
-b6=!1
-b7=!1}if(i<0){b8=Math.abs(i)
-g+=b8
-i=0}else b8=0
-if(b8>0||b7){b9=b7?"Emergency fund used!":"Going into debt!"
-c0=B.W8}else if(b4||b6){c0=B.wV
-b9="Savings helping cover costs"}else if(b>0){c0=B.wV
-b9="Slight overspend covered"}else{b9=a>0?"On track \xb7 saving surplus":"On track"
-c0=B.W7}if(c)c1=a>0?a:-b
-else c1=r?d9:d8
-a4=A.b([new A.l6("Blow",B.bD,B.I,c1)],s)
-if(h!==0||l!==0)a4.push(new A.l6("Heal",B.cc,B.iZ,h))
-if(j!==0||n!==0)a4.push(new A.l6("Smile",B.df,B.vb,j))
-if(k!==0||o!==0)a4.push(new A.l6("Splurge",B.cr,B.o9,k))
-if(i!==0||m!==0)a4.push(new A.l6("Mojo",B.eF,B.uM,i))
-if(g!==0||f!==0)a4.push(new A.l6("Debt",B.bh,B.oa,g))
-c7.push(new A.a0f(c?"End of "+A.m5(c5,null).ht(d):A.m5(c5,null).ht(d),c,c0,b9,a4,a,b,b4,b6,b7,b8,a5,a3))
-if(j>0){c2=h+j
-c3=0}else{c3=j
-c2=h}if(k>0){c2+=k
-c4=0}else c4=k}return new A.Lq(c7,new A.avk(c8),null)}}
+aof(c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5){var s,r,q,p,o,n,m,l,k,j,i,h,g,f,e,d,c,b,a,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0="MMM yyyy",c1=new A.bo(Date.now(),0,!1),c2=A.b([],t.N3)
+for(s=t.cj,r=t.s,q=d3-d4,p=c7,o=c6,n=c5,m=c4,l=p,k=o,j=n,i=m,h=0,g=0,f=0;f<6;++f,g=h,p=l,l=b9,o=k,k=b8,n=j,m=i,i=b7){e=A.ck(A.b_(c1),A.b3(c1)+f,1,0,0,0,0)
+d=f===0
+if(d){c=c9
+b=c8}else{if(q>=0){b=q
+c=0}else{c=Math.abs(q)
+b=0}i+=d0
+k+=d1
+l+=d2}a=A.b([],r)
+for(a0=d5.length,a1=0,a2=0;a2<d5.length;d5.length===a0||(0,A.N)(d5),++a2){a3=d5[a2]
+if(a3.gh2()!=null){if(d){a4=a3.gh2()
+a4.toString
+a5=A.ck(A.b_(c1),A.b3(c1)+1,1,0,0,0,0)
+a6=a4.a
+a7=a5.a
+if(a6>=a7)a8=a6===a7&&a4.b<a5.b
+else a8=!0}else{a4=a3.gh2()
+a4.toString
+if(A.b_(a4)===A.b_(e)){a4=a3.gh2()
+a4.toString
+a8=A.b3(a4)===A.b3(e)}else a8=!1}if(a8){a1+=a3.geK()
+a.push(a3.gaT(a3))}}}i=i-a1-c
+if(i<0){a9=Math.abs(i)
+b0=k>0
+if(b0){b1=k>=a9?a9:k
+k-=b1
+a9-=b1}b2=a9>0&&l>0
+if(b2){b1=l>=a9?a9:l
+l-=b1
+a9-=b1}b3=a9>0
+if(b3)j-=a9
+i=0}else{b0=!1
+b2=!1
+b3=!1}if(j<0){b4=Math.abs(j)
+h+=b4
+j=0}else b4=0
+if(b4>0||b3){b5=b3?"Emergency fund used!":"Going into debt!"
+b6=B.W8}else if(b0||b2){b6=B.wV
+b5="Savings helping cover costs"}else if(c>0){b6=B.wV
+b5="Slight overspend covered"}else{b5=b>0?"On track \xb7 saving surplus":"On track"
+b6=B.W7}a0=A.b([new A.l6("Blow",B.bD,B.I,b)],s)
+if(i!==0||m!==0)a0.push(new A.l6("Heal",B.cc,B.iZ,i))
+if(k!==0||o!==0)a0.push(new A.l6("Smile",B.df,B.vb,k))
+if(l!==0||p!==0)a0.push(new A.l6("Splurge",B.cr,B.o9,l))
+if(j!==0||n!==0)a0.push(new A.l6("Mojo",B.eF,B.uM,j))
+if(h!==0||g!==0)a0.push(new A.l6("Debt",B.bh,B.oa,h))
+c2.push(new A.a0f(d?"End of "+A.m5(c0,null).ht(e):A.m5(c0,null).ht(e),d,b6,b5,a0,b,c,b0,b2,b3,b4,a1,a))
+b7=i+b
+if(k>0){b7+=k
+b8=0}else b8=k
+if(l>0){b7+=l
+b9=0}else b9=l}return new A.Lq(c2,new A.avk(c3),null)}}
 A.avl.prototype={
 $1(a){return a.a===this.a.f},
 $S:24}
