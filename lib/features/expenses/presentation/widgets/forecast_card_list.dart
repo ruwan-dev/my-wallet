@@ -116,31 +116,43 @@ class _ForecastCardListState extends State<ForecastCardList>
             padding: const EdgeInsets.only(bottom: 30, top: 8, left: 4, right: 4),
             physics: const BouncingScrollPhysics(),
             itemCount: widget.cards.length,
-            separatorBuilder: (_, index) {
-              // Bleed 120px into each card — arrowhead ends well inside the right tile
+            separatorBuilder: (_, __) => const SizedBox(width: 12),
+            itemBuilder: (context, i) {
+              final cardWidget = _MonthCard(
+                  card: widget.cards[i], fmt: widget.fmt, fmtShort: _fmtShort);
+              
+              if (i == 0) return cardWidget;
+
               const double gap = 12;
               const double bleed = 120.0;
-              const double canvasW = gap + bleed * 2;  // 252px
-              return SizedBox(
-                width: gap,
-                child: OverflowBox(
-                  maxWidth: canvasW,
-                  alignment: Alignment.center,
-                  child: CustomPaint(
-                    size: const Size(canvasW, 420),
-                    painter: _SweepArrowsPainter(
-                      leftCard:  widget.cards[index],
-                      rightCard: widget.cards[index + 1],
-                      progress:  _progress.value,
-                      bleed:     bleed,
-                      gap:       gap,
+              const double canvasW = gap + bleed * 2;
+
+              return Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  cardWidget,
+                  // Draw the lines overflowing to the left from this card
+                  // This ensures the lines paint ON TOP of both the left and right cards
+                  Positioned(
+                    left: -gap - bleed,
+                    top: 0,
+                    bottom: 0,
+                    width: canvasW,
+                    child: IgnorePointer(
+                      child: CustomPaint(
+                        painter: _SweepArrowsPainter(
+                          leftCard: widget.cards[i - 1],
+                          rightCard: widget.cards[i],
+                          progress: _progress.value,
+                          bleed: bleed,
+                          gap: gap,
+                        ),
+                      ),
                     ),
                   ),
-                ),
+                ],
               );
             },
-            itemBuilder: (context, i) =>
-                _MonthCard(card: widget.cards[i], fmt: widget.fmt, fmtShort: _fmtShort),
           );
         },
       ),
