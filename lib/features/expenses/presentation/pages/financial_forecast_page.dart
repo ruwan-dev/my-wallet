@@ -199,27 +199,28 @@ class FinancialForecastPage extends StatelessWidget {
     for (int i = 0; i < 6; i++) {
       final targetDate = DateTime(now.year, now.month + i, 1);
 
-      double sweep   = 0;
-      double deficit = 0;
-      double healAlloc   = 0;
-      double smileAlloc  = 0;
-      double splurgeAlloc = 0;
-
+      double currentBlowBalance = 0;
+      double currentDeficit = 0;
+      
+      // 1. Add this month's allocations (except for month 0 where balances are already current)
       if (i == 0) {
-        sweep   = month1Sweep;
-        deficit = month1Deficit;
+        currentBlowBalance = month1Sweep;
+        currentDeficit     = month1Deficit;
+        // starting balances are already in projHeal, projSmile, etc.
       } else {
         final futureSweep = actualBlowAllocation - customBlowBudget;
         if (futureSweep >= 0) {
-          sweep = futureSweep;
+          currentBlowBalance = futureSweep;
         } else {
-          deficit = futureSweep.abs();
+          currentDeficit = futureSweep.abs();
+          currentBlowBalance = 0; // nothing left in blow
         }
-        healAlloc    = monthlyHealAllocation;
-        smileAlloc   = monthlySmileAllocation;
-        splurgeAlloc = monthlySplurgeAllocation;
+        projHeal    += monthlyHealAllocation;
+        projSmile   += monthlySmileAllocation;
+        projSplurge += monthlySplurgeAllocation;
       }
 
+      // 2. Pay debts due this month
       double currentMonthDebtPaid = 0;
       List<String> currentMonthPaidNames = [];
       
@@ -244,10 +245,10 @@ class FinancialForecastPage extends StatelessWidget {
         }
       }
 
-      projHeal    += sweep + healAlloc - deficit - currentMonthDebtPaid;
-      projSmile   += smileAlloc;
-      projSplurge += splurgeAlloc;
+      projHeal -= currentMonthDebtPaid;
+      projHeal -= currentDeficit;
 
+      // 3. Cover negative Heal with other buckets
       bool usedSmile   = false;
       bool usedSplurge = false;
       bool usedMojo    = false;
@@ -280,7 +281,7 @@ class FinancialForecastPage extends StatelessWidget {
         projMojo  = 0;
       }
 
-      // Health status
+      // 4. Record the card state BEFORE the sweep happens
       final ForecastHealth health;
       final String healthMsg;
       if (debtAdded > 0 || usedMojo) {
@@ -289,25 +290,16 @@ class FinancialForecastPage extends StatelessWidget {
       } else if (usedSmile || usedSplurge) {
         health    = ForecastHealth.warning;
         healthMsg = 'Savings helping cover costs';
-      } else if (deficit > 0) {
+      } else if (currentDeficit > 0) {
         health    = ForecastHealth.warning;
         healthMsg = 'Slight overspend covered';
       } else {
         health    = ForecastHealth.safe;
-        healthMsg = sweep > 0 ? 'On track · saving surplus' : 'On track';
+        healthMsg = currentBlowBalance > 0 ? 'On track · saving surplus' : 'On track';
       }
 
-      // Calculate Blow balance for the card
-      double blowBalance = 0;
-      if (i == 0) {
-        blowBalance = sweep > 0 ? sweep : -deficit;
-      } else {
-        blowBalance = customBlowBudget > 0 ? customBlowBudget : actualBlowAllocation;
-      }
-
-      // Bucket rows (only show non-zero buckets or if it's Blow)
       final buckets = <BucketSnapshot>[
-        BucketSnapshot(name: 'Blow', bucketType: BucketType.dailyExpenses, color: const Color(0xFF38B2AC), icon: Icons.shopping_cart, balance: blowBalance, change: 0),
+        BucketSnapshot(name: 'Blow', bucketType: BucketType.dailyExpenses, color: const Color(0xFF38B2AC), icon: Icons.shopping_cart, balance: currentBlowBalance, change: 0),
         if (projHeal != 0 || prevHeal != 0)
           BucketSnapshot(name: 'Heal', bucketType: BucketType.heal, color: const Color(0xFFE05263), icon: Icons.medical_services, balance: projHeal, change: projHeal - prevHeal),
         if (projSmile != 0 || prevSmile != 0)
@@ -317,7 +309,7 @@ class FinancialForecastPage extends StatelessWidget {
         if (projMojo != 0 || prevMojo != 0)
           BucketSnapshot(name: 'Mojo', bucketType: BucketType.mojo, color: const Color(0xFF3949AB), icon: Icons.shield, balance: projMojo, change: projMojo - prevMojo),
         if (projDebt != 0 || prevDebt != 0)
-          BucketSnapshot(name: 'Debt', bucketType: BucketType.none, color: const Color(0xFFB91C1C), icon: Icons.credit_card, balance: projDebt, change: projDebt - prevDebt), // Or whatever bucketType debt should have
+          BucketSnapshot(name: 'Debt', bucketType: BucketType.none, color: const Color(0xFFB91C1C), icon: Icons.credit_card, balance: projDebt, change: projDebt - prevDebt),
       ];
 
       cards.add(ForecastMonthCard(
@@ -326,8 +318,8 @@ class FinancialForecastPage extends StatelessWidget {
         health:        health,
         healthMessage: healthMsg,
         buckets:       buckets,
-        sweepAmount:   sweep,
-        deficitAmount: deficit,
+        sweepAmount:   currentBlowBalance, // Blow sweeps to Heal
+        deficitAmount: currentDeficit,
         usedSmile:     usedSmile,
         usedSplurge:   usedSplurge,
         usedMojo:      usedMojo,
@@ -336,14 +328,15 @@ class FinancialForecastPage extends StatelessWidget {
         paidDebtNames:  currentMonthPaidNames,
       ));
 
-      // Update previous balances for next iteration
+      // Update previous balances for next iteration display
       prevHeal    = projHeal;
       prevMojo    = projMojo;
       prevSmile   = projSmile;
       prevSplurge = projSplurge;
       prevDebt    = projDebt;
 
-      // Aggressively sweep remaining Smile and Splurge into Heal for next month
+      // 5. Sweep EVERYTHING leftover to Heal for NEXT month
+      projHeal += currentBlowBalance;
       if (projSmile > 0) {
         projHeal += projSmile;
         projSmile = 0;
