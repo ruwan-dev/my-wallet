@@ -49,7 +49,7 @@ class _DebtTimelineState extends State<DebtTimeline> {
       shrinkWrap: true, // Allow it to take only necessary space vertically
       physics:
           const NeverScrollableScrollPhysics(), // Since it's inside a SingleChildScrollView already
-      reverse: true, // Builds from bottom to top
+      reverse: false, // Builds from top to bottom
       itemCount: sortedDebts.length,
       padding: const EdgeInsets.symmetric(vertical: 8),
       itemBuilder: (context, index) {
@@ -81,11 +81,13 @@ class _DebtTimelineState extends State<DebtTimeline> {
     }
 
     Color colorMe = calculateNodeColor(debt);
-    Color colorAbove = index < sortedDebts.length - 1
-        ? calculateNodeColor(sortedDebts[index + 1])
-        : colorMe;
-    Color colorBelow = index > 0
+    // Since we build top-to-bottom, the node ABOVE us is index - 1
+    Color colorAbove = index > 0
         ? calculateNodeColor(sortedDebts[index - 1])
+        : colorMe;
+    // The node BELOW us is index + 1
+    Color colorBelow = index < sortedDebts.length - 1
+        ? calculateNodeColor(sortedDebts[index + 1])
         : colorMe;
 
     double ratio = maxDebt > 0 ? (debt.currentBalance / maxDebt).clamp(0.0, 1.0) : 0.0;
