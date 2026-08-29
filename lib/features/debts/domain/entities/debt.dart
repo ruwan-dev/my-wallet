@@ -7,6 +7,7 @@ class Debt extends Equatable {
   final double totalAmount;
   final double currentBalance;
   final DateTime createdAt;
+  final DateTime? dueDate;
 
   const Debt({
     required this.id,
@@ -15,6 +16,7 @@ class Debt extends Equatable {
     required this.totalAmount,
     required this.currentBalance,
     required this.createdAt,
+    this.dueDate,
   });
 
   @override
@@ -25,5 +27,6 @@ class Debt extends Equatable {
         totalAmount,
         currentBalance,
         createdAt,
+        dueDate,
       ];
 }

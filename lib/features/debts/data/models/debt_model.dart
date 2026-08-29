@@ -30,6 +30,10 @@ class DebtModel extends Debt {
   @override
   final DateTime createdAt;
 
+  @HiveField(7)
+  @override
+  final DateTime? dueDate;
+
   const DebtModel({
     required this.id,
     required this.userId,
@@ -37,6 +41,7 @@ class DebtModel extends Debt {
     required this.totalAmount,
     required this.currentBalance,
     required this.createdAt,
+    this.dueDate,
   }) : super(
           id: id,
           userId: userId,
@@ -44,6 +49,7 @@ class DebtModel extends Debt {
           totalAmount: totalAmount,
           currentBalance: currentBalance,
           createdAt: createdAt,
+          dueDate: dueDate,
         );
 
   factory DebtModel.fromEntity(Debt entity) {
@@ -54,6 +60,7 @@ class DebtModel extends Debt {
       totalAmount: entity.totalAmount,
       currentBalance: entity.currentBalance,
       createdAt: entity.createdAt,
+      dueDate: entity.dueDate,
     );
   }
 
@@ -67,6 +74,9 @@ class DebtModel extends Debt {
       createdAt: map['createdAt'] != null
           ? (map['createdAt'] as Timestamp).toDate()
           : DateTime.now(),
+      dueDate: map['dueDate'] != null
+          ? (map['dueDate'] as Timestamp).toDate()
+          : null,
     );
   }
 
@@ -77,6 +87,7 @@ class DebtModel extends Debt {
       'totalAmount': totalAmount,
       'currentBalance': currentBalance,
       'createdAt': Timestamp.fromDate(createdAt),
+      if (dueDate != null) 'dueDate': Timestamp.fromDate(dueDate!),
     };
   }
 
@@ -88,6 +99,7 @@ class DebtModel extends Debt {
     double? totalAmount,
     double? currentBalance,
     DateTime? createdAt,
+    DateTime? dueDate,
   }) {
     return DebtModel(
       id: id ?? this.id,
@@ -96,6 +108,7 @@ class DebtModel extends Debt {
       totalAmount: totalAmount ?? this.totalAmount,
       currentBalance: currentBalance ?? this.currentBalance,
       createdAt: createdAt ?? this.createdAt,
+      dueDate: dueDate ?? this.dueDate,
     );
   }
 }

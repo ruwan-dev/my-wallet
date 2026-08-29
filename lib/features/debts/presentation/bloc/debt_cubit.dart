@@ -43,6 +43,7 @@ class DebtCubit extends Cubit<DebtState> {
     required String name,
     required double totalAmount,
     required double currentBalance,
+    DateTime? dueDate,
   }) async {
     if (_currentUserId.isEmpty) return;
 
@@ -53,6 +54,7 @@ class DebtCubit extends Cubit<DebtState> {
       totalAmount: totalAmount,
       currentBalance: currentBalance,
       createdAt: DateTime.now(),
+      dueDate: dueDate,
     );
 
     await _debtRepository.addDebt(newDebt);
@@ -63,6 +65,7 @@ class DebtCubit extends Cubit<DebtState> {
     required String name,
     required double totalAmount,
     required double currentBalance,
+    DateTime? dueDate,
   }) async {
     if (state is! DebtLoaded || _currentUserId.isEmpty) return;
     final debts = (state as DebtLoaded).debts;
@@ -78,6 +81,7 @@ class DebtCubit extends Cubit<DebtState> {
       totalAmount: totalAmount,
       currentBalance: currentBalance,
       createdAt: debt.createdAt,
+      dueDate: dueDate ?? debt.dueDate,
     );
 
     try {

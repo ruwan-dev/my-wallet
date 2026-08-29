@@ -25,6 +25,7 @@ class _InlineDebtEditorState extends State<InlineDebtEditor> {
   late final TextEditingController _nameCtrl;
   late final TextEditingController _totalCtrl;
   late final TextEditingController _balanceCtrl;
+  DateTime? _selectedDueDate;
 
   @override
   void initState() {
@@ -32,6 +33,7 @@ class _InlineDebtEditorState extends State<InlineDebtEditor> {
     _nameCtrl = TextEditingController(text: widget.initialDebt?.name ?? '');
     _totalCtrl = TextEditingController(text: widget.initialDebt?.totalAmount.toString() ?? '');
     _balanceCtrl = TextEditingController(text: widget.initialDebt?.currentBalance.toString() ?? '');
+    _selectedDueDate = widget.initialDebt?.dueDate;
   }
 
   @override
@@ -73,16 +75,44 @@ class _InlineDebtEditorState extends State<InlineDebtEditor> {
             name: name,
             totalAmount: total > 0 ? total : balance,
             currentBalance: balance,
+            dueDate: _selectedDueDate,
           );
     } else {
       context.read<DebtCubit>().addDebt(
             name: name,
             totalAmount: total > 0 ? total : balance,
             currentBalance: balance,
+            dueDate: _selectedDueDate,
           );
     }
 
     widget.onSave();
+  }
+
+  Future<void> _pickDueDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDueDate ?? DateTime.now(),
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 365 * 30)),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: Color(0xFF00ACC1),
+              onPrimary: Colors.white,
+              onSurface: Colors.black87,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null) {
+      setState(() {
+        _selectedDueDate = picked;
+      });
+    }
   }
 
   @override
@@ -133,6 +163,33 @@ class _InlineDebtEditorState extends State<InlineDebtEditor> {
               const TextInputType.numberWithOptions(decimal: true),
               TextCapitalization.none,
               formatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}'))],
+            ),
+            const SizedBox(height: 12),
+            GestureDetector(
+              onTap: _pickDueDate,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.black.withOpacity(0.1)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.calendar_today, size: 20, color: Colors.black54),
+                    const SizedBox(width: 12),
+                    Text(
+                      _selectedDueDate != null
+                          ? "${_selectedDueDate!.day}/${_selectedDueDate!.month}/${_selectedDueDate!.year}"
+                          : 'Due Date (Optional)',
+                      style: TextStyle(
+                        color: _selectedDueDate != null ? Colors.black87 : Colors.black54,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
             const SizedBox(height: 24),
             Row(
