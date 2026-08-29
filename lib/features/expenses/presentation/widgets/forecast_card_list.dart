@@ -101,7 +101,7 @@ class _MonthCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (healthColor, healthIcon, healthBg) = switch (card.health) {
-      ForecastHealth.safe    => (const Color(0xFF16A34A), Icons.check_circle_rounded,    const Color(0xFFDCFCE7)),
+      ForecastHealth.safe    => (const Color(0xFF38B2AC), Icons.check_circle_rounded,    const Color(0xFF38B2AC).withValues(alpha: 0.15)),
       ForecastHealth.warning => (const Color(0xFFD97706), Icons.warning_amber_rounded,   const Color(0xFFFEF3C7)),
       ForecastHealth.danger  => (const Color(0xFFDC2626), Icons.error_rounded,           const Color(0xFFFFE4E4)),
     };
@@ -219,17 +219,17 @@ class _MonthCard extends StatelessWidget {
                   const Divider(height: 1),
                   const SizedBox(height: 6),
                   if (card.sweepAmount > 0)
-                    _EventRow('💸 Swept to Fire', fmt(card.sweepAmount), const Color(0xFF38B2AC)),
+                    _EventRow('Swept to Fire', fmt(card.sweepAmount), const Color(0xFF38B2AC)),
                   if (card.deficitAmount > 0)
-                    _EventRow('⚡ Blow Overspent', '-${fmt(card.deficitAmount)}', const Color(0xFFE05263)),
+                    _EventRow('Blow Overspent', '-${fmt(card.deficitAmount)}', const Color(0xFFE05263)),
                   if (card.usedSmile)
-                    _EventRow('😊 Smile helped Fire', '', const Color(0xFFD946EF)),
+                    _EventRow('Smile helped Fire', '', const Color(0xFFD946EF)),
                   if (card.usedSplurge)
-                    _EventRow('🎉 Splurge helped Fire', '', const Color(0xFFF59E0B)),
+                    _EventRow('Splurge helped Fire', '', const Color(0xFFF59E0B)),
                   if (card.usedMojo)
-                    _EventRow('🛡️ Mojo covered deficit', '', const Color(0xFF3949AB)),
+                    _EventRow('Mojo covered deficit', '', const Color(0xFF3949AB)),
                   if (card.debtAdded > 0)
-                    _EventRow('⚠️ Debt added', fmt(card.debtAdded), const Color(0xFFB91C1C)),
+                    _EventRow('Debt added', fmt(card.debtAdded), const Color(0xFFB91C1C)),
                 ],
               ),
             ),
