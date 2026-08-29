@@ -60,39 +60,39 @@ class FinancialForecastPage extends StatelessWidget {
 
                   final now = DateTime.now();
                   
-                  // 1. Calculate All-Time Fire & Mojo Balances
+                  // 1. Calculate All-Time Fire & Mojo Balances (Vaults)
                   double fireBalance = 0;
                   double mojoBalance = 0;
-                  double smileBalance = 0;
-                  double splurgeBalance = 0;
+                  // We will calculate Smile and Splurge based on the current month's allocation
+                  // since they are short-term spending wallets.
+
                   for (final tx in txState.transactions) {
                     final bucket = _getBucketForTx(tx, catState.categories);
                     if (bucket == BucketType.fire) {
                       fireBalance += tx.isIncome ? tx.amount : -tx.amount;
                     } else if (bucket == BucketType.mojo) {
                       mojoBalance += tx.isIncome ? tx.amount : -tx.amount;
-                    } else if (bucket == BucketType.smile) {
-                      smileBalance += tx.isIncome ? tx.amount : -tx.amount;
-                    } else if (bucket == BucketType.splurge) {
-                      splurgeBalance += tx.isIncome ? tx.amount : -tx.amount;
-                    }
+                    } 
                   }
 
-                  // 2. Calculate Current Month Income and Blow Spent
+                  // 2. Calculate Current Month Income and Spending for Short-Term Buckets
                   double monthlyIncome = 0;
                   double currentBlowSpent = 0;
+                  double currentSplurgeSpent = 0;
+                  double currentSmileSpent = 0;
 
                   for (final tx in txState.transactions) {
-                    // Check if the transaction belongs to the current month and year
                     if (tx.date.year == now.year && tx.date.month == now.month) {
                       if (tx.isIncome) {
-                        // Add to this month's income
                         monthlyIncome += tx.amount;
                       } else {
-                        // Add to this month's Blow spent (if applicable)
                         final bucket = _getBucketForTx(tx, catState.categories);
                         if (bucket == BucketType.dailyExpenses) {
                           currentBlowSpent += tx.amount;
+                        } else if (bucket == BucketType.splurge) {
+                          currentSplurgeSpent += tx.amount;
+                        } else if (bucket == BucketType.smile) {
+                          currentSmileSpent += tx.amount;
                         }
                       }
                     }
@@ -112,6 +112,10 @@ class FinancialForecastPage extends StatelessWidget {
                       }
                     }
                   }
+
+                  // 4. Set Starting Balances for Short-Term Wallets (Month 1)
+                  double splurgeBalance = splurgeBudget - currentSplurgeSpent;
+                  double smileBalance = smileBudget - currentSmileSpent;
 
                   // 4. Calculate Month 1 Actuals (Sweep / Deficit)
                   double remainingCash = actualBlowAllocation - currentBlowSpent;
