@@ -249,7 +249,10 @@ class GitGraphPainter extends CustomPainter {
         canvas.drawCircle(Offset(x, y), 5, Paint()..color = color);
       }
 
-      // ── 4. Balance amounts ABOVE each dot with white pill background ──────
+      // ── 4. Balance labels sitting ON the horizontal track line ───────────
+      // Placed at 70% along the segment so they float ON the line itself
+      final double labelX = prevX + (x - prevX) * 0.70;
+
       void drawBal(TrackType track, String balStr) {
         if (!activeTracks.contains(track)) return;
         final y     = _trackY(track, activeTracks);
@@ -262,34 +265,35 @@ class GitGraphPainter extends CustomPainter {
         final btp = TextPainter(text: balSpan, textDirection: TextDirection.ltr);
         btp.layout();
 
-        const double pillH = 18;
-        final double pillW = btp.width + 12;
-        // Center the pill above the dot
-        final pillLeft = x - pillW / 2;
-        final pillTop  = y - 9 - pillH - 4; // 9 = dot radius, 4 = gap
+        const double pillH = 16;
+        final double pillW = btp.width + 10;
 
-        // White background pill for readability over lines
+        // Pill sits centered ON the line (vertically centered at y)
+        final pillLeft = labelX - pillW / 2;
+        final pillTop  = y - pillH / 2;
+
+        // White fill so the line appears to pass through the label neatly
         canvas.drawRRect(
           RRect.fromRectAndRadius(
             Rect.fromLTWH(pillLeft, pillTop, pillW, pillH),
-            const Radius.circular(4),
+            const Radius.circular(8),
           ),
-          Paint()..color = Colors.white.withValues(alpha: 0.92),
+          Paint()..color = Colors.white,
         );
 
-        // Colored border
+        // Colored outline
         canvas.drawRRect(
           RRect.fromRectAndRadius(
             Rect.fromLTWH(pillLeft, pillTop, pillW, pillH),
-            const Radius.circular(4),
+            const Radius.circular(8),
           ),
           Paint()
-            ..color = color.withValues(alpha: 0.35)
+            ..color = color.withValues(alpha: 0.5)
             ..style = PaintingStyle.stroke
-            ..strokeWidth = 1,
+            ..strokeWidth = 1.2,
         );
 
-        btp.paint(canvas, Offset(x - btp.width / 2, pillTop + (pillH - btp.height) / 2));
+        btp.paint(canvas, Offset(labelX - btp.width / 2, y - btp.height / 2));
       }
 
       drawBal(TrackType.smile,   node.smileBalanceStr);
