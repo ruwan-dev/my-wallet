@@ -334,15 +334,15 @@ class FinancialForecastPage extends StatelessWidget {
       // Bucket rows (only show non-zero buckets)
       final buckets = <BucketSnapshot>[
         if (projFire != 0 || prevFire != 0)
-          BucketSnapshot(name: 'Fire',    color: const Color(0xFFE05263), icon: Icons.local_fire_department, balance: projFire,    change: projFire    - prevFire),
+          BucketSnapshot(name: 'Fire', bucketType: BucketType.fire, color: const Color(0xFFE05263), icon: Icons.local_fire_department, balance: projFire, change: projFire - prevFire),
         if (projSmile != 0 || prevSmile != 0)
-          BucketSnapshot(name: 'Smile',   color: const Color(0xFFD946EF), icon: Icons.sentiment_satisfied,  balance: projSmile,   change: projSmile   - prevSmile),
+          BucketSnapshot(name: 'Smile', bucketType: BucketType.smile, color: const Color(0xFFD946EF), icon: Icons.sentiment_satisfied, balance: projSmile, change: projSmile - prevSmile),
         if (projSplurge != 0 || prevSplurge != 0)
-          BucketSnapshot(name: 'Splurge', color: const Color(0xFFF59E0B), icon: Icons.celebration,          balance: projSplurge, change: projSplurge - prevSplurge),
+          BucketSnapshot(name: 'Splurge', bucketType: BucketType.splurge, color: const Color(0xFFF59E0B), icon: Icons.celebration, balance: projSplurge, change: projSplurge - prevSplurge),
         if (projMojo != 0 || prevMojo != 0)
-          BucketSnapshot(name: 'Mojo',    color: const Color(0xFF3949AB), icon: Icons.shield,               balance: projMojo,    change: projMojo    - prevMojo),
+          BucketSnapshot(name: 'Mojo', bucketType: BucketType.mojo, color: const Color(0xFF3949AB), icon: Icons.shield, balance: projMojo, change: projMojo - prevMojo),
         if (projDebt != 0 || prevDebt != 0)
-          BucketSnapshot(name: 'Debt',    color: const Color(0xFFB91C1C), icon: Icons.credit_card,          balance: projDebt,    change: projDebt    - prevDebt),
+          BucketSnapshot(name: 'Debt', bucketType: BucketType.none, color: const Color(0xFFB91C1C), icon: Icons.credit_card, balance: projDebt, change: projDebt - prevDebt), // Or whatever bucketType debt should have
       ];
 
       cards.add(ForecastMonthCard(

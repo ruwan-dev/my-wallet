@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'dart:ui';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../core/widgets/premium_aurora_vector_background.dart';
 import '../../../expenses/presentation/bloc/transaction_cubit.dart';
@@ -630,6 +631,7 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
                           cardNumberEnding: '**** 0001',
                           description: 'Things that keep you running.\n• Examples: Utility bills, groceries.',
                           backgroundImagePath: 'assets/images/daily_expenses.png',
+                          onTap: () => context.push('/bucket-transactions', extra: BucketType.dailyExpenses),
                         ),
                       ),
                       SizedBox(
@@ -643,6 +645,7 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
                           cardNumberEnding: '**** 0002',
                           description: 'Things you enjoy purely for fun, without any guilt or second-guessing.\n• Examples: Ordering takeout, dining out, fancy coffee, or music festivals.',
                           backgroundImagePath: 'assets/images/splurge.jpg',
+                          onTap: () => context.push('/bucket-transactions', extra: BucketType.splurge),
                         ),
                       ),
                     ],
@@ -1331,6 +1334,7 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
     String? redirectTarget,
     String? description,
     String? backgroundImagePath,
+    VoidCallback? onTap,
   }) {
     final bool hasGoal = targetAmount != null && targetAmount > 0;
     final double progress =
@@ -1340,9 +1344,11 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
     final Color displayColor = isRedirected ? Colors.grey.shade700 : color;
     final Color textColor = isRedirected ? Colors.black54 : Colors.black;
 
-    return Container(
-      width: double.infinity,
-      height: 195,
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        height: 195,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
         gradient: backgroundImagePath == null
@@ -1458,7 +1464,6 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
       ),
     );
   }
-}
 
 class _ConcentricDonutPainter extends CustomPainter {
   final double dailyExpensesSpentPct;
@@ -1560,3 +1565,5 @@ class _ConcentricDonutPainter extends CustomPainter {
         oldDelegate.selectedIndex != selectedIndex;
   }
 }
+
+

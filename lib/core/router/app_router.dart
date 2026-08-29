@@ -33,6 +33,9 @@ import '../../features/budgets/presentation/pages/budgets_main_page.dart';
 import '../../features/expenses/presentation/pages/recurring_bills_page.dart';
 import '../../features/expenses/presentation/pages/financial_forecast_page.dart';
 import '../../features/budgets/presentation/pages/bucket_planner_page.dart';
+import '../../features/expenses/presentation/pages/bucket_transactions_page.dart';
+import '../../features/expenses/domain/entities/category.dart';
+
 class GoRouterRefreshStream extends ChangeNotifier {
   GoRouterRefreshStream(Stream<dynamic> stream) {
     notifyListeners();
@@ -193,6 +196,13 @@ final appRouter = GoRouter(
                 GoRoute(
                   path: 'all-transactions',
                   pageBuilder: (context, state) => const NoTransitionPage(child: TransactionsPage()),
+                ),
+                GoRoute(
+                  path: 'bucket-transactions',
+                  pageBuilder: (context, state) {
+                    final bucketType = state.extra as BucketType;
+                    return NoTransitionPage(child: BucketTransactionsPage(bucketType: bucketType));
+                  },
                 ),
               ],
             ),

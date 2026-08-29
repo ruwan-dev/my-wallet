@@ -1,11 +1,17 @@
 import 'package:flutter/material.dart';
 
+import '../../domain/entities/category.dart';
+
+import 'package:go_router/go_router.dart';
+
 // ─── Data model ─────────────────────────────────────────────────────────────
+
 
 enum ForecastHealth { safe, warning, danger }
 
 class BucketSnapshot {
   final String name;
+  final BucketType bucketType;
   final Color color;
   final IconData icon;
   final double balance;
@@ -13,6 +19,7 @@ class BucketSnapshot {
 
   const BucketSnapshot({
     required this.name,
+    required this.bucketType,
     required this.color,
     required this.icon,
     required this.balance,
@@ -250,9 +257,14 @@ class _BucketRow extends StatelessWidget {
     final changeIcon  = isUp ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded;
     final balColor    = b.balance < 0 ? const Color(0xFFDC2626) : const Color(0xFF1E293B);
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 5),
-      child: Row(
+    return InkWell(
+      onTap: () {
+        context.push('/bucket-transactions', extra: b.bucketType);
+      },
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 4),
+        child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           // Color dot
