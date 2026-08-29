@@ -127,7 +127,7 @@ class BucketTransactionsPage extends StatelessWidget {
                             orElse: () => const Category(id: '', name: 'Unknown', icon: '', color: Colors.grey, isIncome: false, subcategories: []),
                           );
                           final catName = tx.subCategory ?? cat.name;
-                          final amountColor = tx.isIncome ? const Color(0xFF16A34A) : const Color(0xFFE05263);
+                          final amountColor = tx.isIncome ? const Color(0xFF16A34A) : const Color(0xFF38B2AC);
                           final amountPrefix = tx.isIncome ? '+' : '-';
                           
                           return Padding(
