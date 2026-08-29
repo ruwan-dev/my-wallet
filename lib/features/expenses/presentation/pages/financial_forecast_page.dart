@@ -14,6 +14,9 @@ import '../../domain/entities/transaction.dart';
 import '../../domain/entities/category.dart';
 import '../widgets/shimmer_tile.dart';
 import '../widgets/forecast_card_list.dart';
+import '../../../debts/presentation/bloc/debt_cubit.dart';
+import '../../../debts/presentation/bloc/debt_state.dart';
+import '../../../debts/domain/entities/debt.dart';
 
 class FinancialForecastPage extends StatelessWidget {
   const FinancialForecastPage({super.key});
@@ -46,17 +49,22 @@ class FinancialForecastPage extends StatelessWidget {
           onPressed: () => context.pop(),
         ),
       ),
-      body: BlocBuilder<CategoryCubit, CategoryState>(
-        builder: (context, catState) {
-          if (catState is! CategoryLoaded) return const ShimmerTile();
-          
-          return BlocBuilder<TransactionCubit, TransactionState>(
-            builder: (context, txState) {
-              if (txState is! TransactionLoaded) return const ShimmerTile();
+      body: BlocBuilder<DebtCubit, DebtState>(
+        builder: (context, debtState) {
+          if (debtState is! DebtLoaded) return const ShimmerTile();
+          final activeDebts = debtState.debts.where((d) => d.currentBalance > 0).toList();
+
+          return BlocBuilder<CategoryCubit, CategoryState>(
+            builder: (context, catState) {
+              if (catState is! CategoryLoaded) return const ShimmerTile();
               
-              return BlocBuilder<CustomBudgetCubit, CustomBudgetState>(
-                builder: (context, budgetState) {
-                  final customBudgets = budgetState is CustomBudgetLoaded ? budgetState.budgets : [];
+              return BlocBuilder<TransactionCubit, TransactionState>(
+                builder: (context, txState) {
+                  if (txState is! TransactionLoaded) return const ShimmerTile();
+                  
+                  return BlocBuilder<CustomBudgetCubit, CustomBudgetState>(
+                    builder: (context, budgetState) {
+                      final customBudgets = budgetState is CustomBudgetLoaded ? budgetState.budgets : [];
 
                   final now = DateTime.now();
                   
@@ -140,18 +148,20 @@ class FinancialForecastPage extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         // Forecast Cards only
-                        _buildForecastCards(context, healBalance, mojoBalance, smileBalance, splurgeBalance, month1Sweep, month1Deficit, healBudget, smileBudget, splurgeBudget, actualBlowAllocation, customBlowBudget),
+                        _buildForecastCards(context, healBalance, mojoBalance, smileBalance, splurgeBalance, month1Sweep, month1Deficit, healBudget, smileBudget, splurgeBudget, actualBlowAllocation, customBlowBudget, activeDebts),
                       ],
                     ),
-                  );
+                  ); // SingleChildScrollView
                 },
-              );
+              ); // CustomBudgetCubit
             },
-          );
+          ); // TransactionCubit
         },
-      ),
-    );
-  }
+      ); // CategoryCubit
+    },
+   ),
+  );
+ }
 
   Widget _buildForecastCards(
     BuildContext context,
@@ -166,6 +176,7 @@ class FinancialForecastPage extends StatelessWidget {
     double monthlySplurgeAllocation,
     double actualBlowAllocation,
     double customBlowBudget,
+    List<Debt> activeDebts,
   ) {
     String fmt(double v) => AppFormatters.formatCurrency(context, v);
 
@@ -209,7 +220,31 @@ class FinancialForecastPage extends StatelessWidget {
         splurgeAlloc = monthlySplurgeAllocation;
       }
 
-      projHeal    += sweep + healAlloc - deficit;
+      double currentMonthDebtPaid = 0;
+      List<String> currentMonthPaidNames = [];
+      
+      for (final debt in activeDebts) {
+        if (debt.dueDate != null) {
+          bool isDueThisMonth = false;
+          if (i == 0) {
+             // current month: if it's overdue or due this month
+             if (debt.dueDate!.isBefore(DateTime(now.year, now.month + 1, 1))) {
+                isDueThisMonth = true;
+             }
+          } else {
+             if (debt.dueDate!.year == targetDate.year && debt.dueDate!.month == targetDate.month) {
+                isDueThisMonth = true;
+             }
+          }
+
+          if (isDueThisMonth) {
+            currentMonthDebtPaid += debt.currentBalance;
+            currentMonthPaidNames.add(debt.name);
+          }
+        }
+      }
+
+      projHeal    += sweep + healAlloc - deficit - currentMonthDebtPaid;
       projSmile   += smileAlloc;
       projSplurge += splurgeAlloc;
 
@@ -297,6 +332,8 @@ class FinancialForecastPage extends StatelessWidget {
         usedSplurge:   usedSplurge,
         usedMojo:      usedMojo,
         debtAdded:     debtAdded,
+        debtPaidAmount: currentMonthDebtPaid,
+        paidDebtNames:  currentMonthPaidNames,
       ));
 
       // Update previous balances for next iteration

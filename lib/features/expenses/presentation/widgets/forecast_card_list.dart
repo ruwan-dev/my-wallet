@@ -39,6 +39,8 @@ class ForecastMonthCard {
   final bool usedSplurge;
   final bool usedMojo;
   final double debtAdded;
+  final double debtPaidAmount;
+  final List<String> paidDebtNames;
 
   const ForecastMonthCard({
     required this.monthLabel,
@@ -52,6 +54,8 @@ class ForecastMonthCard {
     required this.usedSplurge,
     required this.usedMojo,
     required this.debtAdded,
+    this.debtPaidAmount = 0,
+    this.paidDebtNames = const [],
   });
 }
 
@@ -206,7 +210,7 @@ class _MonthCard extends StatelessWidget {
           ),
 
           // ── Footer: events ──
-          if (card.sweepAmount > 0 || card.deficitAmount > 0 || card.usedSmile || card.usedSplurge || card.usedMojo || card.debtAdded > 0)
+          if (card.sweepAmount > 0 || card.deficitAmount > 0 || card.usedSmile || card.usedSplurge || card.usedMojo || card.debtAdded > 0 || card.debtPaidAmount > 0)
             Container(
               padding: const EdgeInsets.fromLTRB(14, 8, 14, 12),
               decoration: BoxDecoration(
@@ -230,6 +234,8 @@ class _MonthCard extends StatelessWidget {
                     _EventRow('Mojo covered deficit', '', const Color(0xFF3949AB)),
                   if (card.debtAdded > 0)
                     _EventRow('Debt added', fmt(card.debtAdded), const Color(0xFFB91C1C)),
+                  if (card.debtPaidAmount > 0)
+                    _EventRow('Paid: ${card.paidDebtNames.join(", ")}', '-${fmt(card.debtPaidAmount)}', const Color(0xFFE05263)),
                 ],
               ),
             ),
