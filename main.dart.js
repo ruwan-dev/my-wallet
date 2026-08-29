@@ -69874,7 +69874,7 @@ m=n===B.bD||n===B.df||n===B.cr||n===B.cc}else m=!1
 if(!m)continue
 l.arC(a,b,115+p*24+12,r,o.c.bu(0.85))}},
 arC(a,b,c,d,e){var s,r,q,p,o,n=this.e,m=b.a/2,l=new A.bR($.ab().r,B.V,null,null,A.b([],t.v))
-l.ag(new A.ec(n-18,c))
+l.ag(new A.ec(n-40,c))
 l.ag(new A.x_(m,c,m,d,n+this.f+18,d))
 s=new A.a_D(new A.CI(A.tQ(l),!1,A.b([],t.tX))).ga1(0)
 n=s.a
