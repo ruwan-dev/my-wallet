@@ -272,20 +272,10 @@ class _DebtTimelineState extends State<DebtTimeline> {
               ),
 
               // The Node / Checkpoint
-              Container(
-                width: 24,
-                height: 24,
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white,
-                ),
-                child: Center(
-                  child: Icon(
-                    isCompleted ? Icons.check_circle : Icons.circle,
-                    color: nodeColor,
-                    size: 16,
-                  ),
-                ),
+              Icon(
+                isCompleted ? Icons.check_circle : Icons.circle,
+                color: nodeColor,
+                size: 16,
               ),
             ],
           ),
