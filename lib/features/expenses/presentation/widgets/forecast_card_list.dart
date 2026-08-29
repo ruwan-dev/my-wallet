@@ -316,7 +316,12 @@ class _BucketRow extends StatelessWidget {
                       ),
                     ],
                   )
-                : const SizedBox.shrink(),
+                : const Center(
+                    child: Text(
+                      '-',
+                      style: TextStyle(fontSize: 10, color: Colors.grey, fontWeight: FontWeight.w500),
+                    ),
+                  ),
           ),
         ],
       ),
