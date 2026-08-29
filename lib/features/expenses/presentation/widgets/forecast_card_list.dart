@@ -265,9 +265,9 @@ class _BucketRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isUp        = b.change >= 0;
-    final changeColor = isUp ? const Color(0xFF16A34A) : const Color(0xFFDC2626);
-    final changeIcon  = isUp ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded;
+    
+    
+    
     final balColor    = b.balance < 0 ? const Color(0xFFDC2626) : const Color(0xFF1E293B);
 
     return InkWell(
@@ -310,40 +310,9 @@ class _BucketRow extends StatelessWidget {
               ),
             ),
           ),
-
-          const SizedBox(width: 4),
-
-          // Change indicator — arrow + abbreviated amount, fixed width so it never pushes balance
-          SizedBox(
-            width: 44,
-            child: b.change != 0
-                ? Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(changeIcon, size: 9, color: changeColor),
-                      const SizedBox(width: 1),
-                      Flexible(
-                        child: Text(
-                          fmtShort(b.change.abs()),
-                          style: TextStyle(fontSize: 9, color: changeColor, fontWeight: FontWeight.w600),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  )
-                : const Center(
-                    child: Text(
-                      '-',
-                      style: TextStyle(fontSize: 10, color: Colors.grey, fontWeight: FontWeight.w500),
-                    ),
-                  ),
-          ),
         ],
+        ),
       ),
-     ),
     );
   }
 }
-
-
