@@ -237,23 +237,6 @@ class _SweepArrowsPainter extends CustomPainter {
       ..strokeCap = StrokeCap.round;
 
     canvas.drawPath(partial, linePaint);
-
-    // Show dot and arrowhead when fully drawn
-    if (progress >= 0.97) {
-      // Origin dot on left card (same colour as bucket dot)
-      canvas.drawCircle(Offset(x0, startY), 3.5,
-          Paint()..color = color..style = PaintingStyle.fill);
-
-      // Arrowhead pointing right at the Heal dot on the right card
-      const double as = 5.0;
-      final tip = Offset(x3, destY);
-      final head = Path()
-        ..moveTo(tip.dx, tip.dy)
-        ..lineTo(tip.dx - as - 2, tip.dy - as * 0.65)
-        ..lineTo(tip.dx - as - 2, tip.dy + as * 0.65)
-        ..close();
-      canvas.drawPath(head, Paint()..color = color..style = PaintingStyle.fill);
-    }
   }
 
   @override
