@@ -59,10 +59,11 @@ class ForecastCardList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 390,
+      height: 430, // Increased height to fit cards + shadows
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        padding: EdgeInsets.zero,
+        clipBehavior: Clip.none, // Allow shadows to overflow
+        padding: const EdgeInsets.only(bottom: 30, top: 8, left: 4, right: 4),
         physics: const BouncingScrollPhysics(),
         itemCount: cards.length,
         separatorBuilder: (_, __) => const SizedBox(width: 12),
