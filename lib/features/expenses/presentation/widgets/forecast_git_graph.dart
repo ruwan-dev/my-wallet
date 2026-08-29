@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 
-enum TrackType { blow, splurge, smile, fire, mojo, grow, debt }
+enum TrackType { blow, splurge, smile, heal, mojo, grow, debt }
 
 class TrackColors {
   static const Color blow = Color(0xFF38B2AC);
   static const Color splurge = Color(0xFFF59E0B);
   static const Color smile = Color(0xFFD946EF);
-  static const Color fire = Color(0xFFE05263);
+  static const Color heal = Color(0xFFE05263);
   static const Color mojo = Color(0xFF3949AB);
   static const Color grow = Color(0xFF10B981);
   static const Color debt = Color(0xFFB91C1C);
@@ -28,8 +28,8 @@ class ForecastNode {
   final String smileBalanceStr;
   final double splurgeBalance;
   final String splurgeBalanceStr;
-  final double fireBalance;
-  final String fireBalanceStr;
+  final double healBalance;
+  final String healBalanceStr;
   final double mojoBalance;
   final String mojoBalanceStr;
   final double debtBalance;
@@ -44,8 +44,8 @@ class ForecastNode {
     required this.smileBalanceStr,
     required this.splurgeBalance,
     required this.splurgeBalanceStr,
-    required this.fireBalance,
-    required this.fireBalanceStr,
+    required this.healBalance,
+    required this.healBalanceStr,
     required this.mojoBalance,
     required this.mojoBalanceStr,
     required this.debtBalance,
@@ -62,7 +62,7 @@ class ForecastGitGraph extends StatelessWidget {
   const ForecastGitGraph({super.key, required this.nodes});
 
   List<TrackType> _getGloballyActiveTracks() {
-    Set<TrackType> active = {TrackType.blow, TrackType.fire, TrackType.mojo};
+    Set<TrackType> active = {TrackType.blow, TrackType.heal, TrackType.mojo};
     for (final node in nodes) {
       if (node.smileBalance != 0) active.add(TrackType.smile);
       if (node.splurgeBalance != 0) active.add(TrackType.splurge);
@@ -73,7 +73,7 @@ class ForecastGitGraph extends StatelessWidget {
         active.add(t.to);
       }
     }
-    final all = [TrackType.blow, TrackType.splurge, TrackType.smile, TrackType.fire, TrackType.mojo, TrackType.grow, TrackType.debt];
+    final all = [TrackType.blow, TrackType.splurge, TrackType.smile, TrackType.heal, TrackType.mojo, TrackType.grow, TrackType.debt];
     return all.where((t) => active.contains(t)).toList();
   }
 
@@ -126,7 +126,7 @@ Color _getTrackColor(TrackType track) {
     case TrackType.blow: return TrackColors.blow;
     case TrackType.splurge: return TrackColors.splurge;
     case TrackType.smile: return TrackColors.smile;
-    case TrackType.fire: return TrackColors.fire;
+    case TrackType.heal: return TrackColors.heal;
     case TrackType.mojo: return TrackColors.mojo;
     case TrackType.grow: return TrackColors.grow;
     case TrackType.debt: return TrackColors.debt;
@@ -298,7 +298,7 @@ class GitGraphPainter extends CustomPainter {
 
       drawBal(TrackType.smile,   node.smileBalanceStr);
       drawBal(TrackType.splurge, node.splurgeBalanceStr);
-      drawBal(TrackType.fire,    node.fireBalanceStr);
+      drawBal(TrackType.heal,    node.healBalanceStr);
       drawBal(TrackType.mojo,    node.mojoBalanceStr);
       drawBal(TrackType.debt,    node.debtBalanceStr);
 

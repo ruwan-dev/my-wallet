@@ -71,7 +71,7 @@ class SmartSuggestionSheet extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Text(
-              'You have Rs ${availableFireBalance.toStringAsFixed(0)} in your Fire Bucket.\n\nThis is enough to completely clear off your smallest debt: ${debt.name} (Rs ${debt.currentBalance.toStringAsFixed(0)}).',
+              'You have Rs ${availableFireBalance.toStringAsFixed(0)} in your Heal Bucket.\n\nThis is enough to completely clear off your smallest debt: ${debt.name} (Rs ${debt.currentBalance.toStringAsFixed(0)}).',
               textAlign: TextAlign.center,
               style: const TextStyle(
                 color: Colors.white70,

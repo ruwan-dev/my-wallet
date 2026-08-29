@@ -81,10 +81,10 @@ const _buckets = [
     icon: Icons.favorite_rounded,
   ),
   _BucketMeta(
-    type: BucketType.fire, // Mapped 'Grow' to the existing 'fire' bucket type
+    type: BucketType.heal, // Mapped 'Grow' to the existing 'fire' bucket type
     name: 'Grow',
     emoji: '🌱',
-    imageAsset: 'assets/images/bucket_fire.png',
+    imageAsset: 'assets/images/heal_bucket.jpg',
     subtitle: 'Long-term wealth building and investments.',
     percentage: 0.20,
     color: Color(0xFFEC4899), // Pink
@@ -1553,7 +1553,7 @@ class _AddTransactionPageState extends State<AddTransactionPage>
         return const Color(0xFFEAB308);
       case BucketType.smile:
         return const Color(0xFF10B981);
-      case BucketType.fire:
+      case BucketType.heal:
         return const Color(0xFFEF4444);
       default:
         return Colors.grey;
@@ -1568,7 +1568,7 @@ class _AddTransactionPageState extends State<AddTransactionPage>
         return '🎉';
       case BucketType.smile:
         return '😊';
-      case BucketType.fire:
+      case BucketType.heal:
         return '🔥';
       default:
         return '🪣';

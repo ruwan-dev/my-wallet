@@ -526,7 +526,7 @@ class _InlineCategoryFormState extends State<_InlineCategoryForm> {
                 switch (bucket) {
                   case BucketType.dailyExpenses: bucketIcon = Icons.work_outline; break;
                   case BucketType.smile: bucketIcon = Icons.flight_takeoff; break;
-                  case BucketType.fire: bucketIcon = Icons.local_fire_department; break;
+                  case BucketType.heal: bucketIcon = Icons.medical_services; break;
                   case BucketType.mojo: bucketIcon = Icons.security; break;
                   case BucketType.grow: bucketIcon = Icons.eco; break;
                   default: bucketIcon = Icons.category;

@@ -9,12 +9,12 @@ import 'inline_payment_editor.dart';
 
 class DebtTimeline extends StatefulWidget {
   final List<Debt> debts;
-  final double fireBalance;
+  final double healBalance;
 
   const DebtTimeline({
     super.key,
     required this.debts,
-    required this.fireBalance,
+    required this.healBalance,
   });
 
   @override
@@ -56,7 +56,7 @@ class _DebtTimelineState extends State<DebtTimeline> {
           padding: const EdgeInsets.symmetric(vertical: 8),
           itemBuilder: (context, index) {
             return _buildTimelineNode(
-                context, index, sortedDebts, maxDebt, widget.fireBalance);
+                context, index, sortedDebts, maxDebt, widget.healBalance);
           },
         ),
         const SizedBox(height: 16),
@@ -200,7 +200,7 @@ class _DebtTimelineState extends State<DebtTimeline> {
                   if (currentFireBalance <= 0) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text('Cannot pay: Fire Wallet balance is zero or negative.'),
+                        content: Text('Cannot pay: Heal Wallet balance is zero or negative.'),
                         backgroundColor: Colors.redAccent,
                       ),
                     );
@@ -283,7 +283,7 @@ class _DebtTimelineState extends State<DebtTimeline> {
                             side: BorderSide(color: Colors.white.withOpacity(0.2), width: 1.5),
                           ),
                           title: const Text('Mark as Completed', style: TextStyle(color: Colors.white)),
-                          content: Text('Are you sure you want to mark ${debt.name} as completed? This will set its remaining balance to 0 without deducting from your Fire Wallet.', style: const TextStyle(color: Colors.white70)),
+                          content: Text('Are you sure you want to mark ${debt.name} as completed? This will set its remaining balance to 0 without deducting from your Heal Wallet.', style: const TextStyle(color: Colors.white70)),
                           actions: [
                             TextButton(
                               onPressed: () => Navigator.of(dialogContext).pop(),

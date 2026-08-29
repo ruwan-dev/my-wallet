@@ -34,7 +34,7 @@ class ForecastMonthCard {
   final String healthMessage;
   final List<BucketSnapshot> buckets;
   final double sweepAmount;     // surplus from Blow → Fire
-  final double deficitAmount;   // Blow overspent, pulled from Fire
+  final double deficitAmount;   // Blow overspent, pulled from Heal
   final bool usedSmile;
   final bool usedSplurge;
   final bool usedMojo;
@@ -219,13 +219,13 @@ class _MonthCard extends StatelessWidget {
                   const Divider(height: 1),
                   const SizedBox(height: 6),
                   if (card.sweepAmount > 0)
-                    _EventRow('Swept to Fire', fmt(card.sweepAmount), const Color(0xFF38B2AC)),
+                    _EventRow('Swept to Heal', fmt(card.sweepAmount), const Color(0xFF38B2AC)),
                   if (card.deficitAmount > 0)
                     _EventRow('Blow Overspent', '-${fmt(card.deficitAmount)}', const Color(0xFFE05263)),
                   if (card.usedSmile)
-                    _EventRow('Smile helped Fire', '', const Color(0xFFD946EF)),
+                    _EventRow('Smile helped Heal', '', const Color(0xFFD946EF)),
                   if (card.usedSplurge)
-                    _EventRow('Splurge helped Fire', '', const Color(0xFFF59E0B)),
+                    _EventRow('Splurge helped Heal', '', const Color(0xFFF59E0B)),
                   if (card.usedMojo)
                     _EventRow('Mojo covered deficit', '', const Color(0xFF3949AB)),
                   if (card.debtAdded > 0)

@@ -108,7 +108,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           paydayDate: day,
                           smileTargetAmount: cubit.state.smileTargetAmount,
                           smileGoalName: cubit.state.smileGoalName,
-                          fireRedirection: cubit.state.fireRedirection,
+                          healRedirection: cubit.state.healRedirection,
                         );
                       }
                       setState(() => _editingField = null);

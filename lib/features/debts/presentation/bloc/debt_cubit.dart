@@ -116,7 +116,7 @@ class DebtCubit extends Cubit<DebtState> {
       await _debtRepository.updateDebt(updatedDebt);
 
       // 2. Create an expense transaction categorized as Fire bucket
-      // This will automatically deduct from the Fire Bucket balance visually
+      // This will automatically deduct from the Heal Bucket balance visually
       final paymentTransaction = TransactionEntity(
         id: const Uuid().v4(),
         userId: _currentUserId,
@@ -129,7 +129,7 @@ class DebtCubit extends Cubit<DebtState> {
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
         accountId: defaultAccountId, // The account to deduct the money from
-        bucketType: BucketType.fire, // This is crucial for the Fire tab math
+        bucketType: BucketType.heal, // This is crucial for the Heal tab math
       );
 
       await _transactionRepository.addTransaction(paymentTransaction);

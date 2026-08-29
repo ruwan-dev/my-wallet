@@ -42,7 +42,7 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
   late PageController _pageController;
   int _selectedMainTab = 0; // 0=Blow, 1=Mojo, 2=Grow
   int _selectedBucketIndex =
-      -1; // -1 for Total, 0=Daily Expenses, 1=Splurge, 2=Smile, 3=Fire
+      -1; // -1 for Total, 0=Daily Expenses, 1=Splurge, 2=Smile, 3=Heal
   bool _isAddingDebt = false;
   bool _isAddingMojoFunds = false;
   bool _showSinhalaPhilosophy = false;
@@ -317,7 +317,7 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
          note: 'Transferred to Mojo',
          createdAt: now,
          updatedAt: now,
-         bucketType: BucketType.fire,
+         bucketType: BucketType.heal,
       );
     } else if (sourceId == 'bucket_smile') {
       sourceTx = TransactionEntity(
@@ -432,7 +432,7 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
             spentSplurge += tx.amount;
           else if (bucket == BucketType.smile)
             spentSmile += tx.amount;
-          else if (bucket == BucketType.fire) spentFire += tx.amount;
+          else if (bucket == BucketType.heal) spentFire += tx.amount;
         }
       }
     }
@@ -540,7 +540,7 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
           children: [
             _buildSegmentTab(0, 'Blow', Icons.work_outline),
             _buildSegmentTab(1, 'Smile', Icons.flight_takeoff),
-            _buildSegmentTab(2, 'Fire', Icons.local_fire_department),
+            _buildSegmentTab(2, 'Heal', Icons.medical_services),
             _buildSegmentTab(3, 'Mojo', Icons.security),
             _buildSegmentTab(4, 'Grow', Icons.eco),
           ],
@@ -742,8 +742,8 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
                _buildPhilosophyPoint(
-                 title: 'The Fire Evolves',
-                 description: _showSinhalaPhilosophy ? 'ගෙවන්න ණය නැති නිසා, ඔයාගේ 20% Fire මුදල සම්පූර්ණයෙන්ම වෙන් වෙන්නේ ධනය ගොඩනගන්නයි.' : 'With zero debt to pay, your 20% Fire allocation is fully unlocked to build your wealth.',
+                 title: 'The Heal Evolves',
+                 description: _showSinhalaPhilosophy ? 'ගෙවන්න ණය නැති නිසා, ඔයාගේ 20% Heal මුදල සම්පූර්ණයෙන්ම වෙන් වෙන්නේ ධනය ගොඩනගන්නයි.' : 'With zero debt to pay, your 20% Heal allocation is fully unlocked to build your wealth.',
                ),
                const SizedBox(height: 12),
                _buildPhilosophyPoint(
@@ -806,7 +806,7 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
     required double spentFire,
   }) {
     final settings = context.watch<SettingsCubit>().state;
-    final fireBalance = allocatedFire - spentFire;
+    final healBalance = allocatedFire - spentFire;
 
     return Column(
       children: [
@@ -815,19 +815,19 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
           child: _buildWideVaultCard(
             context: context,
             bucketTypeName: 'fire',
-            title: 'Fire Wallet',
-            icon: Icons.local_fire_department,
+            title: 'Heal Wallet',
+            icon: Icons.medical_services,
             primaryColor: const Color(0xFFF87171),
             secondaryColor: const Color(0xFFEF4444),
-            balance: fireBalance,
+            balance: healBalance,
             isRedirected:
-                settings.fireRedirection != FireRedirectionTarget.fire,
+                settings.healRedirection != HealRedirectionTarget.heal,
             redirectTarget:
-                settings.fireRedirection == FireRedirectionTarget.mojo
+                settings.healRedirection == HealRedirectionTarget.mojo
                     ? 'Mojo'
                     : 'Grow',
             description: 'Things that crush your burdens and build your freedom.\n• Examples: Clearing credit card debt and paying off vehicle leases.',
-            backgroundImagePath: 'assets/images/fire.jpg',
+            backgroundImagePath: 'assets/images/heal_bucket.jpg',
             actionWidget: GestureDetector(
                     onTap: () {
                       showModalBottomSheet(
@@ -874,7 +874,7 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'Trophy Road',
+                  'Path to Recovery',
                   style: TextStyle(
                     color: Colors.black87,
                     fontSize: 20,
@@ -898,7 +898,7 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           const SizedBox(height: 16),
-                          DebtTimeline(debts: debts, fireBalance: fireBalance),
+                          DebtTimeline(debts: debts, healBalance: healBalance),
                         ],
                       );
                     }
@@ -915,7 +915,7 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
   }
 
   Widget _buildMojoTab(BuildContext context, double mojoBalance,
-      double dailyExpensesAllocation, double fireBalance, double smileBalance) {
+      double dailyExpensesAllocation, double healBalance, double smileBalance) {
     final double targetGoal = (dailyExpensesAllocation * 3) > 0
         ? (dailyExpensesAllocation * 3)
         : 15000;
@@ -932,9 +932,9 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
         }
       }
     }
-    if (fireBalance > 0) {
+    if (healBalance > 0) {
       sourceAccounts.add(
-          {'id': 'bucket_fire', 'name': 'Fire Vault', 'balance': fireBalance});
+          {'id': 'bucket_fire', 'name': 'Heal Vault', 'balance': healBalance});
     }
     if (smileBalance > 0) {
       sourceAccounts.add({

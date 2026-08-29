@@ -50,7 +50,7 @@ class _InlinePaymentEditorState extends State<InlinePaymentEditor> {
 
     if (amount > widget.currentFireBalance) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Insufficient Fire Wallet balance')),
+        const SnackBar(content: Text('Insufficient Heal Wallet balance')),
       );
       return;
     }
@@ -86,7 +86,7 @@ class _InlinePaymentEditorState extends State<InlinePaymentEditor> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Current Balance: Rs ${widget.debt.currentBalance.toStringAsFixed(2)}\nFire Wallet: Rs ${widget.currentFireBalance.toStringAsFixed(2)}',
+              'Current Balance: Rs ${widget.debt.currentBalance.toStringAsFixed(2)}\nHeal Wallet: Rs ${widget.currentFireBalance.toStringAsFixed(2)}',
               style: const TextStyle(
                 fontSize: 14,
                 color: Colors.black54,

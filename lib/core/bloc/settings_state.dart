@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
 
-enum FireRedirectionTarget { fire, mojo, grow }
+enum HealRedirectionTarget { heal, mojo, grow }
 
 class SettingsState extends Equatable {
   final String currencySymbol;
@@ -8,7 +8,7 @@ class SettingsState extends Equatable {
   final int paydayDate;
   final double smileTargetAmount;
   final String smileGoalName;
-  final FireRedirectionTarget fireRedirection;
+  final HealRedirectionTarget healRedirection;
   final double nodeDivisor;
   /// Maps BucketType.name → accountId for synced buckets.
   final Map<String, String> bucketAccountLinks;
@@ -19,7 +19,7 @@ class SettingsState extends Equatable {
     required this.paydayDate,
     required this.smileTargetAmount,
     required this.smileGoalName,
-    required this.fireRedirection,
+    required this.healRedirection,
     required this.nodeDivisor,
     this.bucketAccountLinks = const {},
   });
@@ -31,7 +31,7 @@ class SettingsState extends Equatable {
       paydayDate: 1,
       smileTargetAmount: 0.0,
       smileGoalName: 'Smile Goal',
-      fireRedirection: FireRedirectionTarget.fire,
+      healRedirection: HealRedirectionTarget.heal,
       nodeDivisor: 5000.0,
       bucketAccountLinks: const {},
     );
@@ -43,7 +43,7 @@ class SettingsState extends Equatable {
     int? paydayDate,
     double? smileTargetAmount,
     String? smileGoalName,
-    FireRedirectionTarget? fireRedirection,
+    HealRedirectionTarget? healRedirection,
     double? nodeDivisor,
     Map<String, String>? bucketAccountLinks,
   }) {
@@ -53,7 +53,7 @@ class SettingsState extends Equatable {
       paydayDate: paydayDate ?? this.paydayDate,
       smileTargetAmount: smileTargetAmount ?? this.smileTargetAmount,
       smileGoalName: smileGoalName ?? this.smileGoalName,
-      fireRedirection: fireRedirection ?? this.fireRedirection,
+      healRedirection: healRedirection ?? this.healRedirection,
       nodeDivisor: nodeDivisor ?? this.nodeDivisor,
       bucketAccountLinks: bucketAccountLinks ?? this.bucketAccountLinks,
     );
@@ -66,7 +66,7 @@ class SettingsState extends Equatable {
         paydayDate,
         smileTargetAmount,
         smileGoalName,
-        fireRedirection,
+        healRedirection,
         nodeDivisor,
         bucketAccountLinks,
       ];

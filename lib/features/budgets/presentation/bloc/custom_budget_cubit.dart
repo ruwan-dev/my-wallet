@@ -87,10 +87,10 @@ class CustomBudgetCubit extends Cubit<CustomBudgetState> {
                   categoryId: 'system_sweep',
                   categoryName: 'Auto Sweep',
                   date: DateTime(now.year, now.month, 1).subtract(const Duration(days: 1)), // Last day of old month
-                  isIncome: true, // Acts as income toward Fire goals
+                  isIncome: true, // Acts as income toward Heal goals
                   createdAt: now,
                   updatedAt: now,
-                  bucketType: BucketType.fire,
+                  bucketType: BucketType.heal,
                 );
                 await addTransaction(sweepTx);
               }

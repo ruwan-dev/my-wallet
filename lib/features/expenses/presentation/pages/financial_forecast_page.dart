@@ -60,16 +60,16 @@ class FinancialForecastPage extends StatelessWidget {
 
                   final now = DateTime.now();
                   
-                  // 1. Calculate All-Time Fire & Mojo Balances (Vaults)
-                  double fireBalance = 0;
+                  // 1. Calculate All-Time Heal & Mojo Balances (Vaults)
+                  double healBalance = 0;
                   double mojoBalance = 0;
                   // We will calculate Smile and Splurge based on the current month's allocation
                   // since they are short-term spending wallets.
 
                   for (final tx in txState.transactions) {
                     final bucket = _getBucketForTx(tx, catState.categories);
-                    if (bucket == BucketType.fire) {
-                      fireBalance += tx.isIncome ? tx.amount : -tx.amount;
+                    if (bucket == BucketType.heal) {
+                      healBalance += tx.isIncome ? tx.amount : -tx.amount;
                     } else if (bucket == BucketType.mojo) {
                       mojoBalance += tx.isIncome ? tx.amount : -tx.amount;
                     } 
@@ -101,14 +101,14 @@ class FinancialForecastPage extends StatelessWidget {
                   // 3. Get Budgets
                   double actualBlowAllocation = monthlyIncome * 0.60;
                   double customBlowBudget = actualBlowAllocation;
-                  double fireBudget = monthlyIncome * 0.20;
+                  double healBudget = monthlyIncome * 0.20;
                   double smileBudget = monthlyIncome * 0.10;
                   double splurgeBudget = monthlyIncome * 0.10;
                   if (budgetState is CustomBudgetLoaded) {
                     for (final b in budgetState.budgets) {
                       if (!b.isCompleted) {
                         if (b.bucketType == BucketType.dailyExpenses && b.totalAllocated > 0) customBlowBudget = b.totalAllocated;
-                        if (b.bucketType == BucketType.fire && b.totalAllocated > 0) fireBudget = b.totalAllocated;
+                        if (b.bucketType == BucketType.heal && b.totalAllocated > 0) healBudget = b.totalAllocated;
                       }
                     }
                   }
@@ -140,7 +140,7 @@ class FinancialForecastPage extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         // Forecast Cards only
-                        _buildForecastCards(context, fireBalance, mojoBalance, smileBalance, splurgeBalance, month1Sweep, month1Deficit, fireBudget, smileBudget, splurgeBudget, actualBlowAllocation, customBlowBudget),
+                        _buildForecastCards(context, healBalance, mojoBalance, smileBalance, splurgeBalance, month1Sweep, month1Deficit, healBudget, smileBudget, splurgeBudget, actualBlowAllocation, customBlowBudget),
                       ],
                     ),
                   );
@@ -155,13 +155,13 @@ class FinancialForecastPage extends StatelessWidget {
 
   Widget _buildForecastCards(
     BuildContext context,
-    double startingFire,
+    double startingHeal,
     double startingMojo,
     double startingSmile,
     double startingSplurge,
     double month1Sweep,
     double month1Deficit,
-    double monthlyFireAllocation,
+    double monthlyHealAllocation,
     double monthlySmileAllocation,
     double monthlySplurgeAllocation,
     double actualBlowAllocation,
@@ -169,14 +169,14 @@ class FinancialForecastPage extends StatelessWidget {
   ) {
     String fmt(double v) => AppFormatters.formatCurrency(context, v);
 
-    double projFire    = startingFire;
+    double projHeal    = startingHeal;
     double projMojo    = startingMojo;
     double projSmile   = startingSmile;
     double projSplurge = startingSplurge;
     double projDebt    = 0;
 
     // Previous balances for change arrows (start = current)
-    double prevFire    = startingFire;
+    double prevHeal    = startingHeal;
     double prevMojo    = startingMojo;
     double prevSmile   = startingSmile;
     double prevSplurge = startingSplurge;
@@ -190,7 +190,7 @@ class FinancialForecastPage extends StatelessWidget {
 
       double sweep   = 0;
       double deficit = 0;
-      double fireAlloc   = 0;
+      double healAlloc   = 0;
       double smileAlloc  = 0;
       double splurgeAlloc = 0;
 
@@ -204,12 +204,12 @@ class FinancialForecastPage extends StatelessWidget {
         } else {
           deficit = futureSweep.abs();
         }
-        fireAlloc    = monthlyFireAllocation;
+        healAlloc    = monthlyHealAllocation;
         smileAlloc   = monthlySmileAllocation;
         splurgeAlloc = monthlySplurgeAllocation;
       }
 
-      projFire    += sweep + fireAlloc - deficit;
+      projHeal    += sweep + healAlloc - deficit;
       projSmile   += smileAlloc;
       projSplurge += splurgeAlloc;
 
@@ -217,8 +217,8 @@ class FinancialForecastPage extends StatelessWidget {
       bool usedSplurge = false;
       bool usedMojo    = false;
 
-      if (projFire < 0) {
-        double missing = projFire.abs();
+      if (projHeal < 0) {
+        double missing = projHeal.abs();
         if (projSmile > 0) {
           final pull = projSmile >= missing ? missing : projSmile;
           projSmile -= pull;
@@ -235,7 +235,7 @@ class FinancialForecastPage extends StatelessWidget {
           projMojo -= missing;
           usedMojo  = true;
         }
-        projFire = 0;
+        projHeal = 0;
       }
 
       double debtAdded = 0;
@@ -273,8 +273,8 @@ class FinancialForecastPage extends StatelessWidget {
       // Bucket rows (only show non-zero buckets or if it's Blow)
       final buckets = <BucketSnapshot>[
         BucketSnapshot(name: 'Blow', bucketType: BucketType.dailyExpenses, color: const Color(0xFF38B2AC), icon: Icons.shopping_cart, balance: blowBalance, change: 0),
-        if (projFire != 0 || prevFire != 0)
-          BucketSnapshot(name: 'Fire', bucketType: BucketType.fire, color: const Color(0xFFE05263), icon: Icons.local_fire_department, balance: projFire, change: projFire - prevFire),
+        if (projHeal != 0 || prevHeal != 0)
+          BucketSnapshot(name: 'Heal', bucketType: BucketType.heal, color: const Color(0xFFE05263), icon: Icons.medical_services, balance: projHeal, change: projHeal - prevHeal),
         if (projSmile != 0 || prevSmile != 0)
           BucketSnapshot(name: 'Smile', bucketType: BucketType.smile, color: const Color(0xFFD946EF), icon: Icons.sentiment_satisfied, balance: projSmile, change: projSmile - prevSmile),
         if (projSplurge != 0 || prevSplurge != 0)
@@ -300,7 +300,7 @@ class FinancialForecastPage extends StatelessWidget {
       ));
 
       // Update previous balances for next iteration
-      prevFire    = projFire;
+      prevHeal    = projHeal;
       prevMojo    = projMojo;
       prevSmile   = projSmile;
       prevSplurge = projSplurge;

@@ -1,7 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 
-enum BucketType { dailyExpenses, splurge, smile, fire, mojo, grow, none }
+enum BucketType { dailyExpenses, splurge, smile, heal, mojo, grow, none }
 
 /// Domain entity representing an expense category.
 class Category extends Equatable {
@@ -65,7 +65,7 @@ extension BucketTypeExtension on BucketType {
       case BucketType.dailyExpenses: return 'Daily Expenses';
       case BucketType.splurge: return 'Splurge';
       case BucketType.smile: return 'Smile';
-      case BucketType.fire: return 'Fire';
+      case BucketType.heal: return 'Heal';
       case BucketType.mojo: return 'Mojo';
       case BucketType.grow: return 'Grow';
       case BucketType.none: return 'None';

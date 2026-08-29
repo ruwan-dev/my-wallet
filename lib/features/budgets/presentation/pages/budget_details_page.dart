@@ -71,7 +71,7 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
           switch (budget.bucketType) {
             case BucketType.dailyExpenses: bucketKey = 'blow'; break;
             case BucketType.smile: bucketKey = 'smile'; break;
-            case BucketType.fire: bucketKey = 'fire'; break;
+            case BucketType.heal: bucketKey = 'fire'; break;
             case BucketType.mojo: bucketKey = 'mojo'; break;
             case BucketType.grow: bucketKey = 'grow'; break;
             default: break;
@@ -249,7 +249,7 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
                                 switch (budget.bucketType) {
                                   case BucketType.dailyExpenses: bucketName = 'Blow'; icon = Icons.work_outline; color = const Color(0xFF38B2AC); break;
                                   case BucketType.smile: bucketName = 'Smile'; icon = Icons.flight_takeoff; color = const Color(0xFF34D399); break;
-                                  case BucketType.fire: bucketName = 'Fire'; icon = Icons.local_fire_department; color = const Color(0xFFF87171); break;
+                                  case BucketType.heal: bucketName = 'Heal'; icon = Icons.medical_services; color = const Color(0xFFF87171); break;
                                   case BucketType.mojo: bucketName = 'Mojo'; icon = Icons.security; color = const Color(0xFFEAB308); break;
                                   case BucketType.grow: bucketName = 'Grow'; icon = Icons.eco; color = const Color(0xFF60A5FA); break;
                                   default: break;
@@ -307,7 +307,7 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
                                 switch (budget.bucketType) {
                                   case BucketType.dailyExpenses: bucketName = 'Blow'; break;
                                   case BucketType.smile: bucketName = 'Smile'; break;
-                                  case BucketType.fire: bucketName = 'Fire'; break;
+                                  case BucketType.heal: bucketName = 'Heal'; break;
                                   case BucketType.mojo: bucketName = 'Mojo'; break;
                                   case BucketType.grow: bucketName = 'Grow'; break;
                                   default: break;

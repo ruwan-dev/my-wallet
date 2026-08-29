@@ -20,7 +20,7 @@ class BucketTransactionsPage extends StatelessWidget {
       case BucketType.dailyExpenses: return 'Blow (Daily Expenses)';
       case BucketType.splurge: return 'Splurge';
       case BucketType.smile: return 'Smile';
-      case BucketType.fire: return 'Fire';
+      case BucketType.heal: return 'Heal';
       case BucketType.mojo: return 'Mojo';
       case BucketType.grow: return 'Grow';
       case BucketType.none: return 'Uncategorized';

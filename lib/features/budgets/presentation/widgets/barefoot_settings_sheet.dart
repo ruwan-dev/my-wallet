@@ -14,7 +14,7 @@ class _BarefootSettingsSheetState extends State<BarefootSettingsSheet> {
   late int _paydayDate;
   late double _smileTargetAmount;
   late TextEditingController _smileGoalController;
-  late FireRedirectionTarget _fireRedirection;
+  late HealRedirectionTarget _fireRedirection;
 
   @override
   void initState() {
@@ -23,7 +23,7 @@ class _BarefootSettingsSheetState extends State<BarefootSettingsSheet> {
     _paydayDate = state.paydayDate;
     _smileTargetAmount = state.smileTargetAmount;
     _smileGoalController = TextEditingController(text: state.smileGoalName);
-    _fireRedirection = state.fireRedirection;
+    _fireRedirection = state.healRedirection;
   }
 
   @override
@@ -37,7 +37,7 @@ class _BarefootSettingsSheetState extends State<BarefootSettingsSheet> {
           paydayDate: _paydayDate,
           smileTargetAmount: _smileTargetAmount,
           smileGoalName: _smileGoalController.text,
-          fireRedirection: _fireRedirection,
+          healRedirection: _fireRedirection,
         );
     Navigator.pop(context);
   }
@@ -144,8 +144,8 @@ class _BarefootSettingsSheetState extends State<BarefootSettingsSheet> {
             
             const SizedBox(height: 24),
 
-            // Fire Redirection
-            const Text('Fire Allocation (20%)', style: TextStyle(color: Colors.white70)),
+            // Heal Redirection
+            const Text('Heal Allocation (20%)', style: TextStyle(color: Colors.white70)),
             const SizedBox(height: 8),
             Container(
               decoration: BoxDecoration(
@@ -154,26 +154,26 @@ class _BarefootSettingsSheetState extends State<BarefootSettingsSheet> {
               ),
               child: Column(
                 children: [
-                  RadioListTile<FireRedirectionTarget>(
-                    title: const Text('Default (Fire Wallet)', style: TextStyle(color: Colors.white)),
+                  RadioListTile<HealRedirectionTarget>(
+                    title: const Text('Default (Heal Wallet)', style: TextStyle(color: Colors.white)),
                     subtitle: const Text('Keep building fire to pay off debts', style: TextStyle(color: Colors.white54, fontSize: 12)),
-                    value: FireRedirectionTarget.fire,
+                    value: HealRedirectionTarget.heal,
                     groupValue: _fireRedirection,
                     activeColor: const Color(0xFFEF4444),
                     onChanged: (val) => setState(() => _fireRedirection = val!),
                   ),
-                  RadioListTile<FireRedirectionTarget>(
+                  RadioListTile<HealRedirectionTarget>(
                     title: const Text('Redirect to Mojo', style: TextStyle(color: Colors.white)),
                     subtitle: const Text('Debt-free? Build your 3-month safety net', style: TextStyle(color: Colors.white54, fontSize: 12)),
-                    value: FireRedirectionTarget.mojo,
+                    value: HealRedirectionTarget.mojo,
                     groupValue: _fireRedirection,
                     activeColor: const Color(0xFFF59E0B),
                     onChanged: (val) => setState(() => _fireRedirection = val!),
                   ),
-                  RadioListTile<FireRedirectionTarget>(
+                  RadioListTile<HealRedirectionTarget>(
                     title: const Text('Redirect to Grow', style: TextStyle(color: Colors.white)),
                     subtitle: const Text('Mojo full? Point the firehose at wealth', style: TextStyle(color: Colors.white54, fontSize: 12)),
-                    value: FireRedirectionTarget.grow,
+                    value: HealRedirectionTarget.grow,
                     groupValue: _fireRedirection,
                     activeColor: const Color(0xFF10B981),
                     onChanged: (val) => setState(() => _fireRedirection = val!),

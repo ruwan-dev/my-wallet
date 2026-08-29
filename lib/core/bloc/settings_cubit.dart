@@ -30,10 +30,10 @@ class SettingsCubit extends Cubit<SettingsState> {
     final smileTargetAmount = (_box.get(_smileTargetAmountKey, defaultValue: 0.0) as num).toDouble();
     final smileGoalName = _box.get(_smileGoalNameKey, defaultValue: 'Smile Goal');
     
-    final fireRedirectionStr = _box.get(_fireRedirectionKey, defaultValue: 'fire');
-    FireRedirectionTarget fireRedirection = FireRedirectionTarget.values.firstWhere(
+    final fireRedirectionStr = _box.get(_fireRedirectionKey, defaultValue: 'heal');
+    HealRedirectionTarget healRedirection = HealRedirectionTarget.values.firstWhere(
       (e) => e.name == fireRedirectionStr,
-      orElse: () => FireRedirectionTarget.fire,
+      orElse: () => HealRedirectionTarget.heal,
     );
     
     final nodeDivisor = (_box.get(_nodeDivisorKey, defaultValue: 5000.0) as num).toDouble();
@@ -53,7 +53,7 @@ class SettingsCubit extends Cubit<SettingsState> {
       paydayDate: paydayDate,
       smileTargetAmount: smileTargetAmount,
       smileGoalName: smileGoalName,
-      fireRedirection: fireRedirection,
+      healRedirection: healRedirection,
       nodeDivisor: nodeDivisor,
       bucketAccountLinks: bucketLinks,
     ));
@@ -100,7 +100,7 @@ class SettingsCubit extends Cubit<SettingsState> {
         _paydayDateKey: state.paydayDate,
         _smileTargetAmountKey: state.smileTargetAmount,
         _smileGoalNameKey: state.smileGoalName,
-        _fireRedirectionKey: state.fireRedirection.name,
+        _fireRedirectionKey: state.healRedirection.name,
         _nodeDivisorKey: state.nodeDivisor,
         _bucketAccountLinksKey: state.bucketAccountLinks,
       };
@@ -126,18 +126,18 @@ class SettingsCubit extends Cubit<SettingsState> {
     required int paydayDate,
     required double smileTargetAmount,
     required String smileGoalName,
-    required FireRedirectionTarget fireRedirection,
+    required HealRedirectionTarget healRedirection,
   }) async {
     await _box.put(_paydayDateKey, paydayDate);
     await _box.put(_smileTargetAmountKey, smileTargetAmount);
     await _box.put(_smileGoalNameKey, smileGoalName);
-    await _box.put(_fireRedirectionKey, fireRedirection.name);
+    await _box.put(_fireRedirectionKey, healRedirection.name);
 
     emit(state.copyWith(
       paydayDate: paydayDate,
       smileTargetAmount: smileTargetAmount,
       smileGoalName: smileGoalName,
-      fireRedirection: fireRedirection,
+      healRedirection: healRedirection,
     ));
     await syncToCloud();
   }

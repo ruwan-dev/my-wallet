@@ -40,7 +40,7 @@ class Particle {
     } else if (type == BucketType.smile) {
       vy -= 300 * dt; // Stars shoot up
       x += math.sin(life * 5) * 2;
-    } else if (type == BucketType.fire) {
+    } else if (type == BucketType.heal) {
       vy -= 500 * dt; // Sparks shoot up fast
       vy *= 0.9; // Drag
       vx *= 0.9;
@@ -102,13 +102,13 @@ class BucketParticleEmitterState extends State<BucketParticleEmitter> with Singl
     if (type == BucketType.dailyExpenses) count = 25; // Bubbles
     if (type == BucketType.splurge) count = 60; // Confetti
     if (type == BucketType.smile) count = 30; // Stars
-    if (type == BucketType.fire) count = 50; // Sparks
+    if (type == BucketType.heal) count = 50; // Sparks
 
     final colors = {
       BucketType.dailyExpenses: [Colors.blue.shade300, Colors.blue.shade200, Colors.cyan.shade200, Colors.white],
       BucketType.splurge: [Colors.red, Colors.blue, Colors.green, Colors.yellow, Colors.purple, Colors.orange],
       BucketType.smile: [Colors.yellow.shade400, Colors.yellow.shade300, Colors.green.shade300, Colors.green.shade400],
-      BucketType.fire: [Colors.pinkAccent, Colors.pink, Colors.orangeAccent, Colors.yellowAccent, Colors.white],
+      BucketType.heal: [Colors.pinkAccent, Colors.pink, Colors.orangeAccent, Colors.yellowAccent, Colors.white],
     };
 
     final palette = colors[type]!;
@@ -126,7 +126,7 @@ class BucketParticleEmitterState extends State<BucketParticleEmitter> with Singl
       } else if (type == BucketType.smile) {
         vx = (_random.nextDouble() - 0.5) * 400;
         vy = -_random.nextDouble() * 500 - 200;
-      } else if (type == BucketType.fire) {
+      } else if (type == BucketType.heal) {
         vx = (_random.nextDouble() - 0.5) * 300;
         vy = -_random.nextDouble() * 900 - 300;
       }
@@ -206,7 +206,7 @@ class _ParticlePainter extends CustomPainter {
       } else if (p.type == BucketType.smile) {
         // Stars
         _drawStar(canvas, Offset.zero, 5, p.size, p.size * 0.4, paint);
-      } else if (p.type == BucketType.fire) {
+      } else if (p.type == BucketType.heal) {
         // Sparks: Lines
         paint.style = PaintingStyle.stroke;
         paint.strokeCap = StrokeCap.round;
