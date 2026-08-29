@@ -117,10 +117,9 @@ class _ForecastCardListState extends State<ForecastCardList>
             physics: const BouncingScrollPhysics(),
             itemCount: widget.cards.length,
             separatorBuilder: (_, index) {
-              // The canvas is wider than the gap: it bleeds 30px into the left
-              // card and 30px into the right card so arrows start/end "inside" the tile.
-              const double gap = 20;
-              const double bleed = 30.0;
+              // The canvas bleeds 60px into each card so the arrowhead can reach the Heal dot
+              const double gap = 16;
+              const double bleed = 60.0;
               const double canvasW = gap + bleed * 2;
               return SizedBox(
                 width: gap,
@@ -160,8 +159,8 @@ class _SweepArrowsPainter extends CustomPainter {
     required this.leftCard,
     required this.rightCard,
     required this.progress,
-    this.bleed  = 30.0,
-    this.totalW = 80.0,
+    this.bleed  = 60.0,
+    this.totalW = 136.0,   // 16 gap + 60*2 bleed
   });
 
   // ── Precise layout constants derived from the card's Flutter padding/font values ──
@@ -185,9 +184,9 @@ class _SweepArrowsPainter extends CustomPainter {
   // Start X:  left edge of canvas (0) = bleed px inside left card
   //           dot is at (bleed - 22) from canvas left
   // End X:    right card left edge = bleed + gap  from canvas left
-  //           dot centre at right card = bleed + gap + 22
-  double get _startX => bleed - 22;        // origin dot on left card
-  double get _tipX   => bleed + (totalW - bleed * 2) + 22;  // heal dot on right card
+  //           Heal dot centre in right card ≈ bleed + gap + 22
+  double get _startX => bleed - 22;        // origin dot on left card (right-side)
+  double get _tipX   => bleed + (totalW - bleed * 2) + 22;  // Heal dot on right card
 
   @override
   void paint(Canvas canvas, Size size) {
