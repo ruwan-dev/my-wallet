@@ -183,34 +183,27 @@ class _DebtCardState extends State<DebtCard>
                           ],
                         ),
                         const SizedBox(height: 8),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Expanded(
-                              child: Text(
-                                'Need to be paid: Rs ${widget.debt.currentBalance.toStringAsFixed(0)}',
-                                style: const TextStyle(
-                                    color: Colors.black54,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600),
-                              ),
+                            Text(
+                              'Need to be paid: Rs ${widget.debt.currentBalance.toStringAsFixed(0)}',
+                              style: const TextStyle(
+                                  color: Colors.black54,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600),
                             ),
-                            if (widget.debt.dueDate != null)
-                              Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Icon(Icons.event, size: 14, color: Colors.black45),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    DateFormat('MMM d, yyyy').format(widget.debt.dueDate!),
-                                    style: const TextStyle(
-                                      color: Colors.black54,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ],
+                            if (widget.debt.dueDate != null) ...[
+                              const SizedBox(height: 2),
+                              Text(
+                                'Due date: ${DateFormat('MMM d, yyyy').format(widget.debt.dueDate!)}',
+                                style: const TextStyle(
+                                  color: Colors.black54,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                ),
                               ),
+                            ],
                           ],
                         ),
                         const SizedBox(height: 8),
