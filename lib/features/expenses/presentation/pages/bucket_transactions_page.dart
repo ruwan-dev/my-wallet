@@ -90,9 +90,7 @@ class BucketTransactionsPage extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
                     child: TransactionCard(
                       transaction: transactions[index],
-                      onTap: () {
-                        // Normally this opens edit modal, but here we can just do nothing or call the parent method if we had one.
-                      },
+                      accountName: transactions[index].accountId, // Or fetch actual account name
                     ),
                   );
                 },

@@ -320,6 +320,7 @@ class _BucketRow extends StatelessWidget {
           ),
         ],
       ),
+     ),
     );
   }
 }

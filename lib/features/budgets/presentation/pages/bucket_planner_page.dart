@@ -1462,8 +1462,9 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
           ),
         ],
       ),
-    );
+    ));
   }
+}
 
 class _ConcentricDonutPainter extends CustomPainter {
   final double dailyExpensesSpentPct;
@@ -1565,5 +1566,6 @@ class _ConcentricDonutPainter extends CustomPainter {
         oldDelegate.selectedIndex != selectedIndex;
   }
 }
+
 
 
