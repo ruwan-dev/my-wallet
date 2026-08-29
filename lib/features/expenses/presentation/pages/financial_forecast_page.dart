@@ -262,8 +262,17 @@ class FinancialForecastPage extends StatelessWidget {
         healthMsg = sweep > 0 ? 'On track · saving surplus' : 'On track';
       }
 
-      // Bucket rows (only show non-zero buckets)
+      // Calculate Blow balance for the card
+      double blowBalance = 0;
+      if (i == 0) {
+        blowBalance = sweep > 0 ? sweep : -deficit;
+      } else {
+        blowBalance = customBlowBudget > 0 ? customBlowBudget : actualBlowAllocation;
+      }
+
+      // Bucket rows (only show non-zero buckets or if it's Blow)
       final buckets = <BucketSnapshot>[
+        BucketSnapshot(name: 'Blow', bucketType: BucketType.dailyExpenses, color: const Color(0xFF38B2AC), icon: Icons.shopping_cart, balance: blowBalance, change: 0),
         if (projFire != 0 || prevFire != 0)
           BucketSnapshot(name: 'Fire', bucketType: BucketType.fire, color: const Color(0xFFE05263), icon: Icons.local_fire_department, balance: projFire, change: projFire - prevFire),
         if (projSmile != 0 || prevSmile != 0)
