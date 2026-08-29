@@ -68173,27 +68173,26 @@ return A.dO(null,null,new A.auK(this.a,b,this.b,this.c),t.Fi,t.Ib)},
 $S:69}
 A.auK.prototype={
 $2(a7,a8){var s,r,q,p,o,n,m,l,k,j,i,h,g,f,e,d,c,b,a,a0,a1,a2,a3=this,a4=null,a5="Available to Sweep: ",a6=new A.bF(Date.now(),0,!1)
-for(s=a3.b.a,r=J.cw(s),q=r.gaq(s),p=a3.a,o=a3.c.a,n=0,m=0,l=0,k=0;q.v();){j=q.gL(q)
-i=p.a_b(j,o)
-if(i===B.cF){h=j.y
-j=j.e
-n+=h?j:-j}else if(i===B.eB){h=j.y
-j=j.e
-m+=h?j:-j}else if(i===B.dz){h=j.y
-j=j.e
-l+=h?j:-j}else if(i===B.cE){h=j.y
-j=j.e
-k+=h?j:-j}}for(s=r.gaq(s),g=0,f=0;s.v();){r=s.gL(s)
+for(s=a3.b.a,r=J.cw(s),q=r.gaq(s),p=a3.a,o=a3.c.a,n=0,m=0;q.v();){l=q.gL(q)
+k=p.a_b(l,o)
+if(k===B.cF){j=l.y
+l=l.e
+n+=j?l:-l}else if(k===B.eB){j=l.y
+l=l.e
+m+=j?l:-l}}for(s=r.gaq(s),i=0,h=0,g=0,f=0;s.v();){r=s.gL(s)
 q=r.x
-if(A.cA(q)===A.cA(a6)&&A.cn(q)===A.cn(a6))if(r.y)g+=r.e
-else if(p.a_b(r,o)===B.bV)f+=r.e}e=g*0.6
-d=g*0.2
-c=g*0.1
+if(A.cA(q)===A.cA(a6)&&A.cn(q)===A.cn(a6))if(r.y)i+=r.e
+else{k=p.a_b(r,o)
+if(k===B.bV)h+=r.e
+else if(k===B.cE)g+=r.e
+else if(k===B.dz)f+=r.e}}e=i*0.6
+d=i*0.2
+c=i*0.1
 if(a8 instanceof A.q1)for(s=J.aL(a8.a),b=e;s.v();){r=s.gL(s)
 if(!r.r){q=r.w
 if(q===B.bV&&r.gkK()>0)b=r.gkK()
 if(q===B.cF&&r.gkK()>0)d=r.gkK()}}else b=e
-a=e-f
+a=e-h
 if(a>0){a0=a
 a1=0}else{a1=Math.abs(a)
 a0=0}a2=b>e?b-e:0
@@ -68201,20 +68200,20 @@ s=A.a6(24)
 r=A.b([new A.bb(0,B.B,A.L(10,B.j.l()>>>16&255,B.j.l()>>>8&255,B.j.l()&255),B.fF,24)],t.V)
 q=a3.d.ok
 o=q.x
-j=t.p
-o=A.b([A.aT(A.b([B.Xz,B.bc,A.U("Current Blow (Daily) Status",a4,a4,a4,a4,a4,o==null?a4:o.qi(B.v),a4,a4)],j),B.o,B.n,B.l,0),B.aa,p.DN(a7,"Actual 60% Allocation",e,B.ay),B.aD,p.DN(a7,"Custom Budget Limit",b,B.ay)],j)
-if(a2>0)B.b.P(o,A.b([B.aD,p.DN(a7,"Budget Config Warning",a2,B.hG)],j))
+l=t.p
+o=A.b([A.aT(A.b([B.Xz,B.bc,A.U("Current Blow (Daily) Status",a4,a4,a4,a4,a4,o==null?a4:o.qi(B.v),a4,a4)],l),B.o,B.n,B.l,0),B.aa,p.DN(a7,"Actual 60% Allocation",e,B.ay),B.aD,p.DN(a7,"Custom Budget Limit",b,B.ay)],l)
+if(a2>0)B.b.P(o,A.b([B.aD,p.DN(a7,"Budget Config Warning",a2,B.hG)],l))
 o.push(B.aD)
-o.push(p.DN(a7,"Spent So Far",f,B.iB))
+o.push(p.DN(a7,"Spent So Far",h,B.iB))
 o.push(B.ah)
 o.push(B.TC)
 o.push(B.ah)
 if(a0>0)o.push(A.U(a5+A.d2(a0,A.an(a7,!0,t.R).c),a4,a4,a4,a4,a4,B.KD,a4,a4))
-else{h=t.R
-if(a1>0)o.push(A.U("Actual Overspend: -"+A.d2(a1,A.an(a7,!0,h).c),a4,a4,a4,a4,a4,B.aun,a4,a4))
-else o.push(A.U(a5+A.d2(0,A.an(a7,!0,h).c),a4,a4,a4,a4,a4,B.KD,a4,a4))}s=A.ah(a4,A.aS(o,B.U,B.n,B.l),B.k,a4,a4,new A.ak(B.h,B.Td,a4,s,r,a4,B.r),a4,a4,a4,a4,B.aV,a4,a4,a4)
+else{j=t.R
+if(a1>0)o.push(A.U("Actual Overspend: -"+A.d2(a1,A.an(a7,!0,j).c),a4,a4,a4,a4,a4,B.aun,a4,a4))
+else o.push(A.U(a5+A.d2(0,A.an(a7,!0,j).c),a4,a4,a4,a4,a4,B.KD,a4,a4))}s=A.ah(a4,A.aS(o,B.U,B.n,B.l),B.k,a4,a4,new A.ak(B.h,B.Td,a4,s,r,a4,B.r),a4,a4,a4,a4,B.aV,a4,a4,a4)
 q=q.w
-return A.ff(A.aS(A.b([s,B.bp,A.U("6-Month Bucket Projection",a4,a4,a4,a4,a4,q==null?a4:q.dk(B.ay,B.v),a4,a4),B.aa,p.an5(a7,n,m,l,k,a0,a1,d,c,c,e,b)],j),B.b_,B.n,B.l),a4,B.w,B.UR,a4,B.W)},
+return A.ff(A.aS(A.b([s,B.bp,A.U("6-Month Bucket Projection",a4,a4,a4,a4,a4,q==null?a4:q.dk(B.ay,B.v),a4,a4),B.aa,p.an5(a7,n,m,c-f,c-g,a0,a1,d,c,c,e,b)],l),B.b_,B.n,B.l),a4,B.w,B.UR,a4,B.W)},
 $S:448}
 A.auH.prototype={
 $1(a){return A.d2(a,A.an(this.a,!0,t.R).c)},
