@@ -117,14 +117,25 @@ class _ForecastCardListState extends State<ForecastCardList>
             physics: const BouncingScrollPhysics(),
             itemCount: widget.cards.length,
             separatorBuilder: (_, index) {
+              // The canvas is wider than the gap: it bleeds 30px into the left
+              // card and 30px into the right card so arrows start/end "inside" the tile.
+              const double gap = 20;
+              const double bleed = 30.0;
+              const double canvasW = gap + bleed * 2;
               return SizedBox(
-                width: 40,
-                child: CustomPaint(
-                  size: const Size(40, 420),
-                  painter: _SweepArrowsPainter(
-                    leftCard:  widget.cards[index],
-                    rightCard: widget.cards[index + 1],
-                    progress:  _progress.value,
+                width: gap,
+                child: OverflowBox(
+                  maxWidth: canvasW,
+                  alignment: Alignment.center,
+                  child: CustomPaint(
+                    size: const Size(canvasW, 420),
+                    painter: _SweepArrowsPainter(
+                      leftCard:  widget.cards[index],
+                      rightCard: widget.cards[index + 1],
+                      progress:  _progress.value,
+                      bleed:     bleed,
+                      totalW:    canvasW,
+                    ),
                   ),
                 ),
               );
@@ -141,17 +152,21 @@ class _ForecastCardListState extends State<ForecastCardList>
 class _SweepArrowsPainter extends CustomPainter {
   final ForecastMonthCard leftCard;
   final ForecastMonthCard rightCard;
-  final double progress; // 0.0 → 1.0 for draw animation
+  final double progress;
+  final double bleed;   // px the canvas overlaps INTO each card
+  final double totalW;  // total canvas width = gap + bleed*2
 
   _SweepArrowsPainter({
     required this.leftCard,
     required this.rightCard,
     required this.progress,
+    this.bleed  = 30.0,
+    this.totalW = 80.0,
   });
 
   // ── Layout constants that mirror the card's Flutter layout ──
-  static const double _headerH = 116.0; // card header block height
-  static const double _rowH    = 28.0;  // each BucketRow height (vertical:5*2 + ~18)
+  static const double _headerH = 116.0;
+  static const double _rowH    = 28.0;
 
   double _rowCY(int index) => _headerH + index * _rowH + _rowH / 2;
 
@@ -175,7 +190,7 @@ class _SweepArrowsPainter extends CustomPainter {
       if (!shouldDraw) continue;
 
       final startY = _rowCY(i);
-      final color  = b.color.withValues(alpha: 0.75);
+      final color  = b.color.withValues(alpha: 0.85);
 
       _drawAnimatedArrow(canvas, size, startY, destY, color);
     }
@@ -183,12 +198,15 @@ class _SweepArrowsPainter extends CustomPainter {
 
   void _drawAnimatedArrow(
       Canvas canvas, Size size, double startY, double destY, Color color) {
-    const x0 = 2.0;
-    final x3 = size.width - 10;
+    // x0 = inside left card (starts at bleed px from left = 0 of canvas)
+    final x0 = 4.0;              // well inside left card
+    final x3 = size.width - 4;  // well inside right card
 
+    // Control points: curve bends in the middle (the gap between cards)
+    final mid = size.width / 2;
     final fullPath = Path()
       ..moveTo(x0, startY)
-      ..cubicTo(size.width * 0.55, startY, size.width * 0.45, destY, x3, destY);
+      ..cubicTo(mid, startY, mid, destY, x3, destY);
 
     final metric = fullPath.computeMetrics().first;
     final animLen = metric.length * progress;
@@ -198,21 +216,25 @@ class _SweepArrowsPainter extends CustomPainter {
 
     final linePaint = Paint()
       ..color = color
-      ..strokeWidth = 2.0
+      ..strokeWidth = 1.8
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
 
     canvas.drawPath(partial, linePaint);
 
+    // Filled arrowhead at destination once complete
     if (progress >= 0.97) {
       const double as = 5.0;
-      final head = Path();
-      final tip = Offset(size.width - 4, destY);
-      head.moveTo(tip.dx, tip.dy);
-      head.lineTo(tip.dx - as - 2, tip.dy - as * 0.7);
-      head.lineTo(tip.dx - as - 2, tip.dy + as * 0.7);
-      head.close();
-      canvas.drawPath(head,
+      final tip = Offset(x3, destY);
+      final head = Path()
+        ..moveTo(tip.dx, tip.dy)
+        ..lineTo(tip.dx - as - 2, tip.dy - as * 0.65)
+        ..lineTo(tip.dx - as - 2, tip.dy + as * 0.65)
+        ..close();
+      canvas.drawPath(head, Paint()..color = color..style = PaintingStyle.fill);
+
+      // Small start dot inside left card
+      canvas.drawCircle(Offset(x0, startY), 3.0,
           Paint()..color = color..style = PaintingStyle.fill);
     }
   }
@@ -449,10 +471,6 @@ class _BucketRow extends StatelessWidget {
             ),
           ),
 
-          if (b.balance > 0)
-            Icon(Icons.arrow_forward_rounded, size: 14, color: Colors.grey.shade400)
-          else
-            const SizedBox(width: 14),
         ],
         ),
       ),
