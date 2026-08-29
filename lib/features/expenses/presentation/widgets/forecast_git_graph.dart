@@ -34,7 +34,7 @@ class ForecastNode {
   final String mojoBalanceStr;
   final double debtBalance;
   final String debtBalanceStr;
-  final double allocationAmount; // Direct to fire
+  final double allocationAmount;
   final String allocationAmountStr;
   final List<ForecastTransfer> transfers;
 
@@ -56,56 +56,14 @@ class ForecastNode {
   });
 }
 
-class ActiveTableRows {
-  final bool hasAllocation;
-  final bool hasSweep;
-  final bool hasDeficit;
-  final bool hasSmileRescue;
-  final bool hasSplurgeRescue;
-  final bool hasMojoCover;
-  final bool hasDebtBorrow;
-  
-  ActiveTableRows({
-    required this.hasAllocation,
-    required this.hasSweep,
-    required this.hasDeficit,
-    required this.hasSmileRescue,
-    required this.hasSplurgeRescue,
-    required this.hasMojoCover,
-    required this.hasDebtBorrow,
-  });
-  
-  factory ActiveTableRows.fromNodes(List<ForecastNode> nodes) {
-    bool alloc = false, sweep = false, deficit = false;
-    bool smile = false, splurge = false, mojo = false, debt = false;
-    
-    for (final node in nodes) {
-      if (node.allocationAmount > 0) alloc = true;
-      for (final t in node.transfers) {
-        if (t.from == TrackType.blow && t.to == TrackType.fire) sweep = true;
-        if (t.from == TrackType.fire && t.to == TrackType.blow) deficit = true;
-        if (t.from == TrackType.smile && t.to == TrackType.fire) smile = true;
-        if (t.from == TrackType.splurge && t.to == TrackType.fire) splurge = true;
-        if (t.from == TrackType.mojo && t.to == TrackType.fire) mojo = true;
-        if (t.from == TrackType.debt && t.to == TrackType.mojo) debt = true;
-      }
-    }
-    return ActiveTableRows(
-      hasAllocation: alloc, hasSweep: sweep, hasDeficit: deficit,
-      hasSmileRescue: smile, hasSplurgeRescue: splurge,
-      hasMojoCover: mojo, hasDebtBorrow: debt
-    );
-  }
-}
-
 class ForecastGitGraph extends StatelessWidget {
   final List<ForecastNode> nodes;
 
   const ForecastGitGraph({super.key, required this.nodes});
 
   List<TrackType> _getGloballyActiveTracks() {
-    Set<TrackType> active = {TrackType.blow, TrackType.fire, TrackType.mojo}; // Base tracks always active
-    
+    Set<TrackType> active = {TrackType.blow, TrackType.fire, TrackType.mojo};
+
     for (final node in nodes) {
       if (node.smileBalance != 0) active.add(TrackType.smile);
       if (node.splurgeBalance != 0) active.add(TrackType.splurge);
@@ -116,7 +74,7 @@ class ForecastGitGraph extends StatelessWidget {
         active.add(t.to);
       }
     }
-    
+
     final all = [TrackType.blow, TrackType.splurge, TrackType.smile, TrackType.fire, TrackType.mojo, TrackType.grow, TrackType.debt];
     return all.where((t) => active.contains(t)).toList();
   }
@@ -124,30 +82,32 @@ class ForecastGitGraph extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final double screenWidth = MediaQuery.of(context).size.width;
-    final double fixedLeftWidth = 85.0;
+    final double fixedLeftWidth = 75.0;
     final double scrollableWidth = screenWidth - fixedLeftWidth;
-    final double colWidth = scrollableWidth / 1.8; // show nearly 2 columns
-    
+    final double colWidth = scrollableWidth / 1.8;
+
     final activeTracks = _getGloballyActiveTracks();
-    final activeRows = ActiveTableRows.fromNodes(nodes);
 
     final double startPadding = 15.0;
     final double totalWidth = startPadding + (nodes.length * colWidth) + (colWidth / 2);
-    final double totalHeight = 550.0; // Plenty of room for dynamic table
+    // Height: just enough for lines + month label + a little breathing room
+    final double trackSpacing = 44.0;
+    final double startY = 35.0;
+    final double totalHeight = startY + (activeTracks.length * trackSpacing) + 60.0;
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // FIXED LEFT LABELS
+        // FIXED LEFT LABELS (track names only)
         SizedBox(
           width: fixedLeftWidth,
           height: totalHeight,
           child: CustomPaint(
-            painter: FixedLabelsPainter(activeTracks, activeRows),
+            painter: FixedLabelsPainter(activeTracks, trackSpacing, startY),
           ),
         ),
-        
-        // SCROLLABLE GRAPH & AMOUNTS
+
+        // SCROLLABLE GRAPH
         Expanded(
           child: SingleChildScrollView(
             scrollDirection: Axis.horizontal,
@@ -156,7 +116,7 @@ class ForecastGitGraph extends StatelessWidget {
               width: totalWidth,
               height: totalHeight,
               child: CustomPaint(
-                painter: GitGraphPainter(nodes, colWidth, activeTracks, activeRows),
+                painter: GitGraphPainter(nodes, colWidth, activeTracks, trackSpacing, startY),
               ),
             ),
           ),
@@ -166,14 +126,33 @@ class ForecastGitGraph extends StatelessWidget {
   }
 }
 
-// Shared Math / Utils
-const double _trackSpacing = 28.0; 
-const double _startY = 30.0;
+void _drawText(Canvas canvas, String text, double x, double y, Color color,
+    {double fontSize = 11, bool bold = false, TextAlign align = TextAlign.left}) {
+  final textSpan = TextSpan(
+    text: text,
+    style: TextStyle(
+        color: color,
+        fontSize: fontSize,
+        fontWeight: bold ? FontWeight.bold : FontWeight.normal),
+  );
+  final textPainter = TextPainter(
+    text: textSpan,
+    textDirection: TextDirection.ltr,
+    textAlign: align,
+  );
+  textPainter.layout();
 
-double _getTrackY(TrackType track, List<TrackType> activeTracks) {
+  double dx = x;
+  if (align == TextAlign.center) dx = x - textPainter.width / 2;
+  if (align == TextAlign.right) dx = x - textPainter.width;
+
+  textPainter.paint(canvas, Offset(dx, y));
+}
+
+double _getTrackY(TrackType track, List<TrackType> activeTracks, double trackSpacing, double startY) {
   int index = activeTracks.indexOf(track);
-  if (index == -1) return _startY;
-  return _startY + (index * _trackSpacing);
+  if (index == -1) return startY;
+  return startY + (index * trackSpacing);
 }
 
 Color _getTrackColor(TrackType track) {
@@ -188,96 +167,21 @@ Color _getTrackColor(TrackType track) {
   }
 }
 
-void _drawText(Canvas canvas, String text, double x, double y, Color color, {double fontSize = 12, bool bold = false, TextAlign align = TextAlign.left}) {
-  final textSpan = TextSpan(
-    text: text,
-    style: TextStyle(color: color, fontSize: fontSize, fontWeight: bold ? FontWeight.bold : FontWeight.normal),
-  );
-  final textPainter = TextPainter(
-    text: textSpan,
-    textDirection: TextDirection.ltr,
-    textAlign: align,
-  );
-  textPainter.layout();
-  
-  double dx = x;
-  if (align == TextAlign.center) dx = x - textPainter.width / 2;
-  if (align == TextAlign.right) dx = x - textPainter.width;
-  
-  textPainter.paint(canvas, Offset(dx, y));
-}
-
-// Fixed Labels Painter
+// Fixed left column: only track name labels
 class FixedLabelsPainter extends CustomPainter {
   final List<TrackType> activeTracks;
-  final ActiveTableRows activeRows;
-  FixedLabelsPainter(this.activeTracks, this.activeRows);
+  final double trackSpacing;
+  final double startY;
+
+  FixedLabelsPainter(this.activeTracks, this.trackSpacing, this.startY);
 
   @override
   void paint(Canvas canvas, Size size) {
-    // 1. Draw Track Names (aligned with the horizontal lines)
     for (final track in activeTracks) {
-      final y = _getTrackY(track, activeTracks);
+      final y = _getTrackY(track, activeTracks, trackSpacing, startY);
       final color = _getTrackColor(track);
-      _drawText(canvas, track.name.toUpperCase(), 0, y - 6, color, fontSize: 10, bold: true, align: TextAlign.left);
-    }
-    
-    // 2. Draw Table Rows
-    double tableStartY = _startY + (activeTracks.length * _trackSpacing) + 50;
-    double currentTextY = tableStartY;
-
-    // Transactions
-    if (activeRows.hasAllocation) {
-      _drawText(canvas, 'Alloc:', 0, currentTextY, Colors.blue, fontSize: 11, bold: true, align: TextAlign.left);
-      currentTextY += 18;
-    }
-    if (activeRows.hasSweep) {
-      _drawText(canvas, 'Sweep:', 0, currentTextY, TrackColors.blow, fontSize: 11, bold: true, align: TextAlign.left);
-      currentTextY += 18;
-    }
-    if (activeRows.hasDeficit) {
-      _drawText(canvas, 'Deficit:', 0, currentTextY, TrackColors.fire, fontSize: 11, bold: true, align: TextAlign.left);
-      currentTextY += 18;
-    }
-    if (activeRows.hasSmileRescue) {
-      _drawText(canvas, 'Smile Cover:', 0, currentTextY, TrackColors.smile, fontSize: 11, bold: true, align: TextAlign.left);
-      currentTextY += 18;
-    }
-    if (activeRows.hasSplurgeRescue) {
-      _drawText(canvas, 'Splurge Cover:', 0, currentTextY, TrackColors.splurge, fontSize: 11, bold: true, align: TextAlign.left);
-      currentTextY += 18;
-    }
-    if (activeRows.hasMojoCover) {
-      _drawText(canvas, 'Mojo Cover:', 0, currentTextY, TrackColors.mojo, fontSize: 11, bold: true, align: TextAlign.left);
-      currentTextY += 18;
-    }
-    if (activeRows.hasDebtBorrow) {
-      _drawText(canvas, 'Debt Borrow:', 0, currentTextY, TrackColors.debt, fontSize: 11, bold: true, align: TextAlign.left);
-      currentTextY += 18;
-    }
-
-    currentTextY += 10; // gap before balances
-
-    // Balances
-    if (activeTracks.contains(TrackType.smile)) {
-      _drawText(canvas, 'Smile Bal:', 0, currentTextY, TrackColors.smile, fontSize: 12, bold: true, align: TextAlign.left);
-      currentTextY += 18;
-    }
-    if (activeTracks.contains(TrackType.splurge)) {
-      _drawText(canvas, 'Splurge Bal:', 0, currentTextY, TrackColors.splurge, fontSize: 12, bold: true, align: TextAlign.left);
-      currentTextY += 18;
-    }
-    if (activeTracks.contains(TrackType.fire)) {
-      _drawText(canvas, 'Fire Bal:', 0, currentTextY, TrackColors.fire, fontSize: 12, bold: true, align: TextAlign.left);
-      currentTextY += 18;
-    }
-    if (activeTracks.contains(TrackType.mojo)) {
-      _drawText(canvas, 'Mojo Bal:', 0, currentTextY, TrackColors.mojo, fontSize: 12, bold: true, align: TextAlign.left);
-      currentTextY += 18;
-    }
-    if (activeTracks.contains(TrackType.debt)) {
-      _drawText(canvas, 'Debt Bal:', 0, currentTextY, TrackColors.debt, fontSize: 12, bold: true, align: TextAlign.left);
-      currentTextY += 18;
+      _drawText(canvas, track.name.toUpperCase(), 0, y - 7, color,
+          fontSize: 10, bold: true, align: TextAlign.left);
     }
   }
 
@@ -285,155 +189,131 @@ class FixedLabelsPainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }
 
-// Scrolling Graph Painter
+// Scrolling graph painter — NO bottom table, amounts shown ON the curves
 class GitGraphPainter extends CustomPainter {
   final List<ForecastNode> nodes;
   final double colWidth;
   final List<TrackType> activeTracks;
-  final ActiveTableRows activeRows;
+  final double trackSpacing;
+  final double startY;
 
-  GitGraphPainter(this.nodes, this.colWidth, this.activeTracks, this.activeRows);
+  GitGraphPainter(this.nodes, this.colWidth, this.activeTracks, this.trackSpacing, this.startY);
 
   @override
   void paint(Canvas canvas, Size size) {
+    const double startPadding = 15.0;
+
     for (int i = 0; i < nodes.length; i++) {
       final node = nodes[i];
-      
-      final double startPadding = 15.0;
+
       final double prevX = i == 0 ? startPadding : startPadding + (i * colWidth);
       final double x = startPadding + ((i + 1) * colWidth);
+      final double midX = (prevX + x) / 2;
 
-      // 0. Draw the "Today" starting dots
+      // 0. "Today" starting dots on first column
       if (i == 0) {
         for (final track in activeTracks) {
-          final y = _getTrackY(track, activeTracks);
+          final y = _getTrackY(track, activeTracks, trackSpacing, startY);
           final color = _getTrackColor(track);
-          canvas.drawCircle(Offset(prevX, y), 8, Paint()..color = color.withValues(alpha: 0.3));
-          canvas.drawCircle(Offset(prevX, y), 4, Paint()..color = color);
+          canvas.drawCircle(Offset(prevX, y), 9, Paint()..color = color.withValues(alpha: 0.25));
+          canvas.drawCircle(Offset(prevX, y), 5, Paint()..color = color);
         }
-        double textStartY = _startY + (activeTracks.length * _trackSpacing) + 25;
-        _drawText(canvas, 'Today', prevX, textStartY, const Color(0xFF1E293B), fontSize: 13, bold: true, align: TextAlign.center);
+        final textY = startY + (activeTracks.length * trackSpacing) + 8;
+        _drawText(canvas, 'Today', prevX, textY, const Color(0xFF64748B),
+            fontSize: 11, bold: false, align: TextAlign.center);
       }
 
-      // 1. Draw continuous horizontal track lines
+      // 1. Horizontal track lines
       for (final track in activeTracks) {
-        final y = _getTrackY(track, activeTracks);
-        final paint = Paint()
-          ..color = _getTrackColor(track).withValues(alpha: 0.3)
-          ..strokeWidth = 3
-          ..style = PaintingStyle.stroke;
-          
-        canvas.drawLine(Offset(prevX, y), Offset(x, y), paint);
+        final y = _getTrackY(track, activeTracks, trackSpacing, startY);
+        canvas.drawLine(
+          Offset(prevX, y),
+          Offset(x, y),
+          Paint()
+            ..color = _getTrackColor(track).withValues(alpha: 0.25)
+            ..strokeWidth = 3
+            ..style = PaintingStyle.stroke,
+        );
       }
 
-      // 2. Draw Transfer Curves
+      // 2. Transfer curves + label ON the midpoint of each curve
       for (final transfer in node.transfers) {
-        final fromY = _getTrackY(transfer.from, activeTracks);
-        final toY = _getTrackY(transfer.to, activeTracks);
-        
-        final path = Path();
-        path.moveTo(prevX, fromY);
-        
-        path.cubicTo(
-          prevX + (x - prevX) / 2, fromY, 
-          prevX + (x - prevX) / 2, toY, 
-          x, toY
+        final fromY = _getTrackY(transfer.from, activeTracks, trackSpacing, startY);
+        final toY = _getTrackY(transfer.to, activeTracks, trackSpacing, startY);
+
+        final path = Path()
+          ..moveTo(prevX, fromY)
+          ..cubicTo(midX, fromY, midX, toY, x, toY);
+
+        canvas.drawPath(
+          path,
+          Paint()
+            ..color = transfer.color.withValues(alpha: 0.85)
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 2.5,
         );
 
-        final paint = Paint()
-          ..color = transfer.color.withValues(alpha: 0.8)
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 2.5;
-          
-        canvas.drawPath(path, paint);
+        // Amount label drawn at the peak of the curve (midX, midY)
+        final double midY = (fromY + toY) / 2;
+        // Strip prefix tokens like "+", "-", "Rescue: " etc and show clean amount
+        final String amountText = transfer.label
+            .replaceAll(RegExp(r'^(Rescue|Cover|Borrow|Sweep):\s*'), '');
+
+        // Small pill background
+        final textSpan = TextSpan(
+          text: amountText,
+          style: TextStyle(
+              color: transfer.color, fontSize: 10, fontWeight: FontWeight.bold),
+        );
+        final tp = TextPainter(text: textSpan, textDirection: TextDirection.ltr);
+        tp.layout();
+        final pillRect = RRect.fromRectAndRadius(
+          Rect.fromCenter(
+              center: Offset(midX, midY - tp.height / 2 - 2),
+              width: tp.width + 10,
+              height: tp.height + 6),
+          const Radius.circular(4),
+        );
+        canvas.drawRRect(pillRect,
+            Paint()..color = transfer.color.withValues(alpha: 0.12));
+        tp.paint(canvas, Offset(midX - tp.width / 2, midY - tp.height - 2));
       }
 
-      // 3. Draw Nodes (Dots)
+      // 3. End-of-month dots
       for (final track in activeTracks) {
-        final y = _getTrackY(track, activeTracks);
+        final y = _getTrackY(track, activeTracks, trackSpacing, startY);
         final color = _getTrackColor(track);
-        
-        canvas.drawCircle(Offset(x, y), 8, Paint()..color = color.withValues(alpha: 0.3));
-        canvas.drawCircle(Offset(x, y), 4, Paint()..color = color);
+        canvas.drawCircle(Offset(x, y), 9, Paint()..color = color.withValues(alpha: 0.25));
+        canvas.drawCircle(Offset(x, y), 5, Paint()..color = color);
       }
 
-      // 4. Draw Table Rows (Numbers ONLY)
-      double tableStartY = _startY + (activeTracks.length * _trackSpacing) + 50;
-      double currentTextY = tableStartY;
-      
-      // Month Label goes ABOVE the table
-      _drawText(canvas, node.monthLabel, x, tableStartY - 25, const Color(0xFF1E293B), fontSize: 13, bold: true, align: TextAlign.center);
+      // 4. Balance labels drawn ABOVE each dot (right side of dot, slight offset)
+      // We show the balance of each track ABOVE its own line at x
+      _drawBalanceNearDot(canvas, node, x, activeTracks);
 
-      // Helper to strip "Cover:", "Rescue:", etc from label
-      String? _getTransferLabel(TrackType from, TrackType to) {
-        for (final t in node.transfers) {
-          if (t.from == from && t.to == to) {
-            return t.label.replaceAll(RegExp(r'^(Rescue|Cover|Borrow):\s*'), '');
-          }
-        }
-        return null;
-      }
-
-      // Transactions
-      if (activeRows.hasAllocation) {
-        _drawText(canvas, node.allocationAmount > 0 ? node.allocationAmountStr : '-', x, currentTextY, Colors.blue, fontSize: 11, align: TextAlign.center);
-        currentTextY += 18;
-      }
-      if (activeRows.hasSweep) {
-        String? val = _getTransferLabel(TrackType.blow, TrackType.fire);
-        _drawText(canvas, val ?? '-', x, currentTextY, TrackColors.blow, fontSize: 11, align: TextAlign.center);
-        currentTextY += 18;
-      }
-      if (activeRows.hasDeficit) {
-        String? val = _getTransferLabel(TrackType.fire, TrackType.blow);
-        _drawText(canvas, val ?? '-', x, currentTextY, TrackColors.fire, fontSize: 11, align: TextAlign.center);
-        currentTextY += 18;
-      }
-      if (activeRows.hasSmileRescue) {
-        String? val = _getTransferLabel(TrackType.smile, TrackType.fire);
-        _drawText(canvas, val ?? '-', x, currentTextY, TrackColors.smile, fontSize: 11, align: TextAlign.center);
-        currentTextY += 18;
-      }
-      if (activeRows.hasSplurgeRescue) {
-        String? val = _getTransferLabel(TrackType.splurge, TrackType.fire);
-        _drawText(canvas, val ?? '-', x, currentTextY, TrackColors.splurge, fontSize: 11, align: TextAlign.center);
-        currentTextY += 18;
-      }
-      if (activeRows.hasMojoCover) {
-        String? val = _getTransferLabel(TrackType.mojo, TrackType.fire);
-        _drawText(canvas, val ?? '-', x, currentTextY, TrackColors.mojo, fontSize: 11, align: TextAlign.center);
-        currentTextY += 18;
-      }
-      if (activeRows.hasDebtBorrow) {
-        String? val = _getTransferLabel(TrackType.debt, TrackType.mojo);
-        _drawText(canvas, val ?? '-', x, currentTextY, TrackColors.debt, fontSize: 11, align: TextAlign.center);
-        currentTextY += 18;
-      }
-
-      currentTextY += 10; // gap before balances
-
-      // Balances
-      if (activeTracks.contains(TrackType.smile)) {
-        _drawText(canvas, node.smileBalanceStr, x, currentTextY, TrackColors.smile, fontSize: 12, bold: true, align: TextAlign.center);
-        currentTextY += 18;
-      }
-      if (activeTracks.contains(TrackType.splurge)) {
-        _drawText(canvas, node.splurgeBalanceStr, x, currentTextY, TrackColors.splurge, fontSize: 12, bold: true, align: TextAlign.center);
-        currentTextY += 18;
-      }
-      if (activeTracks.contains(TrackType.fire)) {
-        _drawText(canvas, node.fireBalanceStr, x, currentTextY, TrackColors.fire, fontSize: 12, bold: true, align: TextAlign.center);
-        currentTextY += 18;
-      }
-      if (activeTracks.contains(TrackType.mojo)) {
-        _drawText(canvas, node.mojoBalanceStr, x, currentTextY, TrackColors.mojo, fontSize: 12, bold: true, align: TextAlign.center);
-        currentTextY += 18;
-      }
-      if (activeTracks.contains(TrackType.debt)) {
-        _drawText(canvas, node.debtBalanceStr, x, currentTextY, TrackColors.debt, fontSize: 12, bold: true, align: TextAlign.center);
-        currentTextY += 18;
-      }
+      // 5. Month label below all tracks
+      final double labelY = startY + (activeTracks.length * trackSpacing) + 8;
+      _drawText(canvas, node.monthLabel, x, labelY, const Color(0xFF1E293B),
+          fontSize: 12, bold: true, align: TextAlign.center);
     }
+  }
+
+  void _drawBalanceNearDot(
+      Canvas canvas, ForecastNode node, double x, List<TrackType> activeTracks) {
+    // Draw the balance amount just to the right of each dot (small, subtle)
+    void drawBal(TrackType track, String balStr) {
+      if (!activeTracks.contains(track)) return;
+      final y = _getTrackY(track, activeTracks, trackSpacing, startY);
+      final color = _getTrackColor(track);
+      _drawText(canvas, balStr, x + 12, y - 8, color,
+          fontSize: 10, bold: false, align: TextAlign.left);
+    }
+
+    drawBal(TrackType.smile, node.smileBalanceStr);
+    drawBal(TrackType.splurge, node.splurgeBalanceStr);
+    drawBal(TrackType.fire, node.fireBalanceStr);
+    drawBal(TrackType.mojo, node.mojoBalanceStr);
+    drawBal(TrackType.debt, node.debtBalanceStr);
   }
 
   @override
