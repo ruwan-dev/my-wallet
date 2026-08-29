@@ -117,10 +117,10 @@ class _ForecastCardListState extends State<ForecastCardList>
             physics: const BouncingScrollPhysics(),
             itemCount: widget.cards.length,
             separatorBuilder: (_, index) {
-              // The canvas bleeds 60px into each card so the arrowhead can reach the Heal dot
-              const double gap = 16;
-              const double bleed = 60.0;
-              const double canvasW = gap + bleed * 2;
+              // Bleed 120px into each card — arrowhead ends well inside the right tile
+              const double gap = 12;
+              const double bleed = 120.0;
+              const double canvasW = gap + bleed * 2;  // 252px
               return SizedBox(
                 width: gap,
                 child: OverflowBox(
@@ -133,7 +133,7 @@ class _ForecastCardListState extends State<ForecastCardList>
                       rightCard: widget.cards[index + 1],
                       progress:  _progress.value,
                       bleed:     bleed,
-                      totalW:    canvasW,
+                      gap:       gap,
                     ),
                   ),
                 ),
@@ -153,14 +153,14 @@ class _SweepArrowsPainter extends CustomPainter {
   final ForecastMonthCard rightCard;
   final double progress;
   final double bleed;   // px the canvas overlaps INTO each card
-  final double totalW;  // total canvas width = gap + bleed*2
+  final double gap;     // gap between cards (the SizedBox width)
 
   _SweepArrowsPainter({
     required this.leftCard,
     required this.rightCard,
     required this.progress,
-    this.bleed  = 60.0,
-    this.totalW = 136.0,   // 16 gap + 60*2 bleed
+    this.bleed = 120.0,
+    this.gap   = 12.0,
   });
 
   // ── Precise layout constants derived from the card's Flutter padding/font values ──
@@ -169,24 +169,23 @@ class _SweepArrowsPainter extends CustomPainter {
   //  Bucket section padding(v:8, top only): +8
   //  Total Y to first bucket row top: 8 + 99 + 8 = 115
   //  Each BucketRow padding(v:5) + content max(dot8, text14) = 24px per row
-  static const double _listTopPad  = 8.0;
-  static const double _headerH     = 99.0;
+  static const double _listTopPad   = 8.0;
+  static const double _headerH      = 99.0;
   static const double _bucketTopPad = 8.0;
-  static const double _rowH        = 24.0;
+  static const double _rowH         = 24.0;
 
   double _rowCY(int index) {
     final sectionTop = _listTopPad + _headerH + _bucketTopPad;
     return sectionTop + index * _rowH + _rowH / 2;
   }
 
-  // The dot in each BucketRow is 14px from the card's left edge:
-  //   card horizontal padding 14  + row horizontal padding 4 → dot centre = 14+4+4 = 22px from card edge
-  // Start X:  left edge of canvas (0) = bleed px inside left card
-  //           dot is at (bleed - 22) from canvas left
-  // End X:    right card left edge = bleed + gap  from canvas left
-  //           Heal dot centre in right card ≈ bleed + gap + 22
-  double get _startX => bleed - 22;        // origin dot on left card (right-side)
-  double get _tipX   => bleed + (totalW - bleed * 2) + 22;  // Heal dot on right card
+  // Canvas geometry (all X values are in canvas coordinates):
+  //   canvas left (x=0)  = bleed px INSIDE the left card's right region
+  //   right card starts  = bleed + gap
+  // We start the line from the right-hand side of the left card (~22px from its right edge)
+  // and end 80px into the right card (well past its left border).
+  double get _startX => bleed - 22;          // inside left card
+  double get _tipX   => bleed + gap + 80;    // 80px inside right card
 
   @override
   void paint(Canvas canvas, Size size) {
