@@ -159,6 +159,13 @@ class _MonthCard extends StatelessWidget {
                     ),
                   ],
                 ),
+                const SizedBox(height: 6),
+                Text(
+                  card.isCurrentMonth
+                      ? 'Based on your current behaviour, these will be your balances.'
+                      : 'If you stick to your budget, these will be your balances.',
+                  style: TextStyle(fontSize: 10, color: Colors.grey.shade600, height: 1.2),
+                ),
                 const SizedBox(height: 8),
                 // Health badge
                 Container(
