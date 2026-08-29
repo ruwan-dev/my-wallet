@@ -3,13 +3,13 @@ import 'package:flutter/material.dart';
 enum TrackType { blow, splurge, smile, fire, mojo, grow, debt }
 
 class TrackColors {
-  static const Color blow = Color(0xFF38B2AC); // Pastel Cyan
-  static const Color splurge = Color(0xFFF59E0B); // Amber
-  static const Color smile = Color(0xFFD946EF); // Fuchsia/Pink
-  static const Color fire = Color(0xFFE05263); // Soft Red/Orange
-  static const Color mojo = Color(0xFF3949AB); // Deep Blue
-  static const Color grow = Color(0xFF10B981); // Emerald Green
-  static const Color debt = Color(0xFFB91C1C); // Dark Red
+  static const Color blow = Color(0xFF38B2AC);
+  static const Color splurge = Color(0xFFF59E0B);
+  static const Color smile = Color(0xFFD946EF);
+  static const Color fire = Color(0xFFE05263);
+  static const Color mojo = Color(0xFF3949AB);
+  static const Color grow = Color(0xFF10B981);
+  static const Color debt = Color(0xFFB91C1C);
 }
 
 class ForecastTransfer {
@@ -63,7 +63,6 @@ class ForecastGitGraph extends StatelessWidget {
 
   List<TrackType> _getGloballyActiveTracks() {
     Set<TrackType> active = {TrackType.blow, TrackType.fire, TrackType.mojo};
-
     for (final node in nodes) {
       if (node.smileBalance != 0) active.add(TrackType.smile);
       if (node.splurgeBalance != 0) active.add(TrackType.splurge);
@@ -74,7 +73,6 @@ class ForecastGitGraph extends StatelessWidget {
         active.add(t.to);
       }
     }
-
     final all = [TrackType.blow, TrackType.splurge, TrackType.smile, TrackType.fire, TrackType.mojo, TrackType.grow, TrackType.debt];
     return all.where((t) => active.contains(t)).toList();
   }
@@ -82,46 +80,26 @@ class ForecastGitGraph extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final double screenWidth = MediaQuery.of(context).size.width;
-    final double fixedLeftWidth = 75.0;
-    final double scrollableWidth = screenWidth - fixedLeftWidth;
-    final double colWidth = scrollableWidth / 1.8;
+    final double colWidth = screenWidth / 1.8;
 
     final activeTracks = _getGloballyActiveTracks();
 
-    final double startPadding = 15.0;
-    final double totalWidth = startPadding + (nodes.length * colWidth) + (colWidth / 2);
-    // Height: just enough for lines + month label + a little breathing room
-    final double trackSpacing = 44.0;
-    final double startY = 35.0;
-    final double totalHeight = startY + (activeTracks.length * trackSpacing) + 60.0;
+    const double trackSpacing = 44.0;
+    const double startY = 35.0;
+    // Extra right padding so balance labels near the last dot don't clip
+    final double totalWidth = (nodes.length * colWidth) + colWidth;
+    final double totalHeight = startY + (activeTracks.length * trackSpacing) + 50.0;
 
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // FIXED LEFT LABELS (track names only)
-        SizedBox(
-          width: fixedLeftWidth,
-          height: totalHeight,
-          child: CustomPaint(
-            painter: FixedLabelsPainter(activeTracks, trackSpacing, startY),
-          ),
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      physics: const BouncingScrollPhysics(),
+      child: SizedBox(
+        width: totalWidth,
+        height: totalHeight,
+        child: CustomPaint(
+          painter: GitGraphPainter(nodes, colWidth, activeTracks),
         ),
-
-        // SCROLLABLE GRAPH
-        Expanded(
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
-            child: SizedBox(
-              width: totalWidth,
-              height: totalHeight,
-              child: CustomPaint(
-                painter: GitGraphPainter(nodes, colWidth, activeTracks, trackSpacing, startY),
-              ),
-            ),
-          ),
-        ),
-      ],
+      ),
     );
   }
 }
@@ -135,24 +113,12 @@ void _drawText(Canvas canvas, String text, double x, double y, Color color,
         fontSize: fontSize,
         fontWeight: bold ? FontWeight.bold : FontWeight.normal),
   );
-  final textPainter = TextPainter(
-    text: textSpan,
-    textDirection: TextDirection.ltr,
-    textAlign: align,
-  );
-  textPainter.layout();
-
+  final tp = TextPainter(text: textSpan, textDirection: TextDirection.ltr, textAlign: align);
+  tp.layout();
   double dx = x;
-  if (align == TextAlign.center) dx = x - textPainter.width / 2;
-  if (align == TextAlign.right) dx = x - textPainter.width;
-
-  textPainter.paint(canvas, Offset(dx, y));
-}
-
-double _getTrackY(TrackType track, List<TrackType> activeTracks, double trackSpacing, double startY) {
-  int index = activeTracks.indexOf(track);
-  if (index == -1) return startY;
-  return startY + (index * trackSpacing);
+  if (align == TextAlign.center) dx = x - tp.width / 2;
+  if (align == TextAlign.right) dx = x - tp.width;
+  tp.paint(canvas, Offset(dx, y));
 }
 
 Color _getTrackColor(TrackType track) {
@@ -167,65 +133,67 @@ Color _getTrackColor(TrackType track) {
   }
 }
 
-// Fixed left column: only track name labels
-class FixedLabelsPainter extends CustomPainter {
-  final List<TrackType> activeTracks;
-  final double trackSpacing;
-  final double startY;
-
-  FixedLabelsPainter(this.activeTracks, this.trackSpacing, this.startY);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    for (final track in activeTracks) {
-      final y = _getTrackY(track, activeTracks, trackSpacing, startY);
-      final color = _getTrackColor(track);
-      _drawText(canvas, track.name.toUpperCase(), 0, y - 7, color,
-          fontSize: 10, bold: true, align: TextAlign.left);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+double _trackY(TrackType track, List<TrackType> activeTracks) {
+  const double startY = 35.0;
+  const double trackSpacing = 44.0;
+  final idx = activeTracks.indexOf(track);
+  if (idx == -1) return startY;
+  return startY + idx * trackSpacing;
 }
 
-// Scrolling graph painter — NO bottom table, amounts shown ON the curves
 class GitGraphPainter extends CustomPainter {
   final List<ForecastNode> nodes;
   final double colWidth;
   final List<TrackType> activeTracks;
-  final double trackSpacing;
-  final double startY;
 
-  GitGraphPainter(this.nodes, this.colWidth, this.activeTracks, this.trackSpacing, this.startY);
+  GitGraphPainter(this.nodes, this.colWidth, this.activeTracks);
+
+  static const double startY = 35.0;
+  static const double trackSpacing = 44.0;
+  // How far from left edge the graph starts (room for inline label)
+  static const double leftPad = 8.0;
 
   @override
   void paint(Canvas canvas, Size size) {
-    const double startPadding = 15.0;
-
     for (int i = 0; i < nodes.length; i++) {
       final node = nodes[i];
 
-      final double prevX = i == 0 ? startPadding : startPadding + (i * colWidth);
-      final double x = startPadding + ((i + 1) * colWidth);
-      final double midX = (prevX + x) / 2;
+      final double prevX = leftPad + (i * colWidth);
+      final double x     = leftPad + ((i + 1) * colWidth);
+      final double midX  = (prevX + x) / 2;
 
-      // 0. "Today" starting dots on first column
+      // ── 0. "Today" dots + inline track name label on first column ─────────
       if (i == 0) {
         for (final track in activeTracks) {
-          final y = _getTrackY(track, activeTracks, trackSpacing, startY);
+          final y     = _trackY(track, activeTracks);
           final color = _getTrackColor(track);
-          canvas.drawCircle(Offset(prevX, y), 9, Paint()..color = color.withValues(alpha: 0.25));
+
+          // dot
+          canvas.drawCircle(Offset(prevX, y), 9, Paint()..color = color.withValues(alpha: 0.22));
           canvas.drawCircle(Offset(prevX, y), 5, Paint()..color = color);
+
+          // track name label to the left of the first dot
+          // Draw a small pill background then the text
+          final labelSpan = TextSpan(
+            text: track.name.toUpperCase(),
+            style: TextStyle(color: color, fontSize: 9, fontWeight: FontWeight.bold),
+          );
+          final ltp = TextPainter(text: labelSpan, textDirection: TextDirection.ltr);
+          ltp.layout();
+          // place label just before the first dot
+          final lx = prevX - ltp.width - 6;
+          final ly = y - ltp.height / 2;
+          if (lx >= 0) ltp.paint(canvas, Offset(lx, ly));
         }
-        final textY = startY + (activeTracks.length * trackSpacing) + 8;
+        // "Today" text below tracks
+        final textY = startY + activeTracks.length * trackSpacing + 8;
         _drawText(canvas, 'Today', prevX, textY, const Color(0xFF64748B),
-            fontSize: 11, bold: false, align: TextAlign.center);
+            fontSize: 11, align: TextAlign.center);
       }
 
-      // 1. Horizontal track lines
+      // ── 1. Horizontal track lines ─────────────────────────────────────────
       for (final track in activeTracks) {
-        final y = _getTrackY(track, activeTracks, trackSpacing, startY);
+        final y = _trackY(track, activeTracks);
         canvas.drawLine(
           Offset(prevX, y),
           Offset(x, y),
@@ -236,10 +204,10 @@ class GitGraphPainter extends CustomPainter {
         );
       }
 
-      // 2. Transfer curves + label ON the midpoint of each curve
+      // ── 2. Transfer curves + pill label at curve midpoint ─────────────────
       for (final transfer in node.transfers) {
-        final fromY = _getTrackY(transfer.from, activeTracks, trackSpacing, startY);
-        final toY = _getTrackY(transfer.to, activeTracks, trackSpacing, startY);
+        final fromY = _trackY(transfer.from, activeTracks);
+        final toY   = _trackY(transfer.to, activeTracks);
 
         final path = Path()
           ..moveTo(prevX, fromY)
@@ -253,67 +221,53 @@ class GitGraphPainter extends CustomPainter {
             ..strokeWidth = 2.5,
         );
 
-        // Amount label drawn at the peak of the curve (midX, midY)
-        final double midY = (fromY + toY) / 2;
-        // Strip prefix tokens like "+", "-", "Rescue: " etc and show clean amount
-        final String amountText = transfer.label
-            .replaceAll(RegExp(r'^(Rescue|Cover|Borrow|Sweep):\s*'), '');
-
-        // Small pill background
-        final textSpan = TextSpan(
+        // Amount pill at midpoint
+        final double pillMidY = (fromY + toY) / 2;
+        final amountText = transfer.label.replaceAll(RegExp(r'^(Rescue|Cover|Borrow|Sweep):\s*'), '');
+        final aSpan = TextSpan(
           text: amountText,
-          style: TextStyle(
-              color: transfer.color, fontSize: 10, fontWeight: FontWeight.bold),
+          style: TextStyle(color: transfer.color, fontSize: 10, fontWeight: FontWeight.bold),
         );
-        final tp = TextPainter(text: textSpan, textDirection: TextDirection.ltr);
-        tp.layout();
+        final atp = TextPainter(text: aSpan, textDirection: TextDirection.ltr);
+        atp.layout();
         final pillRect = RRect.fromRectAndRadius(
           Rect.fromCenter(
-              center: Offset(midX, midY - tp.height / 2 - 2),
-              width: tp.width + 10,
-              height: tp.height + 6),
+              center: Offset(midX, pillMidY - atp.height / 2 - 2),
+              width: atp.width + 10,
+              height: atp.height + 6),
           const Radius.circular(4),
         );
-        canvas.drawRRect(pillRect,
-            Paint()..color = transfer.color.withValues(alpha: 0.12));
-        tp.paint(canvas, Offset(midX - tp.width / 2, midY - tp.height - 2));
+        canvas.drawRRect(pillRect, Paint()..color = transfer.color.withValues(alpha: 0.12));
+        atp.paint(canvas, Offset(midX - atp.width / 2, pillMidY - atp.height - 2));
       }
 
-      // 3. End-of-month dots
+      // ── 3. End-of-month dots ──────────────────────────────────────────────
       for (final track in activeTracks) {
-        final y = _getTrackY(track, activeTracks, trackSpacing, startY);
+        final y     = _trackY(track, activeTracks);
         final color = _getTrackColor(track);
-        canvas.drawCircle(Offset(x, y), 9, Paint()..color = color.withValues(alpha: 0.25));
+        canvas.drawCircle(Offset(x, y), 9, Paint()..color = color.withValues(alpha: 0.22));
         canvas.drawCircle(Offset(x, y), 5, Paint()..color = color);
       }
 
-      // 4. Balance labels drawn ABOVE each dot (right side of dot, slight offset)
-      // We show the balance of each track ABOVE its own line at x
-      _drawBalanceNearDot(canvas, node, x, activeTracks);
+      // ── 4. Balance amounts to the right of each end dot ───────────────────
+      void drawBal(TrackType track, String balStr) {
+        if (!activeTracks.contains(track)) return;
+        final y     = _trackY(track, activeTracks);
+        final color = _getTrackColor(track);
+        _drawText(canvas, balStr, x + 12, y - 8, color,
+            fontSize: 10, align: TextAlign.left);
+      }
+      drawBal(TrackType.smile,   node.smileBalanceStr);
+      drawBal(TrackType.splurge, node.splurgeBalanceStr);
+      drawBal(TrackType.fire,    node.fireBalanceStr);
+      drawBal(TrackType.mojo,    node.mojoBalanceStr);
+      drawBal(TrackType.debt,    node.debtBalanceStr);
 
-      // 5. Month label below all tracks
-      final double labelY = startY + (activeTracks.length * trackSpacing) + 8;
+      // ── 5. Month label below all tracks ───────────────────────────────────
+      final double labelY = startY + activeTracks.length * trackSpacing + 8;
       _drawText(canvas, node.monthLabel, x, labelY, const Color(0xFF1E293B),
           fontSize: 12, bold: true, align: TextAlign.center);
     }
-  }
-
-  void _drawBalanceNearDot(
-      Canvas canvas, ForecastNode node, double x, List<TrackType> activeTracks) {
-    // Draw the balance amount just to the right of each dot (small, subtle)
-    void drawBal(TrackType track, String balStr) {
-      if (!activeTracks.contains(track)) return;
-      final y = _getTrackY(track, activeTracks, trackSpacing, startY);
-      final color = _getTrackColor(track);
-      _drawText(canvas, balStr, x + 12, y - 8, color,
-          fontSize: 10, bold: false, align: TextAlign.left);
-    }
-
-    drawBal(TrackType.smile, node.smileBalanceStr);
-    drawBal(TrackType.splurge, node.splurgeBalanceStr);
-    drawBal(TrackType.fire, node.fireBalanceStr);
-    drawBal(TrackType.mojo, node.mojoBalanceStr);
-    drawBal(TrackType.debt, node.debtBalanceStr);
   }
 
   @override
