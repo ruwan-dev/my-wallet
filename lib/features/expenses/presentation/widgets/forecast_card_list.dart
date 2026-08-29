@@ -284,14 +284,17 @@ class _BucketRow extends StatelessWidget {
             ),
           ),
 
-          // Balance — takes all remaining space, right-aligned, NEVER wraps
+          // Balance — takes all remaining space, left-aligned so the Rs symbol lines up
           Expanded(
-            child: Text(
-              fmt(b.balance),
-              style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: balColor),
-              textAlign: TextAlign.end,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+            child: Padding(
+              padding: const EdgeInsets.only(left: 12.0),
+              child: Text(
+                fmt(b.balance),
+                style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: balColor),
+                textAlign: TextAlign.left,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
           ),
 
