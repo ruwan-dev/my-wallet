@@ -66,10 +66,19 @@ class ForecastCardList extends StatelessWidget {
         physics: const BouncingScrollPhysics(),
         itemCount: cards.length,
         separatorBuilder: (_, __) => const SizedBox(width: 12),
-        itemBuilder: (context, i) => _MonthCard(card: cards[i], fmt: fmt),
+        itemBuilder: (context, i) => _MonthCard(card: cards[i], fmt: fmt, fmtShort: _fmtShort),
       ),
     );
   }
+}
+
+/// Abbreviates large numbers: 38552 → "38.6k", 1200000 → "1.2M"
+String _fmtShort(double v) {
+  final sign = v < 0 ? '-' : '';
+  final abs  = v.abs();
+  if (abs >= 1000000) return '${sign}${(abs / 1000000).toStringAsFixed(1)}M';
+  if (abs >= 1000)    return '${sign}${(abs / 1000).toStringAsFixed(1)}k';
+  return '$sign${abs.toStringAsFixed(0)}';
 }
 
 // ─── Single month card ───────────────────────────────────────────────────────
@@ -77,8 +86,9 @@ class ForecastCardList extends StatelessWidget {
 class _MonthCard extends StatelessWidget {
   final ForecastMonthCard card;
   final String Function(double) fmt;
+  final String Function(double) fmtShort;
 
-  const _MonthCard({required this.card, required this.fmt});
+  const _MonthCard({required this.card, required this.fmt, required this.fmtShort});
 
   @override
   Widget build(BuildContext context) {
@@ -89,7 +99,7 @@ class _MonthCard extends StatelessWidget {
     };
 
     return Container(
-      width: 220,
+      width: 270,
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
@@ -174,7 +184,7 @@ class _MonthCard extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               child: Column(
                 children: [
-                  ...card.buckets.map((b) => _BucketRow(b: b, fmt: fmt)),
+                  ...card.buckets.map((b) => _BucketRow(b: b, fmt: fmt, fmtShort: fmtShort)),
                 ],
               ),
             ),
@@ -228,18 +238,21 @@ Widget _EventRow(String label, String value, Color color) => Padding(
 class _BucketRow extends StatelessWidget {
   final BucketSnapshot b;
   final String Function(double) fmt;
+  final String Function(double) fmtShort;
 
-  const _BucketRow({required this.b, required this.fmt});
+  const _BucketRow({required this.b, required this.fmt, required this.fmtShort});
 
   @override
   Widget build(BuildContext context) {
-    final isUp = b.change >= 0;
+    final isUp        = b.change >= 0;
     final changeColor = isUp ? const Color(0xFF16A34A) : const Color(0xFFDC2626);
     final changeIcon  = isUp ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded;
+    final balColor    = b.balance < 0 ? const Color(0xFFDC2626) : const Color(0xFF1E293B);
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: 5),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           // Color dot
           Container(
@@ -247,35 +260,55 @@ class _BucketRow extends StatelessWidget {
             decoration: BoxDecoration(color: b.color, shape: BoxShape.circle),
           ),
           const SizedBox(width: 6),
-          // Name
+
+          // Bucket name — fixed narrow width
           SizedBox(
-            width: 52,
-            child: Text(b.name, style: const TextStyle(fontSize: 11, color: Color(0xFF475569), fontWeight: FontWeight.w500)),
+            width: 48,
+            child: Text(
+              b.name,
+              style: const TextStyle(fontSize: 11, color: Color(0xFF475569), fontWeight: FontWeight.w500),
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
-          // Balance
+
+          // Balance — takes all remaining space, right-aligned, NEVER wraps
           Expanded(
             child: Text(
               fmt(b.balance),
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.bold,
-                color: b.balance < 0 ? const Color(0xFFDC2626) : const Color(0xFF1E293B),
-              ),
+              style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: balColor),
               textAlign: TextAlign.end,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
-          // Change arrow
+
           const SizedBox(width: 4),
-          if (b.change != 0) ...[
-            Icon(changeIcon, size: 10, color: changeColor),
-            Text(
-              fmt(b.change.abs()),
-              style: TextStyle(fontSize: 9, color: changeColor, fontWeight: FontWeight.w600),
-            ),
-          ] else
-            const SizedBox(width: 28),
+
+          // Change indicator — arrow + abbreviated amount, fixed width so it never pushes balance
+          SizedBox(
+            width: 44,
+            child: b.change != 0
+                ? Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(changeIcon, size: 9, color: changeColor),
+                      const SizedBox(width: 1),
+                      Flexible(
+                        child: Text(
+                          fmtShort(b.change.abs()),
+                          style: TextStyle(fontSize: 9, color: changeColor, fontWeight: FontWeight.w600),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  )
+                : const SizedBox.shrink(),
+          ),
         ],
       ),
     );
   }
 }
+
+
