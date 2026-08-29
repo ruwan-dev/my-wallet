@@ -7,8 +7,8 @@ import '../bloc/transaction_cubit.dart';
 import '../bloc/transaction_state.dart';
 import '../bloc/category_cubit.dart';
 import '../bloc/category_state.dart';
-import '../widgets/transaction_card.dart';
 import '../widgets/shimmer_tile.dart';
+import '../../../../core/utils/formatters.dart';
 
 class BucketTransactionsPage extends StatelessWidget {
   final BucketType bucketType;
@@ -81,19 +81,91 @@ class BucketTransactionsPage extends StatelessWidget {
                 );
               }
 
-              return ListView.builder(
-                padding: const EdgeInsets.only(bottom: 120),
-                physics: const BouncingScrollPhysics(),
-                itemCount: transactions.length,
-                itemBuilder: (context, index) {
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
-                    child: TransactionCard(
-                      transaction: transactions[index],
-                      accountName: transactions[index].accountId, // Or fetch actual account name
+              return Container(
+                margin: const EdgeInsets.fromLTRB(16, 16, 16, 120),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.grey.shade200),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.02),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
                     ),
-                  );
-                },
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    // Table Header
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade50,
+                        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                        border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(flex: 2, child: Text('Date', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey.shade600))),
+                          Expanded(flex: 3, child: Text('Category', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey.shade600))),
+                          Expanded(flex: 3, child: Text('Amount', textAlign: TextAlign.right, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey.shade600))),
+                        ],
+                      ),
+                    ),
+                    // Table Rows
+                    Expanded(
+                      child: ListView.separated(
+                        padding: EdgeInsets.zero,
+                        physics: const BouncingScrollPhysics(),
+                        itemCount: transactions.length,
+                        separatorBuilder: (context, index) => const Divider(height: 1),
+                        itemBuilder: (context, index) {
+                          final tx = transactions[index];
+                          final cat = catState.categories.firstWhere(
+                            (c) => c.id == tx.categoryId,
+                            orElse: () => const Category(id: '', name: 'Unknown', icon: '', color: Colors.grey, isIncome: false, subcategories: []),
+                          );
+                          final catName = tx.subCategory ?? cat.name;
+                          final amountColor = tx.isIncome ? const Color(0xFF16A34A) : const Color(0xFFE05263);
+                          final amountPrefix = tx.isIncome ? '+' : '-';
+                          
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  flex: 2, 
+                                  child: Text(
+                                    "${tx.date.day}/${tx.date.month}/${tx.date.year}", 
+                                    style: const TextStyle(fontSize: 12, color: Color(0xFF475569))
+                                  ),
+                                ),
+                                Expanded(
+                                  flex: 3, 
+                                  child: Text(
+                                    catName, 
+                                    style: const TextStyle(fontSize: 12, color: Color(0xFF1E293B)), 
+                                    overflow: TextOverflow.ellipsis
+                                  ),
+                                ),
+                                Expanded(
+                                  flex: 3, 
+                                  child: Text(
+                                    '$amountPrefix${AppFormatters.formatCurrency(context, tx.amount)}', 
+                                    textAlign: TextAlign.right, 
+                                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: amountColor),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
               );
             },
           );
