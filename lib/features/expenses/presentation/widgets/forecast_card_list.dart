@@ -61,31 +61,71 @@ class ForecastMonthCard {
 
 // ─── Widget ──────────────────────────────────────────────────────────────────
 
-class ForecastCardList extends StatelessWidget {
+class ForecastCardList extends StatefulWidget {
   final List<ForecastMonthCard> cards;
   final String Function(double) fmt;
 
   const ForecastCardList({super.key, required this.cards, required this.fmt});
 
   @override
+  State<ForecastCardList> createState() => _ForecastCardListState();
+}
+
+class _ForecastCardListState extends State<ForecastCardList>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _progress;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    );
+    _progress = CurvedAnimation(parent: _controller, curve: Curves.easeInOut);
+    // Small delay so cards paint first, then lines animate in
+    Future.delayed(const Duration(milliseconds: 300), () {
+      if (mounted) _controller.forward();
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 430, // Increased height to fit cards + shadows
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        clipBehavior: Clip.none, // Allow shadows to overflow
-        padding: const EdgeInsets.only(bottom: 30, top: 8, left: 4, right: 4),
-        physics: const BouncingScrollPhysics(),
-        itemCount: cards.length,
-        separatorBuilder: (_, index) {
-          return SizedBox(
-            width: 32,
-            child: CustomPaint(
-              painter: _SweepArrowsPainter(leftCard: cards[index], rightCard: cards[index + 1]),
-            ),
+      height: 430,
+      child: AnimatedBuilder(
+        animation: _progress,
+        builder: (context, _) {
+          return ListView.separated(
+            scrollDirection: Axis.horizontal,
+            clipBehavior: Clip.none,
+            padding: const EdgeInsets.only(bottom: 30, top: 8, left: 4, right: 4),
+            physics: const BouncingScrollPhysics(),
+            itemCount: widget.cards.length,
+            separatorBuilder: (_, index) {
+              return SizedBox(
+                width: 40,
+                child: CustomPaint(
+                  size: const Size(40, 420),
+                  painter: _SweepArrowsPainter(
+                    leftCard:  widget.cards[index],
+                    rightCard: widget.cards[index + 1],
+                    progress:  _progress.value,
+                  ),
+                ),
+              );
+            },
+            itemBuilder: (context, i) =>
+                _MonthCard(card: widget.cards[i], fmt: widget.fmt, fmtShort: _fmtShort),
           );
         },
-        itemBuilder: (context, i) => _MonthCard(card: cards[i], fmt: fmt, fmtShort: _fmtShort),
       ),
     );
   }
@@ -94,59 +134,85 @@ class ForecastCardList extends StatelessWidget {
 class _SweepArrowsPainter extends CustomPainter {
   final ForecastMonthCard leftCard;
   final ForecastMonthCard rightCard;
+  final double progress; // 0.0 → 1.0 for draw animation
 
-  _SweepArrowsPainter({required this.leftCard, required this.rightCard});
+  _SweepArrowsPainter({
+    required this.leftCard,
+    required this.rightCard,
+    required this.progress,
+  });
+
+  // ── Layout constants that mirror the card's Flutter layout ──
+  static const double _headerH = 116.0; // card header block height
+  static const double _rowH    = 28.0;  // each BucketRow height (vertical:5*2 + ~18)
+
+  double _rowCY(int index) => _headerH + index * _rowH + _rowH / 2;
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = const Color(0xFFE05263).withValues(alpha: 0.6) // Heal red
-      ..strokeWidth = 2
-      ..style = PaintingStyle.stroke;
+    if (progress <= 0) return;
 
-    final rightHealIndex = rightCard.buckets.indexWhere((b) => b.bucketType == BucketType.heal);
+    final rightHealIndex =
+        rightCard.buckets.indexWhere((b) => b.bucketType == BucketType.heal);
     if (rightHealIndex == -1) return;
 
-    // Estimated vertical offset based on UI layout
-    double getY(int index) => 134.0 + (index * 24.0);
-
-    final double destY = getY(rightHealIndex);
+    final destY = _rowCY(rightHealIndex);
 
     for (int i = 0; i < leftCard.buckets.length; i++) {
       final b = leftCard.buckets[i];
-      if (b.balance > 0 && 
-         (b.bucketType == BucketType.dailyExpenses || 
-          b.bucketType == BucketType.smile || 
-          b.bucketType == BucketType.splurge || 
-          b.bucketType == BucketType.heal)) {
-        
-        final startY = getY(i);
-        
-        final path = Path();
-        path.moveTo(0, startY);
-        path.cubicTo(
-          size.width * 0.6, startY, 
-          size.width * 0.4, destY,  
-          size.width, destY         
-        );
-        
-        canvas.drawPath(path, paint);
+      final shouldDraw = b.balance > 0 &&
+          (b.bucketType == BucketType.dailyExpenses ||
+           b.bucketType == BucketType.smile ||
+           b.bucketType == BucketType.splurge ||
+           b.bucketType == BucketType.heal);
+      if (!shouldDraw) continue;
 
-        // Draw arrow head at destination
-        final arrowSize = 4.0;
-        final arrowPath = Path();
-        arrowPath.moveTo(size.width, destY);
-        arrowPath.lineTo(size.width - arrowSize - 2, destY - arrowSize);
-        arrowPath.lineTo(size.width - arrowSize - 2, destY + arrowSize);
-        arrowPath.close();
+      final startY = _rowCY(i);
+      final color  = b.color.withValues(alpha: 0.75);
 
-        canvas.drawPath(arrowPath, Paint()..color = paint.color..style = PaintingStyle.fill);
-      }
+      _drawAnimatedArrow(canvas, size, startY, destY, color);
+    }
+  }
+
+  void _drawAnimatedArrow(
+      Canvas canvas, Size size, double startY, double destY, Color color) {
+    const x0 = 2.0;
+    final x3 = size.width - 10;
+
+    final fullPath = Path()
+      ..moveTo(x0, startY)
+      ..cubicTo(size.width * 0.55, startY, size.width * 0.45, destY, x3, destY);
+
+    final metric = fullPath.computeMetrics().first;
+    final animLen = metric.length * progress;
+    if (animLen <= 0) return;
+
+    final partial = metric.extractPath(0, animLen);
+
+    final linePaint = Paint()
+      ..color = color
+      ..strokeWidth = 2.0
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
+
+    canvas.drawPath(partial, linePaint);
+
+    if (progress >= 0.97) {
+      const double as = 5.0;
+      final head = Path();
+      final tip = Offset(size.width - 4, destY);
+      head.moveTo(tip.dx, tip.dy);
+      head.lineTo(tip.dx - as - 2, tip.dy - as * 0.7);
+      head.lineTo(tip.dx - as - 2, tip.dy + as * 0.7);
+      head.close();
+      canvas.drawPath(head,
+          Paint()..color = color..style = PaintingStyle.fill);
     }
   }
 
   @override
-  bool shouldRepaint(covariant _SweepArrowsPainter oldDelegate) => true;
+  bool shouldRepaint(covariant _SweepArrowsPainter old) =>
+      old.progress != progress;
 }
 
 /// Abbreviates large numbers: 38552 → "38.6k", 1200000 → "1.2M"
