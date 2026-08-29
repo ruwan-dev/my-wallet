@@ -84,7 +84,7 @@ class ForecastGitGraph extends StatelessWidget {
 
     final activeTracks = _getGloballyActiveTracks();
 
-    const double trackSpacing = 44.0;
+    const double trackSpacing = 52.0;
     const double startY = 35.0;
     // Extra right padding so balance labels near the last dot don't clip
     final double totalWidth = (nodes.length * colWidth) + colWidth;
@@ -149,7 +149,7 @@ class GitGraphPainter extends CustomPainter {
   GitGraphPainter(this.nodes, this.colWidth, this.activeTracks);
 
   static const double startY = 35.0;
-  static const double trackSpacing = 44.0;
+  static const double trackSpacing = 52.0;
   // How far from left edge the graph starts (room for inline label)
   static const double leftPad = 8.0;
 
@@ -249,19 +249,55 @@ class GitGraphPainter extends CustomPainter {
         canvas.drawCircle(Offset(x, y), 5, Paint()..color = color);
       }
 
-      // ── 4. Balance amounts to the right of each end dot ───────────────────
+      // ── 4. Balance amounts ABOVE each dot with white pill background ──────
       void drawBal(TrackType track, String balStr) {
         if (!activeTracks.contains(track)) return;
         final y     = _trackY(track, activeTracks);
         final color = _getTrackColor(track);
-        _drawText(canvas, balStr, x + 12, y - 8, color,
-            fontSize: 10, align: TextAlign.left);
+
+        final balSpan = TextSpan(
+          text: balStr,
+          style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.w600),
+        );
+        final btp = TextPainter(text: balSpan, textDirection: TextDirection.ltr);
+        btp.layout();
+
+        const double pillH = 18;
+        final double pillW = btp.width + 12;
+        // Center the pill above the dot
+        final pillLeft = x - pillW / 2;
+        final pillTop  = y - 9 - pillH - 4; // 9 = dot radius, 4 = gap
+
+        // White background pill for readability over lines
+        canvas.drawRRect(
+          RRect.fromRectAndRadius(
+            Rect.fromLTWH(pillLeft, pillTop, pillW, pillH),
+            const Radius.circular(4),
+          ),
+          Paint()..color = Colors.white.withValues(alpha: 0.92),
+        );
+
+        // Colored border
+        canvas.drawRRect(
+          RRect.fromRectAndRadius(
+            Rect.fromLTWH(pillLeft, pillTop, pillW, pillH),
+            const Radius.circular(4),
+          ),
+          Paint()
+            ..color = color.withValues(alpha: 0.35)
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 1,
+        );
+
+        btp.paint(canvas, Offset(x - btp.width / 2, pillTop + (pillH - btp.height) / 2));
       }
+
       drawBal(TrackType.smile,   node.smileBalanceStr);
       drawBal(TrackType.splurge, node.splurgeBalanceStr);
       drawBal(TrackType.fire,    node.fireBalanceStr);
       drawBal(TrackType.mojo,    node.mojoBalanceStr);
       drawBal(TrackType.debt,    node.debtBalanceStr);
+
 
       // ── 5. Month label below all tracks ───────────────────────────────────
       final double labelY = startY + activeTracks.length * trackSpacing + 8;
