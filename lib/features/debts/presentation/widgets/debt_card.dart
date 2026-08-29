@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:confetti/confetti.dart';
 import 'dart:ui';
+import 'package:intl/intl.dart';
 import '../../domain/entities/debt.dart';
 import '../../../../core/theme/app_theme.dart';
 
@@ -194,6 +195,22 @@ class _DebtCardState extends State<DebtCard>
                                     fontWeight: FontWeight.w600),
                               ),
                             ),
+                            if (widget.debt.dueDate != null)
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.event, size: 14, color: Colors.black45),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    DateFormat('MMM d, yyyy').format(widget.debt.dueDate!),
+                                    style: const TextStyle(
+                                      color: Colors.black54,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
                           ],
                         ),
                         const SizedBox(height: 8),
