@@ -63,198 +63,39 @@ class ForecastMonthCard {
 
 // ─── Widget ──────────────────────────────────────────────────────────────────
 
-class ForecastCardList extends StatefulWidget {
+class ForecastCardList extends StatelessWidget {
   final List<ForecastMonthCard> cards;
   final String Function(double) fmt;
 
   const ForecastCardList({super.key, required this.cards, required this.fmt});
 
   @override
-  State<ForecastCardList> createState() => _ForecastCardListState();
-}
-
-class _ForecastCardListState extends State<ForecastCardList>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-  late final Animation<double> _progress;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1400),
-    );
-    _progress = CurvedAnimation(parent: _controller, curve: Curves.easeInOut);
-    // Draw arrows, pause 800ms, reset and repeat forever
-    _controller.addStatusListener((status) {
-      if (status == AnimationStatus.completed) {
-        Future.delayed(const Duration(milliseconds: 800), () {
-          if (mounted) _controller.forward(from: 0);
-        });
-      }
-    });
-    Future.delayed(const Duration(milliseconds: 400), () {
-      if (mounted) _controller.forward();
-    });
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 430,
-      child: AnimatedBuilder(
-        animation: _progress,
-        builder: (context, _) {
-          return ListView.separated(
-            scrollDirection: Axis.horizontal,
-            clipBehavior: Clip.none,
-            padding: const EdgeInsets.only(bottom: 30, top: 8, left: 4, right: 4),
-            physics: const BouncingScrollPhysics(),
-            itemCount: widget.cards.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 12),
-            itemBuilder: (context, i) {
-              final cardWidget = _MonthCard(
-                  card: widget.cards[i], fmt: widget.fmt, fmtShort: _fmtShort);
-              
-              if (i == 0) return cardWidget;
-
-              const double gap = 12;
-              const double bleed = 120.0;
-              const double canvasW = gap + bleed * 2;
-
-              return Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  cardWidget,
-                  // Draw the lines overflowing to the left from this card
-                  // This ensures the lines paint ON TOP of both the left and right cards
-                  Positioned(
-                    left: -gap - bleed,
-                    top: 0,
-                    bottom: 0,
-                    width: canvasW,
-                    child: IgnorePointer(
-                      child: CustomPaint(
-                        painter: _SweepArrowsPainter(
-                          leftCard: widget.cards[i - 1],
-                          rightCard: widget.cards[i],
-                          progress: _progress.value,
-                          bleed: bleed,
-                          gap: gap,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              );
-            },
-          );
-        },
-      ),
+    return ListView.separated(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      padding: const EdgeInsets.only(bottom: 30, top: 8),
+      itemCount: cards.length,
+      separatorBuilder: (_, i) {
+        if (cards[i].sweepAmount <= 0) return const SizedBox(height: 16);
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12.0),
+          child: Center(
+            child: Column(
+              children: [
+                const Icon(Icons.arrow_downward_rounded, color: Color(0xFF38B2AC), size: 28),
+                const SizedBox(height: 4),
+                const Text('Sweeps to next month', style: TextStyle(color: Color(0xFF38B2AC), fontSize: 12, fontWeight: FontWeight.bold)),
+              ],
+            ),
+          ),
+        );
+      },
+      itemBuilder: (context, i) {
+        return _MonthCard(card: cards[i], fmt: fmt, fmtShort: _fmtShort);
+      },
     );
   }
-}
-
-class _SweepArrowsPainter extends CustomPainter {
-  final ForecastMonthCard leftCard;
-  final ForecastMonthCard rightCard;
-  final double progress;
-  final double bleed;   // px the canvas overlaps INTO each card
-  final double gap;     // gap between cards (the SizedBox width)
-
-  _SweepArrowsPainter({
-    required this.leftCard,
-    required this.rightCard,
-    required this.progress,
-    this.bleed = 120.0,
-    this.gap   = 12.0,
-  });
-
-  // ── Precise layout constants derived from the card's Flutter padding/font values ──
-  //  ListView top padding: 8
-  //  Header container padding(v:12): 12 + title(~16) + gap(6) + desc(~24) + gap(8) + badge(~21) + 12 = 99
-  //  Bucket section padding(v:8, top only): +8
-  //  Total Y to first bucket row top: 8 + 99 + 8 = 115
-  //  Each BucketRow padding(v:5) + content max(dot8, text14) = 24px per row
-  static const double _listTopPad   = 8.0;
-  static const double _headerH      = 99.0;
-  static const double _bucketTopPad = 8.0;
-  static const double _rowH         = 24.0;
-
-  double _rowCY(int index) {
-    final sectionTop = _listTopPad + _headerH + _bucketTopPad;
-    return sectionTop + index * _rowH + _rowH / 2;
-  }
-
-  // Canvas geometry (all X values are in canvas coordinates):
-  //   canvas left (x=0)  = bleed px INSIDE the left card's right region
-  //   right card starts  = bleed + gap
-  // Left card amounts end ~14px from its right edge. We start at 40px from its right edge (further left).
-  // Right card Heal dot is ~22px from its left edge. We end at 18px from its left edge (just touching the dot).
-  double get _startX => bleed - 40;          // deeper inside the left card
-  double get _tipX   => bleed + gap + 18;    // touching the Heal dot in right card
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (progress <= 0) return;
-
-    final rightHealIndex =
-        rightCard.buckets.indexWhere((b) => b.bucketType == BucketType.heal);
-    if (rightHealIndex == -1) return;
-
-    final destY = _rowCY(rightHealIndex);
-
-    for (int i = 0; i < leftCard.buckets.length; i++) {
-      final b = leftCard.buckets[i];
-      final shouldDraw = b.balance > 0 &&
-          (b.bucketType == BucketType.dailyExpenses ||
-           b.bucketType == BucketType.smile ||
-           b.bucketType == BucketType.splurge);
-      if (!shouldDraw) continue;
-
-      final startY = _rowCY(i);
-      final color  = b.color.withValues(alpha: 0.85);
-
-      _drawAnimatedArrow(canvas, size, startY, destY, color);
-    }
-  }
-
-  void _drawAnimatedArrow(
-      Canvas canvas, Size size, double startY, double destY, Color color) {
-    final x0 = _startX;
-    final x3 = _tipX;
-    // Bezier bends through the gap in the middle of the canvas
-    final mid = size.width / 2;
-
-    final fullPath = Path()
-      ..moveTo(x0, startY)
-      ..cubicTo(mid, startY, mid, destY, x3, destY);
-
-    final metric = fullPath.computeMetrics().first;
-    final animLen = metric.length * progress;
-    if (animLen <= 0) return;
-
-    final partial = metric.extractPath(0, animLen);
-
-    final linePaint = Paint()
-      ..color = color
-      ..strokeWidth = 1.8
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
-
-    canvas.drawPath(partial, linePaint);
-  }
-
-  @override
-  bool shouldRepaint(covariant _SweepArrowsPainter old) =>
-      old.progress != progress;
 }
 
 /// Abbreviates large numbers: 38552 → "38.6k", 1200000 → "1.2M"
