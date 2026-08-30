@@ -204,6 +204,7 @@ class FinancialForecastPage extends StatelessWidget {
 
     final now = DateTime.now();
     final List<ForecastMonthCard> cards = [];
+    final List<Widget> suggestionWidgets = [];
 
     for (int i = 0; i < 6; i++) {
       final targetDate = DateTime(now.year, now.month + i, 1);
@@ -367,13 +368,90 @@ class FinancialForecastPage extends StatelessWidget {
       prevSplurge = projSplurge;
       prevDebt    = projDebt;
 
+      if (i == 0) {
+        double totalDebtBalance = activeDebts.fold(0.0, (sum, d) => sum + d.currentBalance);
+        
+        // Suggestion 1: Sweep Surplus to Debt
+        if (totalSweepToHeal > 0 && totalDebtBalance > 0) {
+           final targetDebt = activeDebts.firstWhere((d) => d.currentBalance > 0, orElse: () => activeDebts.first);
+           suggestionWidgets.add(_buildSuggestionCard(
+             icon: Icons.lightbulb_circle,
+             color: Colors.amber.shade700,
+             title: 'Accelerate Debt Payoff',
+             message: 'You have ${fmt(totalSweepToHeal)} sweeping to Heal this month. Consider using it to pay off your ${targetDebt.name} faster and save on interest!',
+           ));
+        }
+
+        // Suggestion 2: Overspent
+        if (currentDeficit > 0) {
+           suggestionWidgets.add(_buildSuggestionCard(
+             icon: Icons.warning_rounded,
+             color: Colors.red.shade600,
+             title: 'Blow Overspent',
+             message: 'You overspent your daily expenses by ${fmt(currentDeficit)}. Try to cut back next month so your savings can grow.',
+           ));
+        }
+        
+        // Suggestion 3: Emergency Fund Used
+        if (usedMojo) {
+           suggestionWidgets.add(_buildSuggestionCard(
+             icon: Icons.shield,
+             color: Colors.blue.shade700,
+             title: 'Emergency Fund Used',
+             message: 'You had to dip into Mojo to cover your deficit. Prioritize rebuilding your emergency fund next month!',
+           ));
+        }
+      }
+
       // 6. Execute the Sweep: EVERYTHING leftover goes to Heal for NEXT month
       projHeal += totalSweepToHeal;
       projSmile = 0;
       projSplurge = 0;
     }
 
-    return ForecastCardList(cards: cards, fmt: fmt);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (suggestionWidgets.isNotEmpty) ...[
+          const Text('Insights & Suggestions', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
+          const SizedBox(height: 12),
+          ...suggestionWidgets,
+          const SizedBox(height: 24),
+          const Text('6-Month Forecast', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
+          const SizedBox(height: 12),
+        ],
+        ForecastCardList(cards: cards, fmt: fmt),
+      ],
+    );
+  }
+
+  Widget _buildSuggestionCard({required IconData icon, required Color color, required String title, required String message}) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: color, size: 28),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 14)),
+                const SizedBox(height: 4),
+                Text(message, style: TextStyle(color: Colors.black87, fontSize: 12, height: 1.4)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
