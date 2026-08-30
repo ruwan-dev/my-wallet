@@ -209,14 +209,12 @@ class _MonthCard extends StatelessWidget {
           ),
 
           // ── Bucket rows ──
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              child: Column(
-                children: [
-                  ...card.buckets.map((b) => _BucketRow(b: b, fmt: fmt, fmtShort: fmtShort)),
-                ],
-              ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            child: Column(
+              children: [
+                ...card.buckets.map((b) => _BucketRow(b: b, fmt: fmt, fmtShort: fmtShort)),
+              ],
             ),
           ),
 
