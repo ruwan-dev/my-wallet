@@ -8,6 +8,7 @@ class AuthCubit extends Cubit<AuthState> {
   final AuthRepository repository;
   final FirebaseAuth firebaseAuth;
   StreamSubscription? _authSubscription;
+  bool _isAuthenticating = false;
 
   AuthCubit({
     required this.repository,
@@ -18,6 +19,8 @@ class AuthCubit extends Cubit<AuthState> {
 
   void _init() {
     _authSubscription = firebaseAuth.authStateChanges().listen((user) async {
+      if (_isAuthenticating) return;
+      
       if (user != null) {
         try {
           final userEntity = await repository.getCurrentUser();
@@ -36,6 +39,7 @@ class AuthCubit extends Cubit<AuthState> {
   }
 
   Future<void> login(String email, String password) async {
+    _isAuthenticating = true;
     emit(AuthLoading());
     try {
       final user = await repository.login(email, password);
@@ -44,10 +48,13 @@ class AuthCubit extends Cubit<AuthState> {
       final errorMsg = e.toString().replaceAll('Exception: ', '');
       emit(AuthError(errorMsg));
       emit(AuthUnauthenticated());
+    } finally {
+      _isAuthenticating = false;
     }
   }
 
   Future<void> register(String email, String password) async {
+    _isAuthenticating = true;
     emit(AuthLoading());
     try {
       final user = await repository.register(email, password);
@@ -56,10 +63,13 @@ class AuthCubit extends Cubit<AuthState> {
       final errorMsg = e.toString().replaceAll('Exception: ', '');
       emit(AuthError(errorMsg));
       emit(AuthUnauthenticated());
+    } finally {
+      _isAuthenticating = false;
     }
   }
 
   Future<void> loginWithGoogle() async {
+    _isAuthenticating = true;
     emit(AuthLoading());
     try {
       final user = await repository.loginWithGoogle();
@@ -68,6 +78,8 @@ class AuthCubit extends Cubit<AuthState> {
       final errorMsg = e.toString().replaceAll('Exception: ', '');
       emit(AuthError(errorMsg));
       emit(AuthUnauthenticated());
+    } finally {
+      _isAuthenticating = false;
     }
   }
 
