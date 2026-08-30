@@ -16,6 +16,7 @@ class BucketSnapshot {
   final IconData icon;
   final double balance;
   final double change; // vs previous month
+  final List<String> coverages;
 
   const BucketSnapshot({
     required this.name,
@@ -24,6 +25,7 @@ class BucketSnapshot {
     required this.icon,
     required this.balance,
     required this.change,
+    this.coverages = const [],
   });
 }
 
@@ -279,50 +281,70 @@ class _BucketRow extends StatelessWidget {
     
     final balColor    = b.balance < 0 ? const Color(0xFFDC2626) : const Color(0xFF1E293B);
 
-    return InkWell(
-      onTap: () {
-        context.push('/bucket-transactions', extra: b.bucketType);
-      },
-      borderRadius: BorderRadius.circular(8),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 4),
-        child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          // Color dot
-          Container(
-            width: 8, height: 8,
-            decoration: BoxDecoration(color: b.color, shape: BoxShape.circle),
-          ),
-          const SizedBox(width: 6),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        InkWell(
+          onTap: () {
+            context.push('/bucket-transactions', extra: b.bucketType);
+          },
+          borderRadius: BorderRadius.circular(8),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 4),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // Color dot
+                Container(
+                  width: 8, height: 8,
+                  decoration: BoxDecoration(color: b.color, shape: BoxShape.circle),
+                ),
+                const SizedBox(width: 6),
 
-          // Bucket name — fixed narrow width
-          SizedBox(
-            width: 48,
-            child: Text(
-              b.name,
-              style: const TextStyle(fontSize: 11, color: Color(0xFF475569), fontWeight: FontWeight.w500),
-              overflow: TextOverflow.ellipsis,
+                // Bucket name — fixed narrow width
+                SizedBox(
+                  width: 48,
+                  child: Text(
+                    b.name,
+                    style: const TextStyle(fontSize: 11, color: Color(0xFF475569), fontWeight: FontWeight.w500),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+
+                // Balance — takes all remaining space, left-aligned so the Rs symbol lines up
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.only(left: 12.0),
+                    child: Text(
+                      fmt(b.balance),
+                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: balColor),
+                      textAlign: TextAlign.left,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-
-          // Balance — takes all remaining space, left-aligned so the Rs symbol lines up
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.only(left: 12.0),
-              child: Text(
-                fmt(b.balance),
-                style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: balColor),
-                textAlign: TextAlign.left,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ),
-
-        ],
         ),
-      ),
+        if (b.coverages.isNotEmpty)
+          ...b.coverages.map((cov) => Padding(
+                padding: const EdgeInsets.only(left: 28, bottom: 4),
+                child: Row(
+                  children: [
+                    Icon(Icons.subdirectory_arrow_right_rounded, size: 14, color: Colors.grey.shade400),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        cov,
+                        style: TextStyle(fontSize: 10, color: Colors.grey.shade600, fontStyle: FontStyle.italic),
+                      ),
+                    ),
+                  ],
+                ),
+              )),
+      ],
     );
   }
 }

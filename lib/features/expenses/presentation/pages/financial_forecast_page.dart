@@ -264,38 +264,82 @@ class FinancialForecastPage extends StatelessWidget {
       }
 
       projHeal -= currentMonthDebtPaid;
-      projHeal -= currentDeficit;
 
-      // 3. Cover negative Heal with other buckets
+      // 3. Cover negative buckets (Blow Deficit and Heal Debt Payments)
       bool usedSmile   = false;
       bool usedSplurge = false;
       bool usedMojo    = false;
+      double debtAdded = 0;
+      
+      List<String> blowCoverages = [];
+      List<String> healCoverages = [];
 
-      if (projHeal < 0) {
-        double missing = projHeal.abs();
-        if (projSmile > 0) {
+      // A. Cover Blow Deficit
+      if (currentDeficit > 0) {
+        double missing = currentDeficit;
+        if (missing > 0 && projSmile > 0) {
           final pull = projSmile >= missing ? missing : projSmile;
           projSmile -= pull;
           missing   -= pull;
           usedSmile  = true;
+          blowCoverages.add('Covered by Smile (+${fmtShort(pull)})');
         }
         if (missing > 0 && projSplurge > 0) {
           final pull = projSplurge >= missing ? missing : projSplurge;
           projSplurge -= pull;
           missing     -= pull;
           usedSplurge  = true;
+          blowCoverages.add('Covered by Splurge (+${fmtShort(pull)})');
+        }
+        if (missing > 0 && projMojo > 0) {
+          final pull = projMojo >= missing ? missing : projMojo;
+          projMojo -= pull;
+          missing  -= pull;
+          usedMojo  = true;
+          blowCoverages.add('Covered by Mojo (+${fmtShort(pull)})');
         }
         if (missing > 0) {
-          projMojo -= missing;
+          projDebt += missing;
+          debtAdded += missing;
+          blowCoverages.add('Added to Debt (+${fmtShort(missing)})');
+        }
+      }
+
+      // B. Cover Heal (if they paid more debt than they had in Heal)
+      if (projHeal < 0) {
+        double missing = projHeal.abs();
+        if (missing > 0 && projSmile > 0) {
+          final pull = projSmile >= missing ? missing : projSmile;
+          projSmile -= pull;
+          missing   -= pull;
+          usedSmile  = true;
+          healCoverages.add('Covered by Smile (+${fmtShort(pull)})');
+        }
+        if (missing > 0 && projSplurge > 0) {
+          final pull = projSplurge >= missing ? missing : projSplurge;
+          projSplurge -= pull;
+          missing     -= pull;
+          usedSplurge  = true;
+          healCoverages.add('Covered by Splurge (+${fmtShort(pull)})');
+        }
+        if (missing > 0 && projMojo > 0) {
+          final pull = projMojo >= missing ? missing : projMojo;
+          projMojo -= pull;
+          missing  -= pull;
           usedMojo  = true;
+          healCoverages.add('Covered by Mojo (+${fmtShort(pull)})');
+        }
+        if (missing > 0) {
+          projDebt += missing;
+          debtAdded += missing;
+          healCoverages.add('Added to Debt (+${fmtShort(missing)})');
         }
         projHeal = 0;
       }
 
-      double debtAdded = 0;
       if (projMojo < 0) {
-        debtAdded = projMojo.abs();
-        projDebt += debtAdded;
+        debtAdded += projMojo.abs();
+        projDebt += projMojo.abs();
         projMojo  = 0;
       }
 
@@ -332,8 +376,8 @@ class FinancialForecastPage extends StatelessWidget {
       }
 
       final buckets = <BucketSnapshot>[
-        BucketSnapshot(name: 'Blow', bucketType: BucketType.dailyExpenses, color: const Color(0xFF38B2AC), icon: Icons.shopping_cart, balance: blowDisplayBalance, change: 0),
-        BucketSnapshot(name: 'Heal', bucketType: BucketType.heal, color: const Color(0xFFE05263), icon: Icons.medical_services, balance: projHeal, change: projHeal - prevHeal),
+        BucketSnapshot(name: 'Blow', bucketType: BucketType.dailyExpenses, color: const Color(0xFF38B2AC), icon: Icons.shopping_cart, balance: blowDisplayBalance, change: 0, coverages: blowCoverages),
+        BucketSnapshot(name: 'Heal', bucketType: BucketType.heal, color: const Color(0xFFE05263), icon: Icons.medical_services, balance: projHeal, change: projHeal - prevHeal, coverages: healCoverages),
         if (projSmile != 0 || prevSmile != 0)
           BucketSnapshot(name: 'Smile', bucketType: BucketType.smile, color: const Color(0xFFD946EF), icon: Icons.sentiment_satisfied, balance: projSmile, change: projSmile - prevSmile),
         if (projSplurge != 0 || prevSplurge != 0)
