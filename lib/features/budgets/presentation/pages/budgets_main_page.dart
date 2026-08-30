@@ -279,17 +279,23 @@ class BudgetsMainPage extends StatelessWidget {
 
   Widget _buildEmptyState(ThemeData theme, BuildContext context, bool isHistory) {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            isHistory ? Icons.history : Icons.checklist_rtl_rounded, 
-            size: 80, 
-            color: theme.colorScheme.outline.withOpacity(0.5)
-          ),
-          const SizedBox(height: 24),
-          Text(
-            isHistory ? 'No Completed Budgets' : 'No Active Budgets',
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            isHistory 
+              ? Icon(
+                  Icons.history, 
+                  size: 80, 
+                  color: theme.colorScheme.outline.withValues(alpha: 0.5),
+                )
+              : Image.asset(
+                  'assets/images/empty_budget.png',
+                  width: 140,
+                  height: 140,
+                ),
+            const SizedBox(height: 24),
+            Text(
+              isHistory ? 'No Completed Budgets' : 'No Active Budgets',
             style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 12),
