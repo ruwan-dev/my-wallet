@@ -392,14 +392,14 @@ class FinancialForecastPage extends StatelessWidget {
         int fromIdx = buckets.indexWhere((b) => b.bucketType == type);
         int toIdx = buckets.indexWhere((b) => b.bucketType == BucketType.dailyExpenses);
         if (fromIdx != -1 && toIdx != -1) {
-          arrows.add(ArrowEvent(fromIdx, toIdx, const Color(0xFFDC2626)));
+          arrows.add(ArrowEvent(fromIdx, toIdx, const Color(0xFF38B2AC)));
         }
       }
       for (var type in healCoveredBy) {
         int fromIdx = buckets.indexWhere((b) => b.bucketType == type);
         int toIdx = buckets.indexWhere((b) => b.bucketType == BucketType.heal);
         if (fromIdx != -1 && toIdx != -1) {
-          arrows.add(ArrowEvent(fromIdx, toIdx, const Color(0xFFE05263)));
+          arrows.add(ArrowEvent(fromIdx, toIdx, const Color(0xFF38B2AC)));
         }
       }
 

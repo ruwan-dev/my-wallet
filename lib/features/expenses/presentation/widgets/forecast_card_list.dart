@@ -428,59 +428,61 @@ class _TransferArrowsPainter extends CustomPainter {
       final staggerIndex = arrowsToTarget[targetIdx] ?? 0;
       arrowsToTarget[targetIdx] = staggerIndex + 1;
       
-      final currentRightX = rightX - (staggerIndex * 5); // stagger by 5px
+      final currentRightX = rightX + (staggerIndex * 8); // stagger vertically/horizontally
       
       final startY = (arrow.fromIndex * rowHeight) + (rowHeight / 2);
-      final endY = (arrow.toIndex * rowHeight) + (rowHeight / 2);
+      final currentEndY = (arrow.toIndex * rowHeight) + (rowHeight / 2) + (staggerIndex * 8);
       
       final path = Path();
-      // start at donor (bottom)
-      path.moveTo(currentRightX - 25, startY);
+      // start at donor (near balance)
+      path.moveTo(rightX - 35, startY);
       // go right
       path.lineTo(currentRightX, startY);
       // go up (or down)
-      path.lineTo(currentRightX, endY);
+      path.lineTo(currentRightX, currentEndY);
       // go left to recipient
-      path.lineTo(currentRightX - 35, endY);
+      path.lineTo(rightX - 35, currentEndY);
 
-      final dashWidth = 6.0;
-      final dashSpace = 4.0;
-      final totalDash = dashWidth + dashSpace;
-      
       final pms = path.computeMetrics().toList();
       if (pms.isEmpty) continue;
       final pm = pms.first;
       
       final paint = Paint()
-        ..color = arrow.color.withValues(alpha: 0.8)
+        ..color = arrow.color
         ..strokeWidth = 2.0
         ..style = PaintingStyle.stroke;
         
-      double offset = -animation.value * totalDash;
+      // Draw FULL solid line
+      canvas.drawPath(path, paint);
       
-      final dashedPath = Path();
-      while (offset < pm.length) {
-        if (offset + dashWidth > 0) {
-          final start = offset < 0 ? 0.0 : offset;
-          final end = offset + dashWidth > pm.length ? pm.length : offset + dashWidth;
-          dashedPath.addPath(pm.extractPath(start, end), Offset.zero);
-        }
-        offset += totalDash;
-      }
-      
-      canvas.drawPath(dashedPath, paint);
-      
-      // Draw arrowhead pointing left
+      // Draw arrowhead pointing left at the final target
       final arrowPaint = Paint()
         ..color = arrow.color
         ..style = PaintingStyle.fill;
         
       final arrowPath = Path();
-      arrowPath.moveTo(currentRightX - 35, endY);
-      arrowPath.lineTo(currentRightX - 27, endY - 4);
-      arrowPath.lineTo(currentRightX - 27, endY + 4);
+      arrowPath.moveTo(rightX - 35, currentEndY);
+      arrowPath.lineTo(rightX - 27, currentEndY - 4);
+      arrowPath.lineTo(rightX - 27, currentEndY + 4);
       arrowPath.close();
       canvas.drawPath(arrowPath, arrowPaint);
+
+      // Draw animated glowing ball flowing along the path
+      final distance = pm.length * animation.value;
+      final pos = pm.getPositionForDistance(distance);
+      
+      final ballPaint = Paint()
+        ..color = Colors.white
+        ..style = PaintingStyle.fill;
+        
+      // Outer glow for the ball
+      final glowPaint = Paint()
+        ..color = arrow.color.withValues(alpha: 0.5)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3)
+        ..style = PaintingStyle.fill;
+
+      canvas.drawCircle(pos.position, 4.0, glowPaint);
+      canvas.drawCircle(pos.position, 2.0, ballPaint);
     }
   }
 
