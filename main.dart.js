@@ -68653,58 +68653,57 @@ return r}return s.x},
 E(a){var s=null,r=A.Q(a).ok.w
 r=A.T("Bucket Forecast",s,s,s,s,s,r==null?s:r.dq(B.aQ,B.v),s,s,s)
 return A.ef(A.f_(s,B.p,s,!0,0,s,A.cB(s,s,s,B.q1,s,s,new A.avr(a),s,s,s,s),s,r),B.p,A.dP(s,s,new A.avs(this),t.kq,t.Bb),s,!1,!1,s,s,s,s)},
-aof(c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5){var s,r,q,p,o,n,m,l,k,j,i,h,g,f,e,d,c,b,a,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0="MMM yyyy",c1=new A.bo(Date.now(),0,!1),c2=A.b([],t.N3)
-for(s=t.cj,r=t.s,q=d3-d4,p=c7,o=c6,n=c5,m=c4,l=p,k=o,j=n,i=m,h=0,g=0,f=0;f<6;++f,g=h,p=l,l=b9,o=k,k=b8,n=j,m=i,i=b7){e=A.ck(A.b_(c1),A.b3(c1)+f,1,0,0,0,0)
-d=f===0
-if(d){c=c9
-b=c8}else{if(q>=0){b=q
-c=0}else{c=Math.abs(q)
-b=0}i+=d0
-k+=d1
-l+=d2}a=A.b([],r)
-for(a0=d5.length,a1=0,a2=0;a2<d5.length;d5.length===a0||(0,A.N)(d5),++a2){a3=d5[a2]
-if(a3.gh2()!=null){if(d){a4=a3.gh2()
-a4.toString
-a5=A.ck(A.b_(c1),A.b3(c1)+1,1,0,0,0,0)
-a6=a4.a
-a7=a5.a
-if(a6>=a7)a8=a6===a7&&a4.b<a5.b
-else a8=!0}else{a4=a3.gh2()
-a4.toString
-if(A.b_(a4)===A.b_(e)){a4=a3.gh2()
-a4.toString
-a8=A.b3(a4)===A.b3(e)}else a8=!1}if(a8){a1+=a3.geK()
-a.push(a3.gaT(a3))}}}i=i-a1-c
-if(i<0){a9=Math.abs(i)
-b0=k>0
-if(b0){b1=k>=a9?a9:k
-k-=b1
-a9-=b1}b2=a9>0&&l>0
-if(b2){b1=l>=a9?a9:l
-l-=b1
-a9-=b1}b3=a9>0
-if(b3)j-=a9
-i=0}else{b0=!1
-b2=!1
-b3=!1}if(j<0){b4=Math.abs(j)
-h+=b4
-j=0}else b4=0
-if(b4>0||b3){b5=b3?"Emergency fund used!":"Going into debt!"
-b6=B.W8}else if(b0||b2){b6=B.wV
-b5="Savings helping cover costs"}else if(c>0){b6=B.wV
-b5="Slight overspend covered"}else{b5=b>0?"On track \xb7 saving surplus":"On track"
-b6=B.W7}a0=A.b([new A.l6("Blow",B.bD,B.I,b)],s)
-if(i!==0||m!==0)a0.push(new A.l6("Heal",B.cc,B.iZ,i))
-if(k!==0||o!==0)a0.push(new A.l6("Smile",B.df,B.vb,k))
-if(l!==0||p!==0)a0.push(new A.l6("Splurge",B.cr,B.o9,l))
-if(j!==0||n!==0)a0.push(new A.l6("Mojo",B.eF,B.uM,j))
-if(h!==0||g!==0)a0.push(new A.l6("Debt",B.bh,B.oa,h))
-c2.push(new A.a0f(d?"End of "+A.m5(c0,null).ht(e):A.m5(c0,null).ht(e),d,b6,b5,a0,b,c,b0,b2,b3,b4,a1,a))
-b7=i+b
-if(k>0){b7+=k
-b8=0}else b8=k
-if(l>0){b7+=l
-b9=0}else b9=l}return new A.Lq(c2,new A.avk(c3),null)}}
+aof(c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7){var s,r,q,p,o,n,m,l,k,j,i,h,g,f,e,d,c,b,a,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,c2="MMM yyyy",c3=new A.bo(Date.now(),0,!1),c4=A.b([],t.N3)
+for(s=t.cj,r=t.s,q=d5-d6,p=-d1,o=d0>0,n=c9,m=c8,l=c7,k=c6,j=n,i=m,h=l,g=k,f=0,e=0,d=0;d<6;++d,e=f,n=j,m=i,l=h,k=g,g=c1,i=0,j=0){c=A.ck(A.b_(c3),A.b3(c3)+d,1,0,0,0,0)
+b=d===0
+if(b){a=o?d0:p
+a0=d1
+a1=d0}else{g+=d2
+i+=d3
+j+=d4
+if(q>=0){a1=q
+a0=0}else{a0=Math.abs(q)
+a1=0}a=d5}a2=A.b([],r)
+for(a3=d7.length,a4=0,a5=0;a5<d7.length;d7.length===a3||(0,A.N)(d7),++a5){a6=d7[a5]
+if(a6.gh2()!=null){if(b){a7=a6.gh2()
+a7.toString
+a8=A.ck(A.b_(c3),A.b3(c3)+1,1,0,0,0,0)
+a9=a7.a
+b0=a8.a
+if(a9>=b0)b1=a9===b0&&a7.b<a8.b
+else b1=!0}else{a7=a6.gh2()
+a7.toString
+if(A.b_(a7)===A.b_(c)){a7=a6.gh2()
+a7.toString
+b1=A.b3(a7)===A.b3(c)}else b1=!1}if(b1){a4+=a6.geK()
+a2.push(a6.gaT(a6))}}}g=g-a4-a0
+if(g<0){b2=Math.abs(g)
+b3=i>0
+if(b3){b4=i>=b2?b2:i
+i-=b4
+b2-=b4}b5=b2>0&&j>0
+if(b5){b4=j>=b2?b2:j
+j-=b4
+b2-=b4}b6=b2>0
+if(b6)h-=b2
+g=0}else{b3=!1
+b5=!1
+b6=!1}if(h<0){b7=Math.abs(h)
+f+=b7
+h=0}else b7=0
+b8=a1+i+j
+if(b7>0||b6){b9=b6?"Emergency fund used!":"Going into debt!"
+c0=B.W8}else if(b3||b5){c0=B.wV
+b9="Savings helping cover costs"}else if(a0>0){c0=B.wV
+b9="Slight overspend covered"}else{b9=a1>0?"On track \xb7 saving surplus":"On track"
+c0=B.W7}a3=A.b([new A.l6("Blow",B.bD,B.I,a)],s)
+if(g!==0||k!==0)a3.push(new A.l6("Heal",B.cc,B.iZ,g))
+if(i!==0||m!==0)a3.push(new A.l6("Smile",B.df,B.vb,i))
+if(j!==0||n!==0)a3.push(new A.l6("Splurge",B.cr,B.o9,j))
+if(h!==0||l!==0)a3.push(new A.l6("Mojo",B.eF,B.uM,h))
+if(f!==0||e!==0)a3.push(new A.l6("Debt",B.bh,B.oa,f))
+c4.push(new A.a0f(b?"End of "+A.m5(c2,null).ht(c):A.m5(c2,null).ht(c),b,c0,b9,a3,b8,a0,b3,b5,b6,b7,a4,a2))
+c1=g+b8}return new A.Lq(c4,new A.avk(c5),null)}}
 A.avl.prototype={
 $1(a){return a.a===this.a.f},
 $S:24}
