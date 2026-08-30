@@ -125,7 +125,6 @@ class _MonthCard extends StatelessWidget {
     };
 
     return Container(
-      width: 230,
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
@@ -135,8 +134,8 @@ class _MonthCard extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 16,
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 10,
             offset: const Offset(0, 4),
           ),
         ],
@@ -146,11 +145,9 @@ class _MonthCard extends StatelessWidget {
         children: [
           // ── Header ──
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: card.isCurrentMonth
-                  ? const Color(0xFF38B2AC).withValues(alpha: 0.08)
-                  : Colors.grey.shade50,
+              color: card.isCurrentMonth ? const Color(0xFF38B2AC).withValues(alpha: 0.05) : Colors.transparent,
               borderRadius: const BorderRadius.vertical(top: Radius.circular(19)),
             ),
             child: Column(
@@ -160,11 +157,11 @@ class _MonthCard extends StatelessWidget {
                   children: [
                     if (card.isCurrentMonth)
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                         margin: const EdgeInsets.only(right: 6),
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
                           color: const Color(0xFF38B2AC),
-                          borderRadius: BorderRadius.circular(6),
+                          borderRadius: BorderRadius.circular(4),
                         ),
                         child: const Text('NOW', style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold)),
                       ),
