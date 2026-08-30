@@ -199,25 +199,34 @@ class FinancialForecastPage extends StatelessWidget {
     for (int i = 0; i < 6; i++) {
       final targetDate = DateTime(now.year, now.month + i, 1);
 
-      double currentBlowBalance = 0;
+      double currentBlowRemaining = 0;
       double currentDeficit = 0;
+      double blowDisplayBalance = 0;
       
-      // 1. Add this month's allocations (except for month 0 where balances are already current)
+      // 1. Add this month's allocations
       if (i == 0) {
-        currentBlowBalance = month1Sweep;
+        // Month 0: We use the actual current remaining balances
+        currentBlowRemaining = month1Sweep;
         currentDeficit     = month1Deficit;
-        // starting balances are already in projHeal, projSmile, etc.
+        blowDisplayBalance = month1Sweep > 0 ? month1Sweep : -month1Deficit;
+        // starting balances for Smile, Splurge, Heal are already in projSmile, projSplurge, projHeal.
       } else {
-        final futureSweep = actualBlowAllocation - customBlowBudget;
-        if (futureSweep >= 0) {
-          currentBlowBalance = futureSweep;
-        } else {
-          currentDeficit = futureSweep.abs();
-          currentBlowBalance = 0; // nothing left in blow
-        }
+        // Future months: Add the new monthly allocations
         projHeal    += monthlyHealAllocation;
         projSmile   += monthlySmileAllocation;
         projSplurge += monthlySplurgeAllocation;
+        
+        // For future months, the user wants to see the "initial values" (the full budget allocations)
+        blowDisplayBalance = actualBlowAllocation;
+        
+        // But for the *sweep* at the end of the future month, we predict they will spend their custom budget
+        final futureSweep = actualBlowAllocation - customBlowBudget;
+        if (futureSweep >= 0) {
+          currentBlowRemaining = futureSweep;
+        } else {
+          currentDeficit = futureSweep.abs();
+          currentBlowRemaining = 0;
+        }
       }
 
       // 2. Pay debts due this month
@@ -228,7 +237,6 @@ class FinancialForecastPage extends StatelessWidget {
         if (debt.dueDate != null) {
           bool isDueThisMonth = false;
           if (i == 0) {
-             // current month: if it's overdue or due this month
              if (debt.dueDate!.isBefore(DateTime(now.year, now.month + 1, 1))) {
                 isDueThisMonth = true;
              }
@@ -281,7 +289,11 @@ class FinancialForecastPage extends StatelessWidget {
         projMojo  = 0;
       }
 
-      // 4. Record the card state BEFORE the sweep happens
+      // 4. Calculate what will be swept at the end of THIS month
+      // User requested: "if there are any rest of from blow,smile,splurage and fire it add to the next fire bucket"
+      double totalSweepToHeal = currentBlowRemaining + projSmile + projSplurge;
+
+      // 5. Record the card state BEFORE the sweep happens
       final ForecastHealth health;
       final String healthMsg;
       if (debtAdded > 0 || usedMojo) {
@@ -295,11 +307,11 @@ class FinancialForecastPage extends StatelessWidget {
         healthMsg = 'Slight overspend covered';
       } else {
         health    = ForecastHealth.safe;
-        healthMsg = currentBlowBalance > 0 ? 'On track · saving surplus' : 'On track';
+        healthMsg = currentBlowRemaining > 0 ? 'On track · saving surplus' : 'On track';
       }
 
       final buckets = <BucketSnapshot>[
-        BucketSnapshot(name: 'Blow', bucketType: BucketType.dailyExpenses, color: const Color(0xFF38B2AC), icon: Icons.shopping_cart, balance: currentBlowBalance, change: 0),
+        BucketSnapshot(name: 'Blow', bucketType: BucketType.dailyExpenses, color: const Color(0xFF38B2AC), icon: Icons.shopping_cart, balance: blowDisplayBalance, change: 0),
         if (projHeal != 0 || prevHeal != 0)
           BucketSnapshot(name: 'Heal', bucketType: BucketType.heal, color: const Color(0xFFE05263), icon: Icons.medical_services, balance: projHeal, change: projHeal - prevHeal),
         if (projSmile != 0 || prevSmile != 0)
@@ -318,7 +330,7 @@ class FinancialForecastPage extends StatelessWidget {
         health:        health,
         healthMessage: healthMsg,
         buckets:       buckets,
-        sweepAmount:   currentBlowBalance, // Blow sweeps to Heal
+        sweepAmount:   totalSweepToHeal, // Display the TOTAL swept to Heal
         deficitAmount: currentDeficit,
         usedSmile:     usedSmile,
         usedSplurge:   usedSplurge,
@@ -335,16 +347,10 @@ class FinancialForecastPage extends StatelessWidget {
       prevSplurge = projSplurge;
       prevDebt    = projDebt;
 
-      // 5. Sweep EVERYTHING leftover to Heal for NEXT month
-      projHeal += currentBlowBalance;
-      if (projSmile > 0) {
-        projHeal += projSmile;
-        projSmile = 0;
-      }
-      if (projSplurge > 0) {
-        projHeal += projSplurge;
-        projSplurge = 0;
-      }
+      // 6. Execute the Sweep: EVERYTHING leftover goes to Heal for NEXT month
+      projHeal += totalSweepToHeal;
+      projSmile = 0;
+      projSplurge = 0;
     }
 
     return ForecastCardList(cards: cards, fmt: fmt);
