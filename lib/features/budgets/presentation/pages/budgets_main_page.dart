@@ -101,7 +101,7 @@ class BudgetsMainPage extends StatelessWidget {
               ),
             );
           },
-          backgroundColor: const Color(0xFF7C3AED),
+          backgroundColor: const Color(0xFF38B2AC),
           foregroundColor: Colors.white,
           elevation: 4,
           icon: const Icon(Icons.add),
@@ -314,7 +314,7 @@ class BudgetsMainPage extends StatelessWidget {
               icon: const Icon(Icons.add),
               label: const Text('Create Budget'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF7C3AED),
+                backgroundColor: const Color(0xFF38B2AC),
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                 shape: RoundedRectangleBorder(
