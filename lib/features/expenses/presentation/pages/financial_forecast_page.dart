@@ -124,7 +124,8 @@ class FinancialForecastPage extends StatelessWidget {
                   // 4. Set Starting Balances for Short-Term Wallets (Month 1)
                   double splurgeBalance = splurgeBudget - currentSplurgeSpent;
                   double smileBalance = smileBudget - currentSmileSpent;
-
+                  double currentHealBalance = healBalance + healBudget;
+  
                   // 4. Calculate Month 1 Actuals (Sweep / Deficit)
                   double remainingCash = actualBlowAllocation - currentBlowSpent;
                   double month1Sweep = 0;
@@ -148,7 +149,7 @@ class FinancialForecastPage extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         // Forecast Cards only
-                        _buildForecastCards(context, healBalance, mojoBalance, smileBalance, splurgeBalance, month1Sweep, month1Deficit, healBudget, smileBudget, splurgeBudget, actualBlowAllocation, customBlowBudget, activeDebts),
+                        _buildForecastCards(context, currentHealBalance, mojoBalance, smileBalance, splurgeBalance, month1Sweep, month1Deficit, healBudget, smileBudget, splurgeBudget, actualBlowAllocation, customBlowBudget, activeDebts),
                       ],
                     ),
                   ); // SingleChildScrollView
