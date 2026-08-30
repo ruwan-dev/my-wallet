@@ -179,6 +179,14 @@ class FinancialForecastPage extends StatelessWidget {
     List<Debt> activeDebts,
   ) {
     String fmt(double v) => AppFormatters.formatCurrency(context, v);
+    
+    String fmtShort(double v) {
+      final sign = v < 0 ? '-' : '';
+      final abs  = v.abs();
+      if (abs >= 1000000) return '${sign}${(abs / 1000000).toStringAsFixed(1)}M';
+      if (abs >= 1000)    return '${sign}${(abs / 1000).toStringAsFixed(1)}k';
+      return '$sign${abs.toStringAsFixed(0)}';
+    }
 
     double projHeal    = startingHeal;
     double projMojo    = startingMojo;
@@ -290,8 +298,19 @@ class FinancialForecastPage extends StatelessWidget {
       }
 
       // 4. Calculate what will be swept at the end of THIS month
-      // User requested: "if there are any rest of from blow,smile,splurage and fire it add to the next fire bucket"
       double totalSweepToHeal = currentBlowRemaining + projSmile + projSplurge;
+
+      String? sweepBreakdown;
+      if (totalSweepToHeal > 0) {
+        List<String> parts = [];
+        if (currentBlowRemaining > 0) parts.add(fmtShort(currentBlowRemaining));
+        if (projSmile > 0) parts.add(fmtShort(projSmile));
+        if (projSplurge > 0) parts.add(fmtShort(projSplurge));
+        
+        if (parts.length > 1) {
+          sweepBreakdown = '${parts.join(" + ")} = ${fmtShort(totalSweepToHeal)}';
+        }
+      }
 
       // 5. Record the card state BEFORE the sweep happens
       final ForecastHealth health;
@@ -312,8 +331,7 @@ class FinancialForecastPage extends StatelessWidget {
 
       final buckets = <BucketSnapshot>[
         BucketSnapshot(name: 'Blow', bucketType: BucketType.dailyExpenses, color: const Color(0xFF38B2AC), icon: Icons.shopping_cart, balance: blowDisplayBalance, change: 0),
-        if (projHeal != 0 || prevHeal != 0)
-          BucketSnapshot(name: 'Heal', bucketType: BucketType.heal, color: const Color(0xFFE05263), icon: Icons.medical_services, balance: projHeal, change: projHeal - prevHeal),
+        BucketSnapshot(name: 'Heal', bucketType: BucketType.heal, color: const Color(0xFFE05263), icon: Icons.medical_services, balance: projHeal, change: projHeal - prevHeal),
         if (projSmile != 0 || prevSmile != 0)
           BucketSnapshot(name: 'Smile', bucketType: BucketType.smile, color: const Color(0xFFD946EF), icon: Icons.sentiment_satisfied, balance: projSmile, change: projSmile - prevSmile),
         if (projSplurge != 0 || prevSplurge != 0)
@@ -331,6 +349,7 @@ class FinancialForecastPage extends StatelessWidget {
         healthMessage: healthMsg,
         buckets:       buckets,
         sweepAmount:   totalSweepToHeal, // Display the TOTAL swept to Heal
+        sweepBreakdown: sweepBreakdown,
         deficitAmount: currentDeficit,
         usedSmile:     usedSmile,
         usedSplurge:   usedSplurge,

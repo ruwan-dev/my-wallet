@@ -34,6 +34,7 @@ class ForecastMonthCard {
   final String healthMessage;
   final List<BucketSnapshot> buckets;
   final double sweepAmount;     // surplus from Blow → Fire
+  final String? sweepBreakdown; // e.g. "37k + 10k + 1.7k = 48.7k"
   final double deficitAmount;   // Blow overspent, pulled from Heal
   final bool usedSmile;
   final bool usedSplurge;
@@ -49,6 +50,7 @@ class ForecastMonthCard {
     required this.healthMessage,
     required this.buckets,
     required this.sweepAmount,
+    this.sweepBreakdown,
     required this.deficitAmount,
     required this.usedSmile,
     required this.usedSplurge,
@@ -214,8 +216,7 @@ class _SweepArrowsPainter extends CustomPainter {
       final shouldDraw = b.balance > 0 &&
           (b.bucketType == BucketType.dailyExpenses ||
            b.bucketType == BucketType.smile ||
-           b.bucketType == BucketType.splurge ||
-           b.bucketType == BucketType.heal);
+           b.bucketType == BucketType.splurge);
       if (!shouldDraw) continue;
 
       final startY = _rowCY(i);
@@ -395,7 +396,7 @@ class _MonthCard extends StatelessWidget {
                   const Divider(height: 1),
                   const SizedBox(height: 6),
                   if (card.sweepAmount > 0)
-                    _EventRow('Swept to Heal', fmt(card.sweepAmount), const Color(0xFF38B2AC)),
+                    _EventRow('Swept to Heal', card.sweepBreakdown ?? fmt(card.sweepAmount), const Color(0xFF38B2AC)),
                   if (card.deficitAmount > 0)
                     _EventRow('Blow Overspent', '-${fmt(card.deficitAmount)}', const Color(0xFFE05263)),
                   if (card.usedSmile)
