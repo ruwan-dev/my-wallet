@@ -29,15 +29,25 @@ class BucketSnapshot {
   });
 }
 
+class ArrowEvent {
+  final int fromIndex;
+  final int toIndex;
+  final Color color;
+  const ArrowEvent(this.fromIndex, this.toIndex, this.color);
+}
+
 class ForecastMonthCard {
   final String monthLabel;
   final bool isCurrentMonth;
   final ForecastHealth health;
   final String healthMessage;
   final List<BucketSnapshot> buckets;
-  final double sweepAmount;     // surplus from Blow → Fire
-  final String? sweepBreakdown; // e.g. "37k + 10k + 1.7k = 48.7k"
-  final double deficitAmount;   // Blow overspent, pulled from Heal
+  final List<ArrowEvent> arrows;
+  
+  // End-of-month events
+  final double sweepAmount;
+  final String? sweepBreakdown;
+  final double deficitAmount;
   final bool usedSmile;
   final bool usedSplurge;
   final bool usedMojo;
@@ -51,13 +61,14 @@ class ForecastMonthCard {
     required this.health,
     required this.healthMessage,
     required this.buckets,
-    required this.sweepAmount,
+    this.arrows = const [],
+    this.sweepAmount = 0,
     this.sweepBreakdown,
-    required this.deficitAmount,
-    required this.usedSmile,
-    required this.usedSplurge,
-    required this.usedMojo,
-    required this.debtAdded,
+    this.deficitAmount = 0,
+    this.usedSmile = false,
+    this.usedSplurge = false,
+    this.usedMojo = false,
+    this.debtAdded = 0,
     this.debtPaidAmount = 0,
     this.paidDebtNames = const [],
   });
@@ -213,9 +224,19 @@ class _MonthCard extends StatelessWidget {
           // ── Bucket rows ──
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            child: Column(
+            child: Stack(
               children: [
-                ...card.buckets.map((b) => _BucketRow(b: b, fmt: fmt, fmtShort: fmtShort)),
+                Column(
+                  children: [
+                    ...card.buckets.map((b) => _BucketRow(b: b, fmt: fmt, fmtShort: fmtShort)),
+                  ],
+                ),
+                Positioned.fill(
+                  child: _AnimatedArrowsOverlay(
+                    arrows: card.arrows,
+                    bucketsCount: card.buckets.length,
+                  ),
+                ),
               ],
             ),
           ),
@@ -347,4 +368,122 @@ class _BucketRow extends StatelessWidget {
       ],
     );
   }
+}
+class _AnimatedArrowsOverlay extends StatefulWidget {
+  final List<ArrowEvent> arrows;
+  final int bucketsCount;
+  const _AnimatedArrowsOverlay({required this.arrows, required this.bucketsCount});
+  @override
+  State<_AnimatedArrowsOverlay> createState() => _AnimatedArrowsOverlayState();
+}
+
+class _AnimatedArrowsOverlayState extends State<_AnimatedArrowsOverlay> with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(vsync: this, duration: const Duration(seconds: 2))..repeat();
+  }
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.arrows.isEmpty) return const SizedBox();
+    return CustomPaint(
+      painter: _TransferArrowsPainter(
+        arrows: widget.arrows,
+        bucketsCount: widget.bucketsCount,
+        animation: _ctrl,
+      ),
+    );
+  }
+}
+
+class _TransferArrowsPainter extends CustomPainter {
+  final List<ArrowEvent> arrows;
+  final int bucketsCount;
+  final Animation<double> animation;
+
+  _TransferArrowsPainter({required this.arrows, required this.bucketsCount, required this.animation}) : super(repaint: animation);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (arrows.isEmpty || bucketsCount == 0) return;
+
+    final rowHeight = size.height / bucketsCount;
+    final rightX = size.width - 45;
+    
+    // In case there are multiple arrows to the same target, stagger their rightX slightly
+    // to avoid overlapping perfectly. We can group by toIndex.
+    final Map<int, int> arrowsToTarget = {};
+    
+    for (var i = 0; i < arrows.length; i++) {
+      final arrow = arrows[i];
+      final targetIdx = arrow.toIndex;
+      final staggerIndex = arrowsToTarget[targetIdx] ?? 0;
+      arrowsToTarget[targetIdx] = staggerIndex + 1;
+      
+      final currentRightX = rightX - (staggerIndex * 5); // stagger by 5px
+      
+      final startY = (arrow.fromIndex * rowHeight) + (rowHeight / 2);
+      final endY = (arrow.toIndex * rowHeight) + (rowHeight / 2);
+      
+      final path = Path();
+      // start at donor (bottom)
+      path.moveTo(currentRightX - 25, startY);
+      // go right
+      path.lineTo(currentRightX, startY);
+      // go up (or down)
+      path.lineTo(currentRightX, endY);
+      // go left to recipient
+      path.lineTo(currentRightX - 35, endY);
+
+      final dashWidth = 6.0;
+      final dashSpace = 4.0;
+      final totalDash = dashWidth + dashSpace;
+      
+      final pms = path.computeMetrics().toList();
+      if (pms.isEmpty) continue;
+      final pm = pms.first;
+      
+      final paint = Paint()
+        ..color = arrow.color.withValues(alpha: 0.8)
+        ..strokeWidth = 2.0
+        ..style = PaintingStyle.stroke;
+        
+      double offset = -animation.value * totalDash;
+      
+      final dashedPath = Path();
+      while (offset < pm.length) {
+        if (offset + dashWidth > 0) {
+          final start = offset < 0 ? 0.0 : offset;
+          final end = offset + dashWidth > pm.length ? pm.length : offset + dashWidth;
+          dashedPath.addPath(pm.extractPath(start, end), Offset.zero);
+        }
+        offset += totalDash;
+      }
+      
+      canvas.drawPath(dashedPath, paint);
+      
+      // Draw arrowhead pointing left
+      final arrowPaint = Paint()
+        ..color = arrow.color
+        ..style = PaintingStyle.fill;
+        
+      final arrowPath = Path();
+      arrowPath.moveTo(currentRightX - 35, endY);
+      arrowPath.lineTo(currentRightX - 27, endY - 4);
+      arrowPath.lineTo(currentRightX - 27, endY + 4);
+      arrowPath.close();
+      canvas.drawPath(arrowPath, arrowPaint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _TransferArrowsPainter oldDelegate) => true;
 }

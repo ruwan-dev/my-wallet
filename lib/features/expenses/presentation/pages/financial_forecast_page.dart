@@ -271,8 +271,8 @@ class FinancialForecastPage extends StatelessWidget {
       bool usedMojo    = false;
       double debtAdded = 0;
       
-      List<String> blowCoverages = [];
-      List<String> healCoverages = [];
+      List<BucketType> blowCoveredBy = [];
+      List<BucketType> healCoveredBy = [];
 
       // A. Cover Blow Deficit
       if (currentDeficit > 0) {
@@ -282,26 +282,26 @@ class FinancialForecastPage extends StatelessWidget {
           projSmile -= pull;
           missing   -= pull;
           usedSmile  = true;
-          blowCoverages.add('Covered by Smile (+${fmtShort(pull)})');
+          blowCoveredBy.add(BucketType.smile);
         }
         if (missing > 0 && projSplurge > 0) {
           final pull = projSplurge >= missing ? missing : projSplurge;
           projSplurge -= pull;
           missing     -= pull;
           usedSplurge  = true;
-          blowCoverages.add('Covered by Splurge (+${fmtShort(pull)})');
+          blowCoveredBy.add(BucketType.splurge);
         }
         if (missing > 0 && projMojo > 0) {
           final pull = projMojo >= missing ? missing : projMojo;
           projMojo -= pull;
           missing  -= pull;
           usedMojo  = true;
-          blowCoverages.add('Covered by Mojo (+${fmtShort(pull)})');
+          blowCoveredBy.add(BucketType.mojo);
         }
         if (missing > 0) {
           projDebt += missing;
           debtAdded += missing;
-          blowCoverages.add('Added to Debt (+${fmtShort(missing)})');
+          // Debt added doesn't have an arrow pointing to it in the same way
         }
       }
 
@@ -313,26 +313,25 @@ class FinancialForecastPage extends StatelessWidget {
           projSmile -= pull;
           missing   -= pull;
           usedSmile  = true;
-          healCoverages.add('Covered by Smile (+${fmtShort(pull)})');
+          healCoveredBy.add(BucketType.smile);
         }
         if (missing > 0 && projSplurge > 0) {
           final pull = projSplurge >= missing ? missing : projSplurge;
           projSplurge -= pull;
           missing     -= pull;
           usedSplurge  = true;
-          healCoverages.add('Covered by Splurge (+${fmtShort(pull)})');
+          healCoveredBy.add(BucketType.splurge);
         }
         if (missing > 0 && projMojo > 0) {
           final pull = projMojo >= missing ? missing : projMojo;
           projMojo -= pull;
           missing  -= pull;
           usedMojo  = true;
-          healCoverages.add('Covered by Mojo (+${fmtShort(pull)})');
+          healCoveredBy.add(BucketType.mojo);
         }
         if (missing > 0) {
           projDebt += missing;
           debtAdded += missing;
-          healCoverages.add('Added to Debt (+${fmtShort(missing)})');
         }
         projHeal = 0;
       }
@@ -376,8 +375,8 @@ class FinancialForecastPage extends StatelessWidget {
       }
 
       final buckets = <BucketSnapshot>[
-        BucketSnapshot(name: 'Blow', bucketType: BucketType.dailyExpenses, color: const Color(0xFF38B2AC), icon: Icons.shopping_cart, balance: blowDisplayBalance, change: 0, coverages: blowCoverages),
-        BucketSnapshot(name: 'Heal', bucketType: BucketType.heal, color: const Color(0xFFE05263), icon: Icons.medical_services, balance: projHeal, change: projHeal - prevHeal, coverages: healCoverages),
+        BucketSnapshot(name: 'Blow', bucketType: BucketType.dailyExpenses, color: const Color(0xFF38B2AC), icon: Icons.shopping_cart, balance: blowDisplayBalance, change: 0),
+        BucketSnapshot(name: 'Heal', bucketType: BucketType.heal, color: const Color(0xFFE05263), icon: Icons.medical_services, balance: projHeal, change: projHeal - prevHeal),
         if (projSmile != 0 || prevSmile != 0)
           BucketSnapshot(name: 'Smile', bucketType: BucketType.smile, color: const Color(0xFFD946EF), icon: Icons.sentiment_satisfied, balance: projSmile, change: projSmile - prevSmile),
         if (projSplurge != 0 || prevSplurge != 0)
@@ -388,12 +387,29 @@ class FinancialForecastPage extends StatelessWidget {
           BucketSnapshot(name: 'Debt', bucketType: BucketType.none, color: const Color(0xFFB91C1C), icon: Icons.credit_card, balance: projDebt, change: projDebt - prevDebt),
       ];
 
+      List<ArrowEvent> arrows = [];
+      for (var type in blowCoveredBy) {
+        int fromIdx = buckets.indexWhere((b) => b.bucketType == type);
+        int toIdx = buckets.indexWhere((b) => b.bucketType == BucketType.dailyExpenses);
+        if (fromIdx != -1 && toIdx != -1) {
+          arrows.add(ArrowEvent(fromIdx, toIdx, const Color(0xFFDC2626)));
+        }
+      }
+      for (var type in healCoveredBy) {
+        int fromIdx = buckets.indexWhere((b) => b.bucketType == type);
+        int toIdx = buckets.indexWhere((b) => b.bucketType == BucketType.heal);
+        if (fromIdx != -1 && toIdx != -1) {
+          arrows.add(ArrowEvent(fromIdx, toIdx, const Color(0xFFE05263)));
+        }
+      }
+
       cards.add(ForecastMonthCard(
         monthLabel:    i == 0 ? 'End of ${DateFormat('MMM yyyy').format(targetDate)}' : DateFormat('MMM yyyy').format(targetDate),
         isCurrentMonth: i == 0,
         health:        health,
         healthMessage: healthMsg,
         buckets:       buckets,
+        arrows:        arrows,
         sweepAmount:   totalSweepToHeal, // Display the TOTAL swept to Heal
         sweepBreakdown: sweepBreakdown,
         deficitAmount: currentDeficit,
