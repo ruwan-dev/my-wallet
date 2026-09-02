@@ -50,7 +50,10 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
   // ── Account Sync ────────────────────────────────────────────────────────
   void _showLinkAccountSheet(
       BuildContext context, String bucketTypeName, Color themeColor) {
-    final accState = context.watch<AccountCubit>().state;
+    // Force cyan color to avoid blue text
+    themeColor = const Color(0xFF38B2AC);
+    
+    final accState = context.read<AccountCubit>().state;
     final accounts =
         accState is AccountLoaded ? accState.accounts : <dynamic>[];
     final settings = context.read<SettingsCubit>().state;
@@ -72,22 +75,18 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) {
-        return ClipRRect(
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-            child: Container(
-              constraints: const BoxConstraints(maxWidth: 500),
-              margin: const EdgeInsets.symmetric(horizontal: 0),
-              decoration: BoxDecoration(
-                color: const Color(0xFF3AAFA9).withOpacity(0.85),
-                borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(28)),
-                border: Border.all(color: Colors.white.withOpacity(0.25)),
-              ),
+        return Container(
+          constraints: const BoxConstraints(maxWidth: 500),
+          margin: const EdgeInsets.symmetric(horizontal: 0),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF2F8F7), // Home page background color
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+            border: Border.all(color: const Color(0xFF38B2AC).withOpacity(0.2)),
+          ),
               padding: EdgeInsets.fromLTRB(
-                  24, 20, 24, MediaQuery.of(ctx).viewInsets.bottom + 32),
-              child: Column(
+                  24, 20, 24, MediaQuery.of(ctx).viewInsets.bottom + 120),
+              child: SingleChildScrollView(
+                child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -97,7 +96,7 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
                       width: 40,
                       height: 4,
                       decoration: BoxDecoration(
-                        color: Colors.white24,
+                        color: const Color(0xFF38B2AC).withOpacity(0.3),
                         borderRadius: BorderRadius.circular(4),
                       ),
                     ),
@@ -114,13 +113,13 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
                   const SizedBox(height: 4),
                   const Text(
                     'One account can only be linked to one bucket at a time.',
-                    style: TextStyle(color: Colors.white54, fontSize: 12),
+                    style: TextStyle(color: Color(0xFF38B2AC), fontSize: 12),
                   ),
                   const SizedBox(height: 20),
                   if (availableAccounts.isEmpty)
                     const Text(
                       'No available accounts found. Create an account first or unsync one from another bucket.',
-                      style: TextStyle(color: Colors.white70),
+                      style: TextStyle(color: Color(0xFF38B2AC)),
                     )
                   else
                     ...availableAccounts.map((acc) {
@@ -145,12 +144,12 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
                           decoration: BoxDecoration(
                             color: isLinked
                                 ? themeColor.withOpacity(0.15)
-                                : Colors.white.withOpacity(0.05),
+                                : Colors.white,
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(
                               color: isLinked
                                   ? themeColor.withOpacity(0.5)
-                                  : Colors.white.withOpacity(0.1),
+                                  : const Color(0xFF38B2AC).withOpacity(0.2),
                               width: 1.5,
                             ),
                           ),
@@ -176,7 +175,7 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
                                     Text(
                                       acc.name,
                                       style: const TextStyle(
-                                        color: Colors.white,
+                                        color: Color(0xFF38B2AC),
                                         fontWeight: FontWeight.w600,
                                         fontSize: 14,
                                       ),
@@ -184,8 +183,8 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
                                     Text(
                                       AppFormatters.formatCurrency(
                                           context, acc.balance),
-                                      style: const TextStyle(
-                                        color: Colors.white60,
+                                      style: TextStyle(
+                                        color: const Color(0xFF38B2AC).withOpacity(0.8),
                                         fontSize: 12,
                                       ),
                                     ),
@@ -196,8 +195,8 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
                                 Icon(Icons.link_rounded,
                                     color: themeColor, size: 20)
                               else
-                                const Icon(Icons.link_off_rounded,
-                                    color: Colors.white30, size: 20),
+                                Icon(Icons.link_off_rounded,
+                                    color: const Color(0xFF38B2AC).withOpacity(0.3), size: 20),
                             ],
                           ),
                         ),
@@ -241,9 +240,8 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
                   ],
                 ],
               ),
-            ),
-          ),
-        );
+              ),
+            );
       },
     );
   }
@@ -395,6 +393,12 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
           bucket = category.subcategoryBuckets[tx.subCategory]!;
         }
 
+        if (tx.categoryName == 'Transfer') {
+          if (tx.bucketType == BucketType.mojo) calculatedMojo += tx.amount;
+          if (tx.bucketType == BucketType.grow) calculatedGrow += tx.amount;
+          continue;
+        }
+
         if (bucket == BucketType.mojo) {
           calculatedMojo += tx.isIncome ? tx.amount : -tx.amount;
         } else if (bucket == BucketType.grow) {
@@ -407,6 +411,8 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
       }).toList();
 
       for (final tx in currentMonthTxs) {
+        if (tx.categoryName == 'Transfer') continue;
+        
         if (tx.isIncome) {
           totalIncome += tx.amount;
         } else {
@@ -597,17 +603,10 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
     required double spentEnjoy,
     required double totalRemaining,
   }) {
-    final settings = context.watch<SettingsCubit>().state;
-    final accState = context.watch<AccountCubit>().state;
-    final accounts = accState is AccountLoaded ? accState.accounts : <AccountEntity>[];
 
-    final blowAccountId = settings.bucketAccountLinks['blow'];
-    final blowAccount = blowAccountId != null ? accounts.where((a) => a.id == blowAccountId).firstOrNull : null;
-    final blowBalance = blowAccount != null ? blowAccount.balance : (allocatedDailyExpenses - spentDailyExpenses);
 
-    final splurgeAccountId = settings.bucketAccountLinks['splurge'];
-    final splurgeAccount = splurgeAccountId != null ? accounts.where((a) => a.id == splurgeAccountId).firstOrNull : null;
-    final splurgeBalance = splurgeAccount != null ? splurgeAccount.balance : (allocatedEnjoy - spentEnjoy);
+    final blowBalance = (allocatedDailyExpenses - spentDailyExpenses);
+    final splurgeBalance = (allocatedEnjoy - spentEnjoy);
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -722,9 +721,7 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
     final accState = context.watch<AccountCubit>().state;
     final accounts = accState is AccountLoaded ? accState.accounts : <AccountEntity>[];
 
-    final smileAccountId = settings.bucketAccountLinks['smile'];
-    final smileAccount = smileAccountId != null ? accounts.where((a) => a.id == smileAccountId).firstOrNull : null;
-    final smileBalance = smileAccount != null ? smileAccount.balance : (allocatedSmile - spentSmile);
+    final smileBalance = (allocatedSmile - spentSmile);
 
     return Column(
       children: [
@@ -855,12 +852,8 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
     required double spentFire,
   }) {
     final settings = context.watch<SettingsCubit>().state;
-    final accState = context.watch<AccountCubit>().state;
-    final accounts = accState is AccountLoaded ? accState.accounts : <AccountEntity>[];
 
-    final fireAccountId = settings.bucketAccountLinks['fire'];
-    final fireAccount = fireAccountId != null ? accounts.where((a) => a.id == fireAccountId).firstOrNull : null;
-    final healBalance = fireAccount != null ? fireAccount.balance : (allocatedFire - spentFire);
+    final healBalance = (allocatedFire - spentFire);
 
     return Column(
       children: [
@@ -888,6 +881,7 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
                 showModalBottomSheet(
                   context: context,
                   isScrollControlled: true,
+                  
                   backgroundColor: Colors.transparent,
                   builder: (context) => Padding(
                     padding: EdgeInsets.only(
@@ -1021,6 +1015,7 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
                 showModalBottomSheet(
                   context: context,
                   isScrollControlled: true,
+                  
                   backgroundColor: Colors.transparent,
                   builder: (context) => Padding(
                     padding: EdgeInsets.only(
@@ -1096,6 +1091,7 @@ class _BucketPlannerPageState extends State<BucketPlannerPage>
                 showModalBottomSheet(
                   context: context,
                   isScrollControlled: true,
+                  
                   backgroundColor: Colors.transparent,
                   builder: (context) => Padding(
                     padding: EdgeInsets.only(

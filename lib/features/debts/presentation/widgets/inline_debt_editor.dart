@@ -117,11 +117,16 @@ class _InlineDebtEditorState extends State<InlineDebtEditor> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
-      ),
+    return ClipRRect(
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+        child: Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFF60C5B8).withOpacity(0.15),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+            border: Border.all(color: Colors.white.withOpacity(0.2)),
+          ),
       padding: EdgeInsets.only(
         top: 24,
         left: 20,
@@ -138,7 +143,7 @@ class _InlineDebtEditorState extends State<InlineDebtEditor> {
               style: Theme.of(context)
                   .textTheme
                   .titleLarge
-                  ?.copyWith(fontWeight: FontWeight.bold, color: Colors.black87),
+                  ?.copyWith(fontWeight: FontWeight.bold, color: Colors.white),
             ),
             const SizedBox(height: 16),
             _buildTextField(
@@ -170,20 +175,20 @@ class _InlineDebtEditorState extends State<InlineDebtEditor> {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                 decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.white.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.black.withOpacity(0.1)),
+                  border: Border.all(color: Colors.white.withOpacity(0.2)),
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.calendar_today, size: 20, color: Colors.black54),
+                    const Icon(Icons.calendar_today, size: 20, color: Colors.white70),
                     const SizedBox(width: 12),
                     Text(
                       _selectedDueDate != null
                           ? "${_selectedDueDate!.day}/${_selectedDueDate!.month}/${_selectedDueDate!.year}"
                           : 'Due Date (Optional)',
                       style: TextStyle(
-                        color: _selectedDueDate != null ? Colors.black87 : Colors.black54,
+                        color: _selectedDueDate != null ? Colors.white : Colors.white70,
                         fontSize: 16,
                       ),
                     ),
@@ -200,10 +205,10 @@ class _InlineDebtEditorState extends State<InlineDebtEditor> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                     decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.1),
+                      color: Colors.white.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: const Text('Cancel', style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold)),
+                    child: const Text('Cancel', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -212,7 +217,7 @@ class _InlineDebtEditorState extends State<InlineDebtEditor> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF00ACC1),
+                      color: const Color(0xFF60C5B8),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: const Text('Save', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
@@ -222,6 +227,8 @@ class _InlineDebtEditorState extends State<InlineDebtEditor> {
             ),
           ],
         ),
+      ),
+    ),
       ),
     );
   }
@@ -241,24 +248,24 @@ class _InlineDebtEditorState extends State<InlineDebtEditor> {
       maxLength: maxLength,
       buildCounter: (context, {required currentLength, required isFocused, maxLength}) => null,
       inputFormatters: formatters,
-      style: const TextStyle(color: Colors.black87),
-      cursorColor: const Color(0xFF00ACC1),
+      style: const TextStyle(color: Colors.white),
+      cursorColor: Colors.cyanAccent,
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: const TextStyle(color: Colors.black54),
+        labelStyle: const TextStyle(color: Colors.white70),
         filled: true,
-        fillColor: Colors.black.withOpacity(0.05),
+        fillColor: Colors.white.withOpacity(0.1),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: Colors.black.withOpacity(0.1)),
+          borderSide: BorderSide(color: Colors.white.withOpacity(0.2)),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: Colors.black.withOpacity(0.1)),
+          borderSide: BorderSide(color: Colors.white.withOpacity(0.2)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: Color(0xFF00ACC1)),
+          borderSide: const BorderSide(color: Colors.cyanAccent),
         ),
       ),
     );
