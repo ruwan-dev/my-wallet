@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
-enum TrackType { blow, splurge, smile, heal, mojo, grow, debt }
+enum TrackType { living, enjoy, smile, heal, mojo, grow, debt }
 
 class TrackColors {
-  static const Color blow = Color(0xFF38B2AC);
-  static const Color splurge = Color(0xFFF59E0B);
+  static const Color living = Color(0xFF38B2AC);
+  static const Color enjoy = Color(0xFFF59E0B);
   static const Color smile = Color(0xFFD946EF);
   static const Color heal = Color(0xFFE05263);
   static const Color mojo = Color(0xFF3949AB);
@@ -26,8 +26,8 @@ class ForecastNode {
   final String monthLabel;
   final double smileBalance;
   final String smileBalanceStr;
-  final double splurgeBalance;
-  final String splurgeBalanceStr;
+  final double enjoyBalance;
+  final String enjoyBalanceStr;
   final double healBalance;
   final String healBalanceStr;
   final double mojoBalance;
@@ -42,8 +42,8 @@ class ForecastNode {
     required this.monthLabel,
     required this.smileBalance,
     required this.smileBalanceStr,
-    required this.splurgeBalance,
-    required this.splurgeBalanceStr,
+    required this.enjoyBalance,
+    required this.enjoyBalanceStr,
     required this.healBalance,
     required this.healBalanceStr,
     required this.mojoBalance,
@@ -62,10 +62,10 @@ class ForecastGitGraph extends StatelessWidget {
   const ForecastGitGraph({super.key, required this.nodes});
 
   List<TrackType> _getGloballyActiveTracks() {
-    Set<TrackType> active = {TrackType.blow, TrackType.heal, TrackType.mojo};
+    Set<TrackType> active = {TrackType.living, TrackType.heal, TrackType.mojo};
     for (final node in nodes) {
       if (node.smileBalance != 0) active.add(TrackType.smile);
-      if (node.splurgeBalance != 0) active.add(TrackType.splurge);
+      if (node.enjoyBalance != 0) active.add(TrackType.enjoy);
       if (node.mojoBalance != 0) active.add(TrackType.mojo);
       if (node.debtBalance != 0) active.add(TrackType.debt);
       for (final t in node.transfers) {
@@ -73,7 +73,7 @@ class ForecastGitGraph extends StatelessWidget {
         active.add(t.to);
       }
     }
-    final all = [TrackType.blow, TrackType.splurge, TrackType.smile, TrackType.heal, TrackType.mojo, TrackType.grow, TrackType.debt];
+    final all = [TrackType.living, TrackType.enjoy, TrackType.smile, TrackType.heal, TrackType.mojo, TrackType.grow, TrackType.debt];
     return all.where((t) => active.contains(t)).toList();
   }
 
@@ -123,8 +123,8 @@ void _drawText(Canvas canvas, String text, double x, double y, Color color,
 
 Color _getTrackColor(TrackType track) {
   switch (track) {
-    case TrackType.blow: return TrackColors.blow;
-    case TrackType.splurge: return TrackColors.splurge;
+    case TrackType.living: return TrackColors.living;
+    case TrackType.enjoy: return TrackColors.enjoy;
     case TrackType.smile: return TrackColors.smile;
     case TrackType.heal: return TrackColors.heal;
     case TrackType.mojo: return TrackColors.mojo;
@@ -297,7 +297,7 @@ class GitGraphPainter extends CustomPainter {
       }
 
       drawBal(TrackType.smile,   node.smileBalanceStr);
-      drawBal(TrackType.splurge, node.splurgeBalanceStr);
+      drawBal(TrackType.enjoy, node.enjoyBalanceStr);
       drawBal(TrackType.heal,    node.healBalanceStr);
       drawBal(TrackType.mojo,    node.mojoBalanceStr);
       drawBal(TrackType.debt,    node.debtBalanceStr);

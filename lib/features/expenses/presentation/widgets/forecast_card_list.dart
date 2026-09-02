@@ -37,6 +37,7 @@ class ArrowEvent {
 }
 
 class ForecastMonthCard {
+  final int monthIndex;
   final String monthLabel;
   final bool isCurrentMonth;
   final ForecastHealth health;
@@ -47,15 +48,28 @@ class ForecastMonthCard {
   // End-of-month events
   final double sweepAmount;
   final String? sweepBreakdown;
-  final double deficitAmount;
-  final bool usedSmile;
-  final bool usedSplurge;
-  final bool usedMojo;
+  final bool hasUnresolvedDeficits;
+  final double uncoveredLivingDeficit;
+  final double uncoveredHealDeficit;
+  final double uncoveredSmileDeficit;
+  final double uncoveredEnjoyDeficit;
+  final double uncoveredMojoDeficit;
   final double debtAdded;
   final double debtPaidAmount;
   final List<String> paidDebtNames;
 
+  // Available for manual transfer
+  final double availableLiving;
+  final double availableSmile;
+  final double availableEnjoy;
+  final double availableHeal;
+  final double availableMojo;
+
+  // Callback
+  final void Function(BucketType from, BucketType to, double amount)? onSimulateTransfer;
+
   const ForecastMonthCard({
+    required this.monthIndex,
     required this.monthLabel,
     required this.isCurrentMonth,
     required this.health,
@@ -64,13 +78,21 @@ class ForecastMonthCard {
     this.arrows = const [],
     this.sweepAmount = 0,
     this.sweepBreakdown,
-    this.deficitAmount = 0,
-    this.usedSmile = false,
-    this.usedSplurge = false,
-    this.usedMojo = false,
+    this.hasUnresolvedDeficits = false,
+    this.uncoveredLivingDeficit = 0,
+    this.uncoveredHealDeficit = 0,
+    this.uncoveredSmileDeficit = 0,
+    this.uncoveredEnjoyDeficit = 0,
+    this.uncoveredMojoDeficit = 0,
     this.debtAdded = 0,
     this.debtPaidAmount = 0,
     this.paidDebtNames = const [],
+    this.availableLiving = 0,
+    this.availableSmile = 0,
+    this.availableEnjoy = 0,
+    this.availableHeal = 0,
+    this.availableMojo = 0,
+    this.onSimulateTransfer,
   });
 }
 
@@ -241,8 +263,20 @@ class _MonthCard extends StatelessWidget {
             ),
           ),
 
+          // ── Manual Coverage Action Buttons ──
+          if (card.uncoveredLivingDeficit > 0)
+            _buildManualCoverageButtons(BucketType.dailyExpenses, card.uncoveredLivingDeficit),
+          if (card.uncoveredSmileDeficit > 0)
+            _buildManualCoverageButtons(BucketType.smile, card.uncoveredSmileDeficit),
+          if (card.uncoveredEnjoyDeficit > 0)
+            _buildManualCoverageButtons(BucketType.enjoy, card.uncoveredEnjoyDeficit),
+          if (card.uncoveredMojoDeficit > 0)
+            _buildManualCoverageButtons(BucketType.mojo, card.uncoveredMojoDeficit),
+          if (card.uncoveredHealDeficit > 0)
+            _buildManualCoverageButtons(BucketType.heal, card.uncoveredHealDeficit),
+
           // ── Footer: events ──
-          if (card.sweepAmount > 0 || card.deficitAmount > 0 || card.usedSmile || card.usedSplurge || card.usedMojo || card.debtAdded > 0 || card.debtPaidAmount > 0)
+          if (card.hasUnresolvedDeficits || card.sweepAmount > 0 || card.debtAdded > 0 || card.debtPaidAmount > 0)
             Container(
               padding: const EdgeInsets.fromLTRB(14, 8, 14, 12),
               decoration: BoxDecoration(
@@ -254,16 +288,23 @@ class _MonthCard extends StatelessWidget {
                 children: [
                   const Divider(height: 1),
                   const SizedBox(height: 6),
-                  if (card.sweepAmount > 0)
+                  
+                  if (card.hasUnresolvedDeficits)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Row(
+                        children: [
+                          Icon(Icons.lock, size: 14, color: Colors.orange.shade700),
+                          const SizedBox(width: 6),
+                          Text('Resolve deficits to calculate final sweep', style: TextStyle(fontSize: 11, color: Colors.orange.shade800, fontWeight: FontWeight.bold)),
+                        ],
+                      ),
+                    )
+                  else if (card.sweepAmount > 0)
                     _EventRow('Swept to Heal', card.sweepBreakdown ?? fmt(card.sweepAmount), const Color(0xFF38B2AC)),
-                  if (card.deficitAmount > 0)
-                    _EventRow('Blow Overspent', '-${fmt(card.deficitAmount)}', const Color(0xFFE05263)),
-                  if (card.usedSmile)
-                    _EventRow('Smile helped Heal', '', const Color(0xFFD946EF)),
-                  if (card.usedSplurge)
-                    _EventRow('Splurge helped Heal', '', const Color(0xFFF59E0B)),
-                  if (card.usedMojo)
-                    _EventRow('Mojo covered deficit', '', const Color(0xFF3949AB)),
+                  
+                  if (card.uncoveredLivingDeficit > 0)
+                    _EventRow('Living Overspent', '-${fmt(card.uncoveredLivingDeficit)}', const Color(0xFFE05263)),
                   if (card.debtAdded > 0)
                     _EventRow('Debt added', fmt(card.debtAdded), const Color(0xFFB91C1C)),
                   if (card.debtPaidAmount > 0)
@@ -273,6 +314,58 @@ class _MonthCard extends StatelessWidget {
             ),
         ],
       ),
+    );
+  }
+
+  Widget _buildManualCoverageButtons(BucketType toBucket, double deficit) {
+    if (card.availableLiving <= 0 && card.availableSmile <= 0 && card.availableEnjoy <= 0 && card.availableHeal <= 0 && card.availableMojo <= 0) return const SizedBox();
+    
+    String toName = switch(toBucket) {
+      BucketType.dailyExpenses => 'Living',
+      BucketType.smile => 'Smile',
+      BucketType.enjoy => 'Enjoy',
+      BucketType.mojo => 'Mojo',
+      BucketType.heal => 'Heal',
+      _ => 'Unknown'
+    };
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 4),
+          Text('Cover $toName deficit:', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFFE05263))),
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: [
+              if (toBucket != BucketType.dailyExpenses && card.availableLiving > 0) _buildCoverBtn('Living', BucketType.dailyExpenses, toBucket, deficit, card.availableLiving),
+              if (toBucket != BucketType.smile && card.availableSmile > 0) _buildCoverBtn('Smile', BucketType.smile, toBucket, deficit, card.availableSmile),
+              if (toBucket != BucketType.enjoy && card.availableEnjoy > 0) _buildCoverBtn('Enjoy', BucketType.enjoy, toBucket, deficit, card.availableEnjoy),
+              if (toBucket != BucketType.mojo && card.availableMojo > 0) _buildCoverBtn('Mojo', BucketType.mojo, toBucket, deficit, card.availableMojo),
+              if (toBucket != BucketType.heal && card.availableHeal > 0) _buildCoverBtn('Heal', BucketType.heal, toBucket, deficit, card.availableHeal),
+            ],
+          )
+        ],
+      )
+    );
+  }
+
+  Widget _buildCoverBtn(String name, BucketType fromBucket, BucketType toBucket, double deficit, double available) {
+    final amount = available >= deficit ? deficit : available;
+    return OutlinedButton(
+      style: OutlinedButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
+        minimumSize: const Size(0, 28),
+        side: BorderSide(color: Colors.grey.shade300),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+      ),
+      onPressed: () {
+        card.onSimulateTransfer?.call(fromBucket, toBucket, amount);
+      },
+      child: Text('Cover from $name', style: const TextStyle(fontSize: 10, color: Color(0xFF475569))),
     );
   }
 }
@@ -452,37 +545,32 @@ class _TransferArrowsPainter extends CustomPainter {
         ..strokeWidth = 2.0
         ..style = PaintingStyle.stroke;
         
-      // Draw FULL solid line
-      canvas.drawPath(path, paint);
-      
-      // Draw arrowhead pointing left at the final target
-      final arrowPaint = Paint()
-        ..color = arrow.color
-        ..style = PaintingStyle.fill;
-        
-      final arrowPath = Path();
-      arrowPath.moveTo(rightX - 35, currentEndY);
-      arrowPath.lineTo(rightX - 27, currentEndY - 4);
-      arrowPath.lineTo(rightX - 27, currentEndY + 4);
-      arrowPath.close();
-      canvas.drawPath(arrowPath, arrowPaint);
-
-      // Draw animated glowing ball flowing along the path
+      // Draw animated solid line
       final distance = pm.length * animation.value;
-      final pos = pm.getPositionForDistance(distance);
+      final animatedPath = pm.extractPath(0, distance);
+      canvas.drawPath(animatedPath, paint);
       
-      final ballPaint = Paint()
-        ..color = Colors.white
-        ..style = PaintingStyle.fill;
+      // Draw arrowhead at the current tip of the animation
+      final tangent = pm.getTangentForOffset(distance);
+      if (tangent != null) {
+        final arrowPaint = Paint()
+          ..color = arrow.color
+          ..style = PaintingStyle.fill;
+          
+        canvas.save();
+        canvas.translate(tangent.position.dx, tangent.position.dy);
+        canvas.rotate(tangent.vector.direction);
         
-      // Outer glow for the ball
-      final glowPaint = Paint()
-        ..color = arrow.color.withValues(alpha: 0.5)
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3)
-        ..style = PaintingStyle.fill;
+        final arrowPath = Path();
+        arrowPath.moveTo(0, 0); // Tip
+        arrowPath.lineTo(-8, -4); // Top back
+        arrowPath.lineTo(-8, 4); // Bottom back
+        arrowPath.close();
+        canvas.drawPath(arrowPath, arrowPaint);
+        
+        canvas.restore();
+      }
 
-      canvas.drawCircle(pos.position, 4.0, glowPaint);
-      canvas.drawCircle(pos.position, 2.0, ballPaint);
     }
   }
 

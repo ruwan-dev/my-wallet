@@ -245,9 +245,9 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
                               builder: (context) {
                                 IconData icon = Icons.circle;
                                 Color color = const Color(0xFF38B2AC);
-                                String bucketName = 'Blow';
+                                String bucketName = 'Living';
                                 switch (budget.bucketType) {
-                                  case BucketType.dailyExpenses: bucketName = 'Blow'; icon = Icons.work_outline; color = const Color(0xFF38B2AC); break;
+                                  case BucketType.dailyExpenses: bucketName = 'Living'; icon = Icons.work_outline; color = const Color(0xFF38B2AC); break;
                                   case BucketType.smile: bucketName = 'Smile'; icon = Icons.flight_takeoff; color = const Color(0xFF34D399); break;
                                   case BucketType.heal: bucketName = 'Heal'; icon = Icons.medical_services; color = const Color(0xFFF87171); break;
                                   case BucketType.mojo: bucketName = 'Mojo'; icon = Icons.security; color = const Color(0xFFEAB308); break;
@@ -303,9 +303,9 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
                           if (linkedAccountId != null)
                             Builder(
                               builder: (context) {
-                                String bucketName = 'Blow';
+                                String bucketName = 'Living';
                                 switch (budget.bucketType) {
-                                  case BucketType.dailyExpenses: bucketName = 'Blow'; break;
+                                  case BucketType.dailyExpenses: bucketName = 'Living'; break;
                                   case BucketType.smile: bucketName = 'Smile'; break;
                                   case BucketType.heal: bucketName = 'Heal'; break;
                                   case BucketType.mojo: bucketName = 'Mojo'; break;

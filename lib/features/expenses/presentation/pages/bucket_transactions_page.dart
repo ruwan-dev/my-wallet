@@ -17,8 +17,8 @@ class BucketTransactionsPage extends StatelessWidget {
 
   String _getBucketName() {
     switch (bucketType) {
-      case BucketType.dailyExpenses: return 'Blow (Daily Expenses)';
-      case BucketType.splurge: return 'Splurge';
+      case BucketType.dailyExpenses: return 'Living (Daily Expenses)';
+      case BucketType.enjoy: return 'Enjoy';
       case BucketType.smile: return 'Smile';
       case BucketType.heal: return 'Heal';
       case BucketType.mojo: return 'Mojo';

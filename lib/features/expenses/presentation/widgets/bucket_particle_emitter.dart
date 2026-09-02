@@ -31,7 +31,7 @@ class Particle {
     y += vy * dt;
     
     // Apply gravity/physics based on type
-    if (type == BucketType.splurge) {
+    if (type == BucketType.enjoy) {
       vy += 400 * dt; // Gravity for confetti
       vx *= 0.95; // drag
     } else if (type == BucketType.dailyExpenses) {
@@ -100,13 +100,13 @@ class BucketParticleEmitterState extends State<BucketParticleEmitter> with Singl
 
     int count = 0;
     if (type == BucketType.dailyExpenses) count = 25; // Bubbles
-    if (type == BucketType.splurge) count = 60; // Confetti
+    if (type == BucketType.enjoy) count = 60; // Confetti
     if (type == BucketType.smile) count = 30; // Stars
     if (type == BucketType.heal) count = 50; // Sparks
 
     final colors = {
       BucketType.dailyExpenses: [Colors.blue.shade300, Colors.blue.shade200, Colors.cyan.shade200, Colors.white],
-      BucketType.splurge: [Colors.red, Colors.blue, Colors.green, Colors.yellow, Colors.purple, Colors.orange],
+      BucketType.enjoy: [Colors.red, Colors.blue, Colors.green, Colors.yellow, Colors.purple, Colors.orange],
       BucketType.smile: [Colors.yellow.shade400, Colors.yellow.shade300, Colors.green.shade300, Colors.green.shade400],
       BucketType.heal: [Colors.pinkAccent, Colors.pink, Colors.orangeAccent, Colors.yellowAccent, Colors.white],
     };
@@ -117,7 +117,7 @@ class BucketParticleEmitterState extends State<BucketParticleEmitter> with Singl
       double vx = 0;
       double vy = 0;
       
-      if (type == BucketType.splurge) {
+      if (type == BucketType.enjoy) {
         vx = (_random.nextDouble() - 0.5) * 600;
         vy = -_random.nextDouble() * 600 - 200;
       } else if (type == BucketType.dailyExpenses) {
@@ -200,7 +200,7 @@ class _ParticlePainter extends CustomPainter {
           ..color = Colors.white.withValues(alpha: alpha * 0.5)
           ..style = PaintingStyle.fill;
         canvas.drawCircle(Offset(-p.size * 0.3, -p.size * 0.3), p.size * 0.2, highlightPaint);
-      } else if (p.type == BucketType.splurge) {
+      } else if (p.type == BucketType.enjoy) {
         // Confetti: Rectangles
         canvas.drawRect(Rect.fromCenter(center: Offset.zero, width: p.size, height: p.size * 1.8), paint);
       } else if (p.type == BucketType.smile) {

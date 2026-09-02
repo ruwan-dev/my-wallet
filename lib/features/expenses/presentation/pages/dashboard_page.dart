@@ -10,7 +10,6 @@ import '../../../../core/constants/app_constants.dart';
 
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/formatters.dart';
-import '../../../../core/utils/sweep_util.dart';
 import '../../../../core/bloc/settings_cubit.dart';
 import '../../domain/entities/account.dart';
 import '../../domain/entities/transaction.dart';
@@ -55,8 +54,6 @@ class _DashboardPageState extends State<DashboardPage> {
         },
         listener: (context, state) {
           if (state is TransactionLoaded) {
-            SweepUtil.checkAndTriggerAutoSweep(context);
-            
             // To prevent multiple snackbars for the same deletion, we can just rely on the state
             if (state.deletedTransaction != null) {
               ScaffoldMessenger.of(context)
@@ -98,6 +95,8 @@ class _DashboardPageState extends State<DashboardPage> {
                     if (txState is TransactionLoaded) {
                       fixedExpenses = context.read<TransactionCubit>().currentMonthFixedExpenses;
                       for (final tx in txState.transactions) {
+                        if (tx.transferAccountId != null) continue; // Skip internal transfers
+                        
                         if (tx.isIncome) totalIncome  += tx.amount;
                         else            totalExpense += tx.amount;
                       }

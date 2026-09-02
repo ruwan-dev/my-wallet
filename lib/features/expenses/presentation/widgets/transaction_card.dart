@@ -147,11 +147,15 @@ class TransactionCard extends StatelessWidget {
       orElse: () => DefaultCategories.all.last,
     );
 
+    final isTransfer = transaction.transferAccountId != null;
+    
     // Amount colour: Darker shades for better contrast on glassmorphic backgrounds
-    final amountColor = isIncome ? const Color(0xFF166534) : const Color(0xFFB91C1C);
+    final amountColor = isTransfer 
+        ? Colors.black54 
+        : (isIncome ? const Color(0xFF166534) : const Color(0xFFB91C1C));
 
     final amountText =
-        '${isIncome ? '+' : '-'}${AppFormatters.formatCurrency(context, transaction.amount)}';
+        '${isTransfer ? '' : (isIncome ? '+' : '-')}${AppFormatters.formatCurrency(context, transaction.amount)}';
 
     final cardContent = InkWell(
       onTap: () => _showTransactionDetails(context, theme, amountColor, amountText, category),

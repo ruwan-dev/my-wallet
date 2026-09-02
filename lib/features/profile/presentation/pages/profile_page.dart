@@ -7,7 +7,6 @@ import '../../../auth/presentation/bloc/auth_cubit.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../../core/bloc/settings_cubit.dart';
-import '../../../../core/utils/sweep_util.dart';
 import 'package:expense_tracker/core/widgets/glass_list_tile.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -120,13 +119,6 @@ class _ProfilePageState extends State<ProfilePage> {
                     icon: Icons.calendar_today,
                     title: 'Payday Cycle',
                     subtitle: 'Every month on the ${context.watch<SettingsCubit>().state.paydayDate}${_getDaySuffix(context.watch<SettingsCubit>().state.paydayDate)}',
-                    trailing: IconButton(
-                      icon: const Icon(Icons.flash_on, color: Color(0xFF38B2AC)),
-                      tooltip: 'Test Sweep Now',
-                      onPressed: () {
-                        SweepUtil.checkAndTriggerAutoSweep(context, force: true);
-                      },
-                    ),
                     onTap: () => setState(() {
                       _editingField = 'payday';
                       _inlineEditController.text = context.read<SettingsCubit>().state.paydayDate.toString();

@@ -57,6 +57,26 @@ Future<void> main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
+  // FIX: Reset account balances if DB is corrupted due to orphaned futures
+  final accBox = Hive.box<AccountModel>(AppConstants.accountsBox);
+  final txBox = Hive.box<TransactionModel>(AppConstants.transactionsBox);
+  if (txBox.isEmpty) {
+    for (int i = 0; i < accBox.length; i++) {
+      final acc = accBox.getAt(i);
+      if (acc != null && acc.balance != 0) {
+        accBox.putAt(i, AccountModel(
+          id: acc.id,
+          name: acc.name,
+          balance: 0.0,
+          creditLimit: acc.creditLimit,
+          typeIndex: acc.typeIndex,
+          userId: acc.userId,
+          colorValue: acc.colorValue,
+        ));
+      }
+    }
+  }
+
   // Initialise Dependency Injection
   await configureDependencies();
 

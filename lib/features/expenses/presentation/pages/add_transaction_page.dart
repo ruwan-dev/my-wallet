@@ -52,7 +52,7 @@ class _BucketMeta {
 const _buckets = [
   _BucketMeta(
     type: BucketType.dailyExpenses,
-    name: 'Blow - Daily',
+    name: 'Living - Daily',
     emoji: '🛒',
     imageAsset: 'assets/images/bucket_daily.png',
     subtitle: 'Everyday living expenses like food, transport & bills.',
@@ -61,10 +61,10 @@ const _buckets = [
     icon: Icons.shopping_cart_rounded,
   ),
   _BucketMeta(
-    type: BucketType.splurge,
-    name: 'Blow - Splurge',
+    type: BucketType.enjoy,
+    name: 'Living - Enjoy',
     emoji: '🎉',
-    imageAsset: 'assets/images/bucket_splurge.png',
+    imageAsset: 'assets/images/bucket_enjoy.png',
     subtitle: 'Guilt-free fun money for hobbies & entertainment.',
     percentage: 0.10,
     color: Color(0xFFEAB308), // Yellow
@@ -394,7 +394,10 @@ class _AddTransactionPageState extends State<AddTransactionPage>
     );
 
     if (widget.existingTransaction == null) {
-      context.read<TransactionCubit>().addTransaction(tx);
+      final settings = context.read<SettingsCubit>().state;
+      final links = settings.bucketAccountLinks;
+      final healRedirection = settings.healRedirection.name;
+      context.read<TransactionCubit>().addTransaction(tx, bucketLinks: links, healRedirection: healRedirection);
     } else {
       context
           .read<TransactionCubit>()
@@ -1306,7 +1309,35 @@ class _AddTransactionPageState extends State<AddTransactionPage>
             child: BlocBuilder<AccountCubit, AccountState>(
               builder: (context, state) {
                 if (state is AccountLoaded) {
-                  final validAccounts = state.accounts;
+                  List<AccountEntity> validAccounts = state.accounts;
+                  
+                  // Filter to just the synced account if the selected bucket is synced
+                  if (_isIncome == false && _selectedBucketType != null) {
+                    final settingsState = context.read<SettingsCubit>().state;
+                    String linkKey;
+                    if (_selectedBucketType == BucketType.dailyExpenses) {
+                      linkKey = 'blow';
+                    } else if (_selectedBucketType == BucketType.heal) {
+                      linkKey = 'fire';
+                    } else {
+                      linkKey = _selectedBucketType!.name;
+                    }
+                    
+                    if (settingsState.bucketAccountLinks.containsKey(linkKey)) {
+                      final linkedId = settingsState.bucketAccountLinks[linkKey]!;
+                      final linkedAccounts = validAccounts.where((a) => a.id == linkedId).toList();
+                      if (linkedAccounts.isNotEmpty) {
+                        validAccounts = linkedAccounts;
+                        // Auto-select if not already selected
+                        if (_selectedAccountId != linkedId) {
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            setState(() => _selectedAccountId = linkedId);
+                          });
+                        }
+                      }
+                    }
+                  }
+
                   if (validAccounts.isEmpty) {
                     return Center(
                       child: Text(
@@ -1549,7 +1580,7 @@ class _AddTransactionPageState extends State<AddTransactionPage>
     switch (b) {
       case BucketType.dailyExpenses:
         return const Color(0xFF6366F1);
-      case BucketType.splurge:
+      case BucketType.enjoy:
         return const Color(0xFFEAB308);
       case BucketType.smile:
         return const Color(0xFF10B981);
@@ -1564,7 +1595,7 @@ class _AddTransactionPageState extends State<AddTransactionPage>
     switch (b) {
       case BucketType.dailyExpenses:
         return '🛒';
-      case BucketType.splurge:
+      case BucketType.enjoy:
         return '🎉';
       case BucketType.smile:
         return '😊';

@@ -71,6 +71,7 @@ class CategoryModel extends HiveObject {
 
   BucketType _mapBucketType(String bt) {
     if (bt == 'blow') return BucketType.dailyExpenses;
+    if (bt == 'splurge') return BucketType.enjoy;
     if (bt == 'grow') return BucketType.grow;
     return BucketType.values.firstWhere((e) => e.name == bt, orElse: () => BucketType.none);
   }

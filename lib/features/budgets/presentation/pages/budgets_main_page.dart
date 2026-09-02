@@ -163,9 +163,9 @@ class BudgetsMainPage extends StatelessWidget {
                             Builder(
                               builder: (context) {
                                 IconData icon = Icons.circle;
-                                String bucketName = 'Blow';
+                                String bucketName = 'Living';
                                 switch (budget.bucketType) {
-                                  case BucketType.dailyExpenses: bucketName = 'Blow'; icon = Icons.shopping_bag_outlined; break;
+                                  case BucketType.dailyExpenses: bucketName = 'Living'; icon = Icons.shopping_bag_outlined; break;
                                   case BucketType.smile: bucketName = 'Smile'; icon = Icons.flight_takeoff; break;
                                   case BucketType.heal: bucketName = 'Heal'; icon = Icons.medical_services; break;
                                   case BucketType.mojo: bucketName = 'Mojo'; icon = Icons.security; break;

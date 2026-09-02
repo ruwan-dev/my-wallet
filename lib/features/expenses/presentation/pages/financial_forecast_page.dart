@@ -18,8 +18,29 @@ import '../../../debts/presentation/bloc/debt_cubit.dart';
 import '../../../debts/presentation/bloc/debt_state.dart';
 import '../../../debts/domain/entities/debt.dart';
 
-class FinancialForecastPage extends StatelessWidget {
+class SimulatedTransfer {
+  final int monthIndex;
+  final BucketType fromBucket;
+  final BucketType toBucket;
+  final double amount;
+
+  SimulatedTransfer({
+    required this.monthIndex,
+    required this.fromBucket,
+    required this.toBucket,
+    required this.amount,
+  });
+}
+
+class FinancialForecastPage extends StatefulWidget {
   const FinancialForecastPage({super.key});
+
+  @override
+  State<FinancialForecastPage> createState() => _FinancialForecastPageState();
+}
+
+class _FinancialForecastPageState extends State<FinancialForecastPage> {
+  List<SimulatedTransfer> simulatedTransfers = [];
 
   BucketType _getBucketForTx(TransactionEntity tx, List<Category> categories) {
     if (tx.bucketType != null) return tx.bucketType!;
@@ -71,7 +92,7 @@ class FinancialForecastPage extends StatelessWidget {
                   // 1. Calculate All-Time Heal & Mojo Balances (Vaults)
                   double healBalance = 0;
                   double mojoBalance = 0;
-                  // We will calculate Smile and Splurge based on the current month's allocation
+                  // We will calculate Smile and Enjoy based on the current month's allocation
                   // since they are short-term spending wallets.
 
                   for (final tx in txState.transactions) {
@@ -85,8 +106,8 @@ class FinancialForecastPage extends StatelessWidget {
 
                   // 2. Calculate Current Month Income and Spending for Short-Term Buckets
                   double monthlyIncome = 0;
-                  double currentBlowSpent = 0;
-                  double currentSplurgeSpent = 0;
+                  double currentLivingSpent = 0;
+                  double currentEnjoySpent = 0;
                   double currentSmileSpent = 0;
 
                   for (final tx in txState.transactions) {
@@ -96,9 +117,9 @@ class FinancialForecastPage extends StatelessWidget {
                       } else {
                         final bucket = _getBucketForTx(tx, catState.categories);
                         if (bucket == BucketType.dailyExpenses) {
-                          currentBlowSpent += tx.amount;
-                        } else if (bucket == BucketType.splurge) {
-                          currentSplurgeSpent += tx.amount;
+                          currentLivingSpent += tx.amount;
+                        } else if (bucket == BucketType.enjoy) {
+                          currentEnjoySpent += tx.amount;
                         } else if (bucket == BucketType.smile) {
                           currentSmileSpent += tx.amount;
                         }
@@ -107,27 +128,27 @@ class FinancialForecastPage extends StatelessWidget {
                   }
 
                   // 3. Get Budgets
-                  double actualBlowAllocation = monthlyIncome * 0.60;
-                  double customBlowBudget = actualBlowAllocation;
+                  double actualLivingAllocation = monthlyIncome * 0.60;
+                  double customLivingBudget = actualLivingAllocation;
                   double healBudget = monthlyIncome * 0.20;
                   double smileBudget = monthlyIncome * 0.10;
-                  double splurgeBudget = monthlyIncome * 0.10;
+                  double enjoyBudget = monthlyIncome * 0.10;
                   if (budgetState is CustomBudgetLoaded) {
                     for (final b in budgetState.budgets) {
                       if (!b.isCompleted) {
-                        if (b.bucketType == BucketType.dailyExpenses && b.totalAllocated > 0) customBlowBudget = b.totalAllocated;
+                        if (b.bucketType == BucketType.dailyExpenses && b.totalAllocated > 0) customLivingBudget = b.totalAllocated;
                         if (b.bucketType == BucketType.heal && b.totalAllocated > 0) healBudget = b.totalAllocated;
                       }
                     }
                   }
 
                   // 4. Set Starting Balances for Short-Term Wallets (Month 1)
-                  double splurgeBalance = splurgeBudget - currentSplurgeSpent;
+                  double enjoyBalance = enjoyBudget - currentEnjoySpent;
                   double smileBalance = smileBudget - currentSmileSpent;
                   double currentHealBalance = healBalance + healBudget;
   
                   // 4. Calculate Month 1 Actuals (Sweep / Deficit)
-                  double remainingCash = actualBlowAllocation - currentBlowSpent;
+                  double remainingCash = actualLivingAllocation - currentLivingSpent;
                   double month1Sweep = 0;
                   double month1Deficit = 0;
                   
@@ -139,8 +160,8 @@ class FinancialForecastPage extends StatelessWidget {
 
                   // Budget configuration warning (UI only, does not deduct from Month 1 if unspent)
                   double budgetConfigDeficit = 0;
-                  if (customBlowBudget > actualBlowAllocation) {
-                    budgetConfigDeficit = customBlowBudget - actualBlowAllocation;
+                  if (customLivingBudget > actualLivingAllocation) {
+                    budgetConfigDeficit = customLivingBudget - actualLivingAllocation;
                   }
 
                   return SingleChildScrollView(
@@ -149,7 +170,7 @@ class FinancialForecastPage extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         // Forecast Cards only
-                        _buildForecastCards(context, currentHealBalance, mojoBalance, smileBalance, splurgeBalance, month1Sweep, month1Deficit, healBudget, smileBudget, splurgeBudget, actualBlowAllocation, customBlowBudget, activeDebts),
+                        _buildForecastCards(context, currentHealBalance, mojoBalance, smileBalance, enjoyBalance, month1Sweep, month1Deficit, healBudget, smileBudget, enjoyBudget, actualLivingAllocation, customLivingBudget, activeDebts),
                       ],
                     ),
                   ); // SingleChildScrollView
@@ -169,14 +190,14 @@ class FinancialForecastPage extends StatelessWidget {
     double startingHeal,
     double startingMojo,
     double startingSmile,
-    double startingSplurge,
+    double startingEnjoy,
     double month1Sweep,
     double month1Deficit,
     double monthlyHealAllocation,
     double monthlySmileAllocation,
-    double monthlySplurgeAllocation,
-    double actualBlowAllocation,
-    double customBlowBudget,
+    double monthlyEnjoyAllocation,
+    double actualLivingAllocation,
+    double customLivingBudget,
     List<Debt> activeDebts,
   ) {
     String fmt(double v) => AppFormatters.formatCurrency(context, v);
@@ -192,14 +213,14 @@ class FinancialForecastPage extends StatelessWidget {
     double projHeal    = startingHeal;
     double projMojo    = startingMojo;
     double projSmile   = startingSmile;
-    double projSplurge = startingSplurge;
+    double projEnjoy = startingEnjoy;
     double projDebt    = 0;
 
     // Previous balances for change arrows (start = current)
     double prevHeal    = startingHeal;
     double prevMojo    = startingMojo;
     double prevSmile   = startingSmile;
-    double prevSplurge = startingSplurge;
+    double prevEnjoy = startingEnjoy;
     double prevDebt    = 0;
 
     final now = DateTime.now();
@@ -209,33 +230,33 @@ class FinancialForecastPage extends StatelessWidget {
     for (int i = 0; i < 6; i++) {
       final targetDate = DateTime(now.year, now.month + i, 1);
 
-      double currentBlowRemaining = 0;
+      double currentLivingRemaining = 0;
       double currentDeficit = 0;
-      double blowDisplayBalance = 0;
+      double livingDisplayBalance = 0;
       
       // 1. Add this month's allocations
       if (i == 0) {
         // Month 0: We use the actual current remaining balances
-        currentBlowRemaining = month1Sweep;
+        currentLivingRemaining = month1Sweep;
         currentDeficit     = month1Deficit;
-        blowDisplayBalance = month1Sweep > 0 ? month1Sweep : -month1Deficit;
-        // starting balances for Smile, Splurge, Heal are already in projSmile, projSplurge, projHeal.
+        livingDisplayBalance = month1Sweep > 0 ? month1Sweep : -month1Deficit;
+        // starting balances for Smile, Enjoy, Heal are already in projSmile, projEnjoy, projHeal.
       } else {
         // Future months: Add the new monthly allocations
         projHeal    += monthlyHealAllocation;
         projSmile   += monthlySmileAllocation;
-        projSplurge += monthlySplurgeAllocation;
+        projEnjoy += monthlyEnjoyAllocation;
         
         // For future months, the user wants to see the "initial values" (the full budget allocations)
-        blowDisplayBalance = actualBlowAllocation;
+        livingDisplayBalance = actualLivingAllocation;
         
         // But for the *sweep* at the end of the future month, we predict they will spend their custom budget
-        final futureSweep = actualBlowAllocation - customBlowBudget;
+        final futureSweep = actualLivingAllocation - customLivingBudget;
         if (futureSweep >= 0) {
-          currentBlowRemaining = futureSweep;
+          currentLivingRemaining = futureSweep;
         } else {
           currentDeficit = futureSweep.abs();
-          currentBlowRemaining = 0;
+          currentLivingRemaining = 0;
         }
       }
 
@@ -265,122 +286,119 @@ class FinancialForecastPage extends StatelessWidget {
 
       projHeal -= currentMonthDebtPaid;
 
-      // 3. Cover negative buckets (Blow Deficit and Heal Debt Payments)
-      bool usedSmile   = false;
-      bool usedSplurge = false;
-      bool usedMojo    = false;
-      double debtAdded = 0;
-      
-      List<BucketType> blowCoveredBy = [];
+      // 3. Apply Simulated Manual Transfers for this month
+      List<BucketType> livingCoveredBy = [];
       List<BucketType> healCoveredBy = [];
-
-      // A. Cover Blow Deficit
-      if (currentDeficit > 0) {
-        double missing = currentDeficit;
-        if (missing > 0 && projSmile > 0) {
-          final pull = projSmile >= missing ? missing : projSmile;
-          projSmile -= pull;
-          missing   -= pull;
-          usedSmile  = true;
-          blowCoveredBy.add(BucketType.smile);
-        }
-        if (missing > 0 && projSplurge > 0) {
-          final pull = projSplurge >= missing ? missing : projSplurge;
-          projSplurge -= pull;
-          missing     -= pull;
-          usedSplurge  = true;
-          blowCoveredBy.add(BucketType.splurge);
-        }
-        if (missing > 0 && projMojo > 0) {
-          final pull = projMojo >= missing ? missing : projMojo;
-          projMojo -= pull;
-          missing  -= pull;
-          usedMojo  = true;
-          blowCoveredBy.add(BucketType.mojo);
-        }
-        if (missing > 0) {
-          projDebt += missing;
-          debtAdded += missing;
-          // Debt added doesn't have an arrow pointing to it in the same way
+      List<BucketType> smileCoveredBy = [];
+      List<BucketType> enjoyCoveredBy = [];
+      List<BucketType> mojoCoveredBy = [];
+      
+      final monthTransfers = simulatedTransfers.where((t) => t.monthIndex == i);
+      for (final t in monthTransfers) {
+        // Subtract from source
+        if (t.fromBucket == BucketType.dailyExpenses) currentLivingRemaining -= t.amount;
+        if (t.fromBucket == BucketType.smile) projSmile -= t.amount;
+        if (t.fromBucket == BucketType.enjoy) projEnjoy -= t.amount;
+        if (t.fromBucket == BucketType.heal) projHeal -= t.amount;
+        if (t.fromBucket == BucketType.mojo) projMojo -= t.amount;
+        
+        // Add to destination
+        if (t.toBucket == BucketType.dailyExpenses) {
+           currentDeficit -= t.amount;
+           livingDisplayBalance += t.amount;
+           if (currentDeficit < 0) {
+             currentLivingRemaining += currentDeficit.abs();
+             currentDeficit = 0;
+           }
+           livingCoveredBy.add(t.fromBucket);
+        } else if (t.toBucket == BucketType.heal) {
+           projHeal += t.amount;
+           healCoveredBy.add(t.fromBucket);
+        } else if (t.toBucket == BucketType.smile) {
+           projSmile += t.amount;
+           smileCoveredBy.add(t.fromBucket);
+        } else if (t.toBucket == BucketType.enjoy) {
+           projEnjoy += t.amount;
+           enjoyCoveredBy.add(t.fromBucket);
+        } else if (t.toBucket == BucketType.mojo) {
+           projMojo += t.amount;
+           mojoCoveredBy.add(t.fromBucket);
         }
       }
 
-      // B. Cover Heal (if they paid more debt than they had in Heal)
-      if (projHeal < 0) {
-        double missing = projHeal.abs();
-        if (missing > 0 && projSmile > 0) {
-          final pull = projSmile >= missing ? missing : projSmile;
-          projSmile -= pull;
-          missing   -= pull;
-          usedSmile  = true;
-          healCoveredBy.add(BucketType.smile);
-        }
-        if (missing > 0 && projSplurge > 0) {
-          final pull = projSplurge >= missing ? missing : projSplurge;
-          projSplurge -= pull;
-          missing     -= pull;
-          usedSplurge  = true;
-          healCoveredBy.add(BucketType.splurge);
-        }
-        if (missing > 0 && projMojo > 0) {
-          final pull = projMojo >= missing ? missing : projMojo;
-          projMojo -= pull;
-          missing  -= pull;
-          usedMojo  = true;
-          healCoveredBy.add(BucketType.mojo);
-        }
-        if (missing > 0) {
-          projDebt += missing;
-          debtAdded += missing;
-        }
-        projHeal = 0;
-      }
+      // Check for unresolved deficits
+      bool hasUnresolvedDeficits = currentDeficit > 0 || projHeal < 0 || projSmile < 0 || projEnjoy < 0 || projMojo < 0;
 
-      if (projMojo < 0) {
-        debtAdded += projMojo.abs();
-        projDebt += projMojo.abs();
-        projMojo  = 0;
-      }
+      // Track uncovered deficits to pass to the UI
+      double uncoveredLivingDeficit = currentDeficit > 0 ? currentDeficit : 0;
+      double uncoveredHealDeficit = projHeal < 0 ? projHeal.abs() : 0;
+      double uncoveredSmileDeficit = projSmile < 0 ? projSmile.abs() : 0;
+      double uncoveredEnjoyDeficit = projEnjoy < 0 ? projEnjoy.abs() : 0;
+      double uncoveredMojoDeficit = projMojo < 0 ? projMojo.abs() : 0;
+
+      double debtAdded = 0;
 
       // 4. Calculate what will be swept at the end of THIS month
-      double totalSweepToHeal = currentBlowRemaining + projSmile + projSplurge;
-
+      // We only sweep if there are NO unresolved deficits
+      double totalSweepToHeal = 0;
       String? sweepBreakdown;
-      if (totalSweepToHeal > 0) {
-        List<String> parts = [];
-        if (currentBlowRemaining > 0) parts.add(fmtShort(currentBlowRemaining));
-        if (projSmile > 0) parts.add(fmtShort(projSmile));
-        if (projSplurge > 0) parts.add(fmtShort(projSplurge));
-        
-        if (parts.length > 1) {
-          sweepBreakdown = '${parts.join(" + ")} = ${fmtShort(totalSweepToHeal)}';
+      
+      if (!hasUnresolvedDeficits) {
+        totalSweepToHeal = currentLivingRemaining + projSmile + projEnjoy;
+        if (totalSweepToHeal > 0) {
+          List<String> parts = [];
+          if (currentLivingRemaining > 0) parts.add(fmtShort(currentLivingRemaining));
+          if (projSmile > 0) parts.add(fmtShort(projSmile));
+          if (projEnjoy > 0) parts.add(fmtShort(projEnjoy));
+          
+          if (parts.length > 1) {
+            sweepBreakdown = '${parts.join(" + ")} = ${fmtShort(totalSweepToHeal)}';
+          }
         }
+      } else {
+        // If there ARE unresolved deficits, the simulation assumes you go into debt at the end of the month
+        if (currentDeficit > 0) { projDebt += currentDeficit; debtAdded += currentDeficit; }
+        if (projHeal < 0) { projDebt += projHeal.abs(); debtAdded += projHeal.abs(); projHeal = 0; }
+        if (projSmile < 0) { projDebt += projSmile.abs(); debtAdded += projSmile.abs(); projSmile = 0; }
+        if (projEnjoy < 0) { projDebt += projEnjoy.abs(); debtAdded += projEnjoy.abs(); projEnjoy = 0; }
+        if (projMojo < 0) { projDebt += projMojo.abs(); debtAdded += projMojo.abs(); projMojo = 0; }
       }
 
       // 5. Record the card state BEFORE the sweep happens
       final ForecastHealth health;
       final String healthMsg;
-      if (debtAdded > 0 || usedMojo) {
+      
+      bool usedMojo = livingCoveredBy.contains(BucketType.mojo) || healCoveredBy.contains(BucketType.mojo) ||
+                      smileCoveredBy.contains(BucketType.mojo) || enjoyCoveredBy.contains(BucketType.mojo);
+      bool usedSavings = livingCoveredBy.contains(BucketType.smile) || livingCoveredBy.contains(BucketType.enjoy) ||
+                         healCoveredBy.contains(BucketType.smile) || healCoveredBy.contains(BucketType.enjoy);
+
+      if (debtAdded > 0 || usedMojo || hasUnresolvedDeficits) {
         health    = ForecastHealth.danger;
-        healthMsg = usedMojo ? 'Emergency fund used!' : 'Going into debt!';
-      } else if (usedSmile || usedSplurge) {
+        if (uncoveredLivingDeficit > 0) {
+          healthMsg = 'Living overspent!';
+        } else if (hasUnresolvedDeficits) {
+          healthMsg = 'Resolve deficits!';
+        } else if (usedMojo) {
+          healthMsg = 'Emergency fund used!';
+        } else {
+          healthMsg = 'Going into debt!';
+        }
+      } else if (usedSavings) {
         health    = ForecastHealth.warning;
         healthMsg = 'Savings helping cover costs';
-      } else if (currentDeficit > 0) {
-        health    = ForecastHealth.warning;
-        healthMsg = 'Slight overspend covered';
       } else {
         health    = ForecastHealth.safe;
-        healthMsg = currentBlowRemaining > 0 ? 'On track · saving surplus' : 'On track';
+        healthMsg = currentLivingRemaining > 0 ? 'On track · saving surplus' : 'On track';
       }
 
       final buckets = <BucketSnapshot>[
-        BucketSnapshot(name: 'Blow', bucketType: BucketType.dailyExpenses, color: const Color(0xFF38B2AC), icon: Icons.shopping_cart, balance: blowDisplayBalance, change: 0),
+        BucketSnapshot(name: 'Living', bucketType: BucketType.dailyExpenses, color: const Color(0xFF38B2AC), icon: Icons.shopping_cart, balance: livingDisplayBalance, change: 0),
         BucketSnapshot(name: 'Heal', bucketType: BucketType.heal, color: const Color(0xFFE05263), icon: Icons.medical_services, balance: projHeal, change: projHeal - prevHeal),
         if (projSmile != 0 || prevSmile != 0)
           BucketSnapshot(name: 'Smile', bucketType: BucketType.smile, color: const Color(0xFFD946EF), icon: Icons.sentiment_satisfied, balance: projSmile, change: projSmile - prevSmile),
-        if (projSplurge != 0 || prevSplurge != 0)
-          BucketSnapshot(name: 'Splurge', bucketType: BucketType.splurge, color: const Color(0xFFF59E0B), icon: Icons.celebration, balance: projSplurge, change: projSplurge - prevSplurge),
+        if (projEnjoy != 0 || prevEnjoy != 0)
+          BucketSnapshot(name: 'Enjoy', bucketType: BucketType.enjoy, color: const Color(0xFFF59E0B), icon: Icons.celebration, balance: projEnjoy, change: projEnjoy - prevEnjoy),
         if (projMojo != 0 || prevMojo != 0)
           BucketSnapshot(name: 'Mojo', bucketType: BucketType.mojo, color: const Color(0xFF3949AB), icon: Icons.shield, balance: projMojo, change: projMojo - prevMojo),
         if (projDebt != 0 || prevDebt != 0)
@@ -388,44 +406,73 @@ class FinancialForecastPage extends StatelessWidget {
       ];
 
       List<ArrowEvent> arrows = [];
-      for (var type in blowCoveredBy) {
+      for (var type in livingCoveredBy) {
         int fromIdx = buckets.indexWhere((b) => b.bucketType == type);
         int toIdx = buckets.indexWhere((b) => b.bucketType == BucketType.dailyExpenses);
-        if (fromIdx != -1 && toIdx != -1) {
-          arrows.add(ArrowEvent(fromIdx, toIdx, const Color(0xFF38B2AC)));
-        }
+        if (fromIdx != -1 && toIdx != -1) arrows.add(ArrowEvent(fromIdx, toIdx, const Color(0xFF38B2AC)));
       }
       for (var type in healCoveredBy) {
         int fromIdx = buckets.indexWhere((b) => b.bucketType == type);
         int toIdx = buckets.indexWhere((b) => b.bucketType == BucketType.heal);
-        if (fromIdx != -1 && toIdx != -1) {
-          arrows.add(ArrowEvent(fromIdx, toIdx, const Color(0xFF38B2AC)));
-        }
+        if (fromIdx != -1 && toIdx != -1) arrows.add(ArrowEvent(fromIdx, toIdx, const Color(0xFF38B2AC)));
+      }
+      for (var type in smileCoveredBy) {
+        int fromIdx = buckets.indexWhere((b) => b.bucketType == type);
+        int toIdx = buckets.indexWhere((b) => b.bucketType == BucketType.smile);
+        if (fromIdx != -1 && toIdx != -1) arrows.add(ArrowEvent(fromIdx, toIdx, const Color(0xFF38B2AC)));
+      }
+      for (var type in enjoyCoveredBy) {
+        int fromIdx = buckets.indexWhere((b) => b.bucketType == type);
+        int toIdx = buckets.indexWhere((b) => b.bucketType == BucketType.enjoy);
+        if (fromIdx != -1 && toIdx != -1) arrows.add(ArrowEvent(fromIdx, toIdx, const Color(0xFF38B2AC)));
+      }
+      for (var type in mojoCoveredBy) {
+        int fromIdx = buckets.indexWhere((b) => b.bucketType == type);
+        int toIdx = buckets.indexWhere((b) => b.bucketType == BucketType.mojo);
+        if (fromIdx != -1 && toIdx != -1) arrows.add(ArrowEvent(fromIdx, toIdx, const Color(0xFF38B2AC)));
       }
 
       cards.add(ForecastMonthCard(
+        monthIndex: i,
         monthLabel:    i == 0 ? 'End of ${DateFormat('MMM yyyy').format(targetDate)}' : DateFormat('MMM yyyy').format(targetDate),
         isCurrentMonth: i == 0,
         health:        health,
         healthMessage: healthMsg,
         buckets:       buckets,
         arrows:        arrows,
-        sweepAmount:   totalSweepToHeal, // Display the TOTAL swept to Heal
+        sweepAmount:   totalSweepToHeal,
         sweepBreakdown: sweepBreakdown,
-        deficitAmount: currentDeficit,
-        usedSmile:     usedSmile,
-        usedSplurge:   usedSplurge,
-        usedMojo:      usedMojo,
+        hasUnresolvedDeficits: hasUnresolvedDeficits,
+        uncoveredLivingDeficit: uncoveredLivingDeficit,
+        uncoveredHealDeficit: uncoveredHealDeficit,
+        uncoveredSmileDeficit: uncoveredSmileDeficit,
+        uncoveredEnjoyDeficit: uncoveredEnjoyDeficit,
+        uncoveredMojoDeficit: uncoveredMojoDeficit,
         debtAdded:     debtAdded,
         debtPaidAmount: currentMonthDebtPaid,
         paidDebtNames:  currentMonthPaidNames,
+        availableLiving: currentLivingRemaining,
+        availableSmile: projSmile > 0 ? projSmile : 0,
+        availableEnjoy: projEnjoy > 0 ? projEnjoy : 0,
+        availableHeal: projHeal > 0 ? projHeal : 0,
+        availableMojo: projMojo > 0 ? projMojo : 0,
+        onSimulateTransfer: (from, to, amount) {
+          setState(() {
+            simulatedTransfers.add(SimulatedTransfer(
+              monthIndex: i,
+              fromBucket: from,
+              toBucket: to,
+              amount: amount,
+            ));
+          });
+        },
       ));
 
       // Update previous balances for next iteration display
       prevHeal    = projHeal;
       prevMojo    = projMojo;
       prevSmile   = projSmile;
-      prevSplurge = projSplurge;
+      prevEnjoy = projEnjoy;
       prevDebt    = projDebt;
 
       if (i == 0) {
@@ -447,7 +494,7 @@ class FinancialForecastPage extends StatelessWidget {
            suggestionWidgets.add(_buildSuggestionCard(
              icon: Icons.warning_rounded,
              color: Colors.red.shade600,
-             title: 'Blow Overspent',
+             title: 'Living Overspent',
              message: 'You overspent your daily expenses by ${fmt(currentDeficit)}. Try to cut back next month so your savings can grow.',
            ));
         }
@@ -466,7 +513,7 @@ class FinancialForecastPage extends StatelessWidget {
       // 6. Execute the Sweep: EVERYTHING leftover goes to Heal for NEXT month
       projHeal += totalSweepToHeal;
       projSmile = 0;
-      projSplurge = 0;
+      projEnjoy = 0;
     }
 
     return Column(

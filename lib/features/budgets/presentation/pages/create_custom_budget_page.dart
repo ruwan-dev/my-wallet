@@ -377,7 +377,7 @@ class _CreateCustomBudgetPageState extends State<CreateCustomBudgetPage> {
               icon: Icons.title_rounded,
               theme: theme,
             ),
-            if (_selectedBucket != BucketType.splurge) ...[
+            if (_selectedBucket != BucketType.enjoy) ...[
               const SizedBox(height: 12),
               Container(
                 decoration: BoxDecoration(
@@ -604,8 +604,8 @@ class _CreateCustomBudgetPageState extends State<CreateCustomBudgetPage> {
       ),
       child: Row(
         children: [
-          Expanded(child: _buildSegmentTab(BucketType.dailyExpenses, 'Blow', Icons.work_outline)),
-          Expanded(child: _buildSegmentTab(BucketType.splurge, 'Splurge', Icons.card_giftcard)),
+          Expanded(child: _buildSegmentTab(BucketType.dailyExpenses, 'Living', Icons.work_outline)),
+          Expanded(child: _buildSegmentTab(BucketType.enjoy, 'Enjoy', Icons.card_giftcard)),
         ],
       ),
     );
@@ -617,7 +617,7 @@ class _CreateCustomBudgetPageState extends State<CreateCustomBudgetPage> {
         onTap: () {
           setState(() {
             _selectedBucket = type;
-            if (type == BucketType.splurge) {
+            if (type == BucketType.enjoy) {
               _isRecurring = false;
             }
           });
